@@ -55,8 +55,12 @@ impl<W: Write> HashingWriter<W> {
 
 impl<W: Write> Write for HashingWriter<W> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.hasher.update(buf);
-        self.writer.write(buf)
+        // Hash only the bytes the inner writer actually accepted, so a
+        // short write never causes bytes to be hashed twice or unhashed
+        // bytes to be counted.
+        let n = self.writer.write(buf)?;
+        self.hasher.update(&buf[..n]);
+        Ok(n)
     }
 
     fn flush(&mut self) -> io::Result<()> {
