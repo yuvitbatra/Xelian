@@ -123,8 +123,46 @@ fn cmd_push() -> anyhow::Result<()> {
     anyhow::bail!("error: registry upload not yet implemented (Phase 15)")
 }
 
-fn cmd_run(_target: &str) -> anyhow::Result<()> {
-    not_implemented("run")
+fn cmd_run(target: &str) -> anyhow::Result<()> {
+    // Target discrimination (decision 2026-07-16): only the local `.harbor`
+    // path form is implemented so far. Registry refs and GitHub URLs still
+    // fall through to the "not implemented" stub; full discrimination among
+    // all three target forms is a later task (H-160).
+    let path = std::path::Path::new(target);
+    let is_local_archive = target.ends_with(".harbor") || path.is_file();
+
+    if !is_local_archive {
+        return not_implemented("run");
+    }
+
+    let home = harbor_core::cache::HarborHome::resolve()?;
+    home.ensure_layout()?;
+
+    let prepared =
+        harbor_core::run::run_local_archive(path, &home).map_err(|e| anyhow::anyhow!(e))?;
+
+    for warning in &prepared.warnings {
+        println!("warning: {warning}");
+    }
+
+    if prepared.from_cache {
+        println!(
+            "prepared {}@{} at {} (cached)",
+            prepared.name,
+            prepared.version,
+            prepared.package_dir.display()
+        );
+    } else {
+        println!(
+            "prepared {}@{} at {}",
+            prepared.name,
+            prepared.version,
+            prepared.package_dir.display()
+        );
+    }
+    println!("launch not yet implemented (Phase 8)");
+
+    Ok(())
 }
 
 fn cmd_add(_url: &str) -> anyhow::Result<()> {
