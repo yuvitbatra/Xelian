@@ -103,7 +103,24 @@ fn cmd_init(force: bool) -> anyhow::Result<()> {
 }
 
 fn cmd_push() -> anyhow::Result<()> {
-    not_implemented("push")
+    use anyhow::Context;
+
+    let cwd = std::env::current_dir().context("failed to determine the current directory")?;
+
+    println!("Validating package (manifest, lockfile, required files, entrypoint, commands)...");
+
+    let outcome =
+        harbor_core::validate::validate_and_build(&cwd, None).map_err(|e| anyhow::anyhow!(e))?;
+
+    for warning in &outcome.warnings {
+        println!("warning: {warning}");
+    }
+
+    println!("Computed package-checksum: {}", outcome.package_checksum);
+    println!("Wrote harbor.lock");
+    println!("Built {}", outcome.archive_path.display());
+
+    anyhow::bail!("error: registry upload not yet implemented (Phase 15)")
 }
 
 fn cmd_run(_target: &str) -> anyhow::Result<()> {

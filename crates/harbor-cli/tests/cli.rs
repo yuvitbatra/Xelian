@@ -42,11 +42,13 @@ fn version_flag_prints_binary_version() {
 
 /// Each not-yet-implemented subcommand, given minimal valid arguments, should
 /// currently exit non-zero and mention "not implemented". (`init` is
-/// implemented and covered in tests/init.rs.)
+/// implemented and covered in tests/init.rs; `push` now runs the real §8.1
+/// validation pipeline and is covered separately in tests/push.rs — its
+/// "not implemented" only applies to the registry upload step, with a
+/// distinct message, so it's excluded from this generic check.)
 #[test]
 fn each_subcommand_reports_not_implemented() {
     let cases: &[&[&str]] = &[
-        &["push"],
         &["run", "owner/package"],
         &["add", "https://github.com/owner/repo"],
         &["list"],
