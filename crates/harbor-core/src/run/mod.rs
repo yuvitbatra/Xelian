@@ -91,6 +91,22 @@ pub enum RunError {
     /// archive, or an I/O failure while staging/renaming.
     #[error(transparent)]
     Extract(#[from] extract::ExtractError),
+
+    /// Belt-and-braces safety check, independent of manifest validation:
+    /// the extraction destination computed from the (already-validated)
+    /// manifest `name`/`version` somehow does not resolve under
+    /// `home.packages()`. Should be unreachable in practice — the
+    /// `validate_manifest` call earlier in the pipeline already rejects any
+    /// `name`/`version` shape that could produce a `..`-laden or absolute
+    /// path — but this exists so a future caller/refactor mistake gets a
+    /// clear error instead of silently extracting outside the cache.
+    #[error(
+        "internal error: computed package destination {dest} is not confined to {packages_root}; \
+         refusing to extract outside the Harbor packages directory",
+        dest = dest.display(),
+        packages_root = packages_root.display()
+    )]
+    UnsafeDestination { dest: PathBuf, packages_root: PathBuf },
 }
 
 /// The outcome of successfully preparing a local `.harbor` archive: it has
@@ -126,9 +142,9 @@ pub fn run_local_archive(archive: &Path, home: &HarborHome) -> Result<Prepared, 
     let entries = read_archive_entries(archive)?;
 
     // --- H-050: checksum verify (§9.4) — must happen before any extraction. ---
-    let (_, lock_bytes) = entries
+    let (_, lock_bytes, _) = entries
         .iter()
-        .find(|(p, _)| p == "harbor.lock")
+        .find(|(p, _, _)| p == "harbor.lock")
         .ok_or_else(|| RunError::MissingLockfile { path: archive.to_path_buf() })?;
     let lock_str = String::from_utf8_lossy(lock_bytes).into_owned();
     let lock = Lockfile::from_toml_str(&lock_str).map_err(RunError::LockfileParse)?;
@@ -137,7 +153,13 @@ pub fn run_local_archive(archive: &Path, home: &HarborHome) -> Result<Prepared, 
         .package_checksum
         .clone()
         .ok_or(RunError::MissingPackageChecksum)?;
-    let actual_checksum = compute_package_checksum_from_bytes(&entries);
+    // `compute_package_checksum_from_bytes` doesn't know about tar mode bits
+    // (it hashes path+contents only, per the checksum convention), so build
+    // its expected (path, contents) shape here rather than changing that
+    // shared cross-module convention.
+    let checksum_entries: Vec<(String, Vec<u8>)> =
+        entries.iter().map(|(p, c, _)| (p.clone(), c.clone())).collect();
+    let actual_checksum = compute_package_checksum_from_bytes(&checksum_entries);
     if actual_checksum != expected_checksum {
         return Err(RunError::ChecksumMismatch {
             expected: expected_checksum,
@@ -146,22 +168,46 @@ pub fn run_local_archive(archive: &Path, home: &HarborHome) -> Result<Prepared, 
     }
 
     // --- Parse harbor.toml (pre-extraction) purely for cache addressing. ---
-    let (_, manifest_bytes) = entries
+    let (_, manifest_bytes, _) = entries
         .iter()
-        .find(|(p, _)| p == "harbor.toml")
+        .find(|(p, _, _)| p == "harbor.toml")
         .ok_or_else(|| RunError::MissingManifest { path: archive.to_path_buf() })?;
     let manifest_str = String::from_utf8_lossy(manifest_bytes).into_owned();
     let manifest_for_addressing = Manifest::from_toml_str(&manifest_str)?;
 
+    // CRITICAL (path traversal, see wave4-review.md): validate `name`/
+    // `version` BEFORE they're used to build the extraction destination.
+    // A checksum-consistent archive only proves internal consistency — it
+    // says nothing about whether `name`/`version` are safe path segments.
+    // `validate_manifest` enforces the §19.3 charset (lowercase ascii/digit/
+    // `_`/`-` only — no `/`, no `.`, no `..`) and SemVer 2.0.0 for `version`
+    // (which likewise cannot contain a path separator), so a traversal
+    // payload in either field is rejected here, before any extraction.
+    // (The warnings returned here are discarded: the authoritative warnings
+    // in `Prepared` come from the post-extraction re-validation below.)
+    manifest::validate_manifest(&manifest_for_addressing)?;
+
     // --- H-051: safe extraction, or skip if already cached (§9.5). ---
     let dest = home.local_package_dir(&manifest_for_addressing.name, &manifest_for_addressing.version);
-    let from_cache = dir_is_nonempty(&dest).map_err(|e| RunError::Io {
+
+    // Belt-and-braces: even with `name`/`version` validated above, assert
+    // the computed destination is still confined to `packages/` before
+    // touching the filesystem at all. Never panics — a clear error instead.
+    let packages_root = home.packages();
+    if !dest.starts_with(&packages_root) {
+        return Err(RunError::UnsafeDestination { dest, packages_root });
+    }
+
+    let mut from_cache = dir_is_nonempty(&dest).map_err(|e| RunError::Io {
         path: dest.clone(),
         source: e,
     })?;
 
     if !from_cache {
-        extract::extract_entries(&entries, &dest, &home.tmp())?;
+        // A `true` result means a concurrent `harbor run` of this same
+        // archive won the stage-then-rename race first — treat that as a
+        // cache hit rather than surfacing the raw rename failure.
+        from_cache = extract::extract_entries(&entries, &dest, &home.tmp())?;
     }
 
     // --- H-052: re-validate + OS check (§9.6, §9.6.1), from the EXTRACTED
@@ -225,15 +271,27 @@ fn dir_is_nonempty(dir: &Path) -> io::Result<bool> {
     Ok(rd.next().is_some())
 }
 
+/// Upper bound on how many bytes we'll pre-allocate based on a tar header's
+/// (attacker-controlled) `size` field, before actually reading that many
+/// bytes out of the gzip stream. A hand-crafted archive can claim any size
+/// up to `u64::MAX` in its header independent of what data actually follows;
+/// without this cap, `Vec::with_capacity` would attempt that allocation
+/// immediately — a cheap denial-of-service from a tiny file on disk.
+/// `read_to_end` still grows the buffer past this if the entry legitimately
+/// has more content than the cap; this only bounds the up-front guess.
+const MAX_ENTRY_PREALLOC: usize = 16 * 1024 * 1024; // 16 MiB
+
 /// Read every regular-file entry out of a gzip-compressed tar (`.harbor`)
-/// archive into memory as `(archive-relative path, contents)` pairs.
-/// Directory entries (and any other non-regular entry type) are skipped.
+/// archive into memory as `(archive-relative path, contents, tar mode bits)`
+/// triples. Directory entries (and any other non-regular entry type) are
+/// skipped. The mode is carried through purely so [`extract::extract_entries`]
+/// can restore the execute bit; it plays no part in checksum verification.
 ///
 /// Packages are small in V1 (SPEC.md), so reading the whole archive into
 /// memory once up front — rather than streaming — keeps the checksum-verify
 /// -then-extract pipeline simple and lets both steps share one read of the
 /// archive.
-fn read_archive_entries(archive: &Path) -> Result<Vec<(String, Vec<u8>)>, RunError> {
+fn read_archive_entries(archive: &Path) -> Result<Vec<(String, Vec<u8>, u32)>, RunError> {
     let map_io = |source: io::Error| RunError::Io {
         path: archive.to_path_buf(),
         source,
@@ -250,9 +308,11 @@ fn read_archive_entries(archive: &Path) -> Result<Vec<(String, Vec<u8>)>, RunErr
             continue;
         }
         let path = entry.path().map_err(map_io)?.to_string_lossy().into_owned();
-        let mut contents = Vec::with_capacity(entry.size() as usize);
+        let mode = entry.header().mode().map_err(map_io)?;
+        let cap = (entry.size() as usize).min(MAX_ENTRY_PREALLOC);
+        let mut contents = Vec::with_capacity(cap);
         entry.read_to_end(&mut contents).map_err(map_io)?;
-        entries.push((path, contents));
+        entries.push((path, contents, mode));
     }
 
     Ok(entries)
@@ -502,6 +562,58 @@ manifest = "pyproject.toml"
         assert!(!dir.path().join("evil.txt").exists());
     }
 
+    // ---- CRITICAL fix (wave4-review.md): manifest name/version must be
+    // validated BEFORE they're used to build the extraction destination,
+    // not just the tar entry paths. ----
+
+    #[test]
+    fn manifest_name_path_traversal_is_rejected_before_any_extraction() {
+        let dir = tempdir().unwrap();
+        // A hand-crafted archive with a hostile `name` field. The package
+        // is otherwise entirely self-consistent — the checksum is computed
+        // over these exact bytes — because the point is that internal
+        // consistency alone must NOT be enough to reach extraction.
+        let entries = sample_entries("../../evil", "1.0.0", &[]);
+        let archive_path = dir.path().join("evil-name.harbor");
+        write_archive(&archive_path, &entries);
+
+        let home = HarborHome::at(dir.path().join("home"));
+        home.ensure_layout().unwrap();
+
+        let err = run_local_archive(&archive_path, &home).unwrap_err();
+        assert!(
+            matches!(err, RunError::ManifestValidation(_)),
+            "expected the name-charset rule (§19.3) to reject this before extraction, got: {err:?}"
+        );
+
+        // Nothing must have been written anywhere: not under packages/, and
+        // not at the traversal target either. `home/packages/local/../../evil`
+        // resolves to `home/evil`.
+        assert!(!home.packages().join("local").exists());
+        assert!(!dir.path().join("home").join("evil").exists());
+        assert!(!dir.path().join("evil").exists());
+    }
+
+    #[test]
+    fn manifest_version_path_traversal_is_rejected_before_any_extraction() {
+        let dir = tempdir().unwrap();
+        let entries = sample_entries("evil-version-agent", "../../evil", &[]);
+        let archive_path = dir.path().join("evil-version.harbor");
+        write_archive(&archive_path, &entries);
+
+        let home = HarborHome::at(dir.path().join("home"));
+        home.ensure_layout().unwrap();
+
+        let err = run_local_archive(&archive_path, &home).unwrap_err();
+        assert!(
+            matches!(err, RunError::ManifestValidation(_)),
+            "expected SemVer validation to reject this before extraction, got: {err:?}"
+        );
+
+        assert!(!home.packages().join("local").exists());
+        assert!(!dir.path().join("home").join("evil").exists());
+    }
+
     // ---- skip-if-cached (§9.5 immutability) ----
 
     #[test]
@@ -584,5 +696,65 @@ manifest = "pyproject.toml"
 
         let prepared = run_local_archive(&archive_path, &home).expect("should succeed");
         assert_eq!(prepared.name, "os-ok-agent");
+    }
+
+    // ---- executable mode bits survive extraction (wave4-review.md) ----
+
+    #[cfg(unix)]
+    #[test]
+    fn executable_bit_is_preserved_through_the_real_build_and_run_pipeline() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempdir().unwrap();
+        let pkg_root = dir.path().join("pkg");
+        fs::create_dir_all(pkg_root.join("src")).unwrap();
+
+        fs::write(
+            pkg_root.join("harbor.toml"),
+            minimal_manifest_toml("exec-agent", "1.0.0", &[]),
+        )
+        .unwrap();
+        fs::write(pkg_root.join("src/main.py"), b"print('hi')\n").unwrap();
+
+        // An executable entrypoint script, mode set on disk before the
+        // real `package::collect_files` + `package::build_archive` pipeline
+        // ever sees it — this is what causes `build_archive` to record
+        // tar mode 0o755 for this entry (see `package.rs`'s `is_executable`).
+        let entry_script = pkg_root.join("run.sh");
+        fs::write(&entry_script, b"#!/bin/sh\necho hi\n").unwrap();
+        fs::set_permissions(&entry_script, fs::Permissions::from_mode(0o755)).unwrap();
+
+        // harbor.lock, with a package-checksum computed over everything
+        // except itself, exactly as `harbor push` would produce it.
+        let files_before_lock = crate::package::collect_files(&pkg_root).unwrap();
+        let checksum = crate::lockfile::compute_package_checksum(&files_before_lock).unwrap();
+        let lock = lockfile_with_checksum("1.0.0", Some(checksum));
+        fs::write(pkg_root.join("harbor.lock"), lock.to_toml_string().unwrap()).unwrap();
+
+        let files = crate::package::collect_files(&pkg_root).unwrap();
+        let archive_path = dir.path().join("exec-agent-1.0.0.harbor");
+        crate::package::build_archive(&pkg_root, &files, &archive_path).unwrap();
+
+        let home = HarborHome::at(dir.path().join("home"));
+        home.ensure_layout().unwrap();
+
+        let prepared = run_local_archive(&archive_path, &home).expect("should succeed");
+
+        let extracted_script = prepared.package_dir.join("run.sh");
+        let script_mode = fs::metadata(&extracted_script).unwrap().permissions().mode();
+        assert_ne!(
+            script_mode & 0o111,
+            0,
+            "execute bit should survive the full build-then-run pipeline, got mode {script_mode:o}"
+        );
+
+        // A non-executable file in the same package must not gain the bit.
+        let extracted_readme = prepared.package_dir.join("src/main.py");
+        let py_mode = fs::metadata(&extracted_readme).unwrap().permissions().mode();
+        assert_eq!(
+            py_mode & 0o111,
+            0,
+            "non-executable entry must not gain the execute bit, got mode {py_mode:o}"
+        );
     }
 }

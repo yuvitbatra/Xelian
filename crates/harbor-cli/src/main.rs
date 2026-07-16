@@ -145,21 +145,14 @@ fn cmd_run(target: &str) -> anyhow::Result<()> {
         println!("warning: {warning}");
     }
 
-    if prepared.from_cache {
-        println!(
-            "prepared {}@{} at {} (cached)",
-            prepared.name,
-            prepared.version,
-            prepared.package_dir.display()
-        );
-    } else {
-        println!(
-            "prepared {}@{} at {}",
-            prepared.name,
-            prepared.version,
-            prepared.package_dir.display()
-        );
-    }
+    let cached_suffix = if prepared.from_cache { " (cached)" } else { "" };
+    println!(
+        "prepared {}@{} at {}{}",
+        prepared.name,
+        prepared.version,
+        prepared.package_dir.display(),
+        cached_suffix
+    );
     println!("launch not yet implemented (Phase 8)");
 
     Ok(())
