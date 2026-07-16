@@ -1,0 +1,17 @@
+[package]
+name = "harbor-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "harbor"
+path = "src/main.rs"
+
+[dependencies]
+harbor-core = { workspace = true }
+clap = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
