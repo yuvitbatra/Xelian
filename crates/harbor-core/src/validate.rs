@@ -46,7 +46,9 @@ pub enum ValidateError {
     /// `.gitignore`, which would produce a package that could never run
     /// (SPEC.md §5.4).
     #[error(
-        "entrypoint {path:?} is excluded by .gitignore and cannot be packaged (SPEC.md §5.4)"
+        "entrypoint {path:?} is not in the package file set — it is either \
+         excluded by .gitignore or not a regular file (e.g. a symlink) — and \
+         cannot be packaged (SPEC.md §5.4)"
     )]
     EntrypointExcluded { path: String },
 

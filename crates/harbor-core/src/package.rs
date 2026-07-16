@@ -99,8 +99,9 @@ pub fn collect_files(root: &Path) -> Result<Vec<(String, PathBuf)>, PackageError
         if archive_path.split('/').any(|component| component == ".git") {
             continue;
         }
-        // Never ingest a previously built archive into a new one.
-        if archive_path.ends_with(".harbor") {
+        // Never ingest a previously built archive — or the staging file a
+        // crashed build may have left behind — into a new one.
+        if archive_path.ends_with(".harbor") || archive_path.ends_with(".harbor.tmp") {
             continue;
         }
 
