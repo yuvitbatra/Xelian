@@ -40,12 +40,12 @@ fn version_flag_prints_binary_version() {
     assert!(stdout_long.contains(env!("CARGO_PKG_VERSION")));
 }
 
-/// Each subcommand, given minimal valid arguments, should currently exit
-/// non-zero and mention "not implemented".
+/// Each not-yet-implemented subcommand, given minimal valid arguments, should
+/// currently exit non-zero and mention "not implemented". (`init` is
+/// implemented and covered in tests/init.rs.)
 #[test]
 fn each_subcommand_reports_not_implemented() {
     let cases: &[&[&str]] = &[
-        &["init"],
         &["push"],
         &["run", "owner/package"],
         &["add", "https://github.com/owner/repo"],
@@ -56,8 +56,14 @@ fn each_subcommand_reports_not_implemented() {
         &["yank", "owner/package", "--version", "1.2.0"],
     ];
 
+    // Run in a tempdir so no command can leave stray files in the repo.
+    let dir = tempfile::tempdir().expect("create tempdir");
     for args in cases {
-        let output = harbor().args(*args).output().expect("run harbor subcommand");
+        let output = harbor()
+            .current_dir(dir.path())
+            .args(*args)
+            .output()
+            .expect("run harbor subcommand");
         assert!(
             !output.status.success(),
             "expected non-zero exit for {args:?}, got success"

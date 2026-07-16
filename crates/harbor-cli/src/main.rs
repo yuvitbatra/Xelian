@@ -11,7 +11,15 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Command {
     /// Create a new package skeleton (harbor.toml, harbor.lock) in the current directory.
-    Init,
+    ///
+    /// Performs no network activity. Fails if harbor.toml already exists in
+    /// the current directory, unless --force is given, in which case both
+    /// harbor.toml and harbor.lock are overwritten.
+    Init {
+        /// Overwrite an existing harbor.toml and harbor.lock in the current directory.
+        #[arg(long)]
+        force: bool,
+    },
 
     /// Validate and publish the current package to the registry.
     Push,
@@ -71,8 +79,27 @@ fn not_implemented(cmd: &str) -> anyhow::Result<()> {
     anyhow::bail!("harbor {cmd}: not implemented")
 }
 
-fn cmd_init() -> anyhow::Result<()> {
-    not_implemented("init")
+fn cmd_init(force: bool) -> anyhow::Result<()> {
+    use anyhow::Context;
+
+    let cwd = std::env::current_dir().context("failed to determine the current directory")?;
+
+    match harbor_core::init::init_package(&cwd, force) {
+        Ok(outcome) => {
+            println!("Created {}", outcome.manifest_path.display());
+            println!("Created {}", outcome.lockfile_path.display());
+            if outcome.name_is_placeholder {
+                println!(
+                    "Note: the current directory name isn't a valid package name, \
+                     so harbor.toml uses the placeholder name {:?} — edit `name` \
+                     before running `harbor push`.",
+                    outcome.name
+                );
+            }
+            Ok(())
+        }
+        Err(err) => Err(anyhow::anyhow!(err)),
+    }
 }
 
 fn cmd_push() -> anyhow::Result<()> {
@@ -111,7 +138,7 @@ fn main() {
     let cli = Cli::parse();
 
     let result = match &cli.command {
-        Command::Init => cmd_init(),
+        Command::Init { force } => cmd_init(*force),
         Command::Push => cmd_push(),
         Command::Run { target } => cmd_run(target),
         Command::Add { url } => cmd_add(url),
