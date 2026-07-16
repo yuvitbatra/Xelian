@@ -153,18 +153,18 @@
 
 ## Phase 6 — Runtime management (uv/npm)
 
-- [ ] **H-060 — Extensible runtime-manager dispatch**
+- [x] **H-060 — Extensible runtime-manager dispatch**
   - Difficulty: M · Duration: 4h · Deps: H-052
   - Acceptance: dispatch keyed on `language` (§10.4); adding a third language is
     a new case, not a rewrite; compiles with a placeholder third arm.
 
-- [ ] **H-061 — Python path: ensure `uv` + CPython**
+- [x] **H-061 — Python path: ensure `uv` + CPython**
   - Difficulty: L · Duration: 6h · Deps: H-060
   - Acceptance: auto-installs `uv` if absent; provisions a CPython satisfying the
     `runtime` PEP 440 constraint via `uv` (§9.7, §10.1); constraint matching is
     delegated to `uv`, not parsed in Harbor (§6.1).
 
-- [ ] **H-062 — Node path: ensure Node + `npm`**
+- [x] **H-062 — Node path: ensure Node + `npm`**
   - Difficulty: M · Duration: 5h · Deps: H-060
   - Acceptance: auto-installs Node if absent; selects a runtime satisfying the
     SemVer range via `npm` (§9.7, §10.2).
@@ -173,13 +173,13 @@
 
 ## Phase 7 — Environment + dependency install
 
-- [ ] **H-070 — Environment cache keyed on (name, version)**
+- [x] **H-070 — Environment cache keyed on (name, version)**
   - Difficulty: M · Duration: 4h · Deps: H-061
   - Acceptance: exactly one env per `(name, version)` under `~/.harbor/envs/`,
     mirroring the source-based cache layout (decision 2026-07-16); key is
     `(name, version)` only, no dependency hash (§9.8); reused on subsequent runs.
 
-- [ ] **H-071 — Delegate dependency install to native manager**
+- [x] **H-071 — Delegate dependency install to native manager**
   - Difficulty: M · Duration: 5h · Deps: H-070
   - Acceptance: deps installed via `uv`/`npm` against the native manifest+lockfile
     (§6.1.2, §9.8); Harbor never re-declares/re-resolves deps; interrupted
