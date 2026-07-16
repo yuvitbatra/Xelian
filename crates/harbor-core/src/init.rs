@@ -113,17 +113,22 @@ manifest = "pyproject.toml"
 /// the placeholder name `"my-package"` with a `# TODO` comment, and
 /// [`InitOutcome::name_is_placeholder`] is `true`.
 ///
-/// If `harbor.toml` already exists in `dir` and `force` is `false`, returns
-/// [`InitError::AlreadyExists`] and changes nothing on disk — an existing
-/// `harbor.lock` is left untouched too, even though only `harbor.toml`'s
-/// presence is checked. With `force: true`, both files are (re)written
-/// unconditionally.
+/// If `harbor.toml` or `harbor.lock` already exists in `dir` and `force` is
+/// `false`, returns [`InitError::AlreadyExists`] and changes nothing on
+/// disk. With `force: true`, both files are (re)written unconditionally.
 pub fn init_package(dir: &Path, force: bool) -> Result<InitOutcome, InitError> {
     let manifest_path = dir.join("harbor.toml");
     let lockfile_path = dir.join("harbor.lock");
 
-    if manifest_path.exists() && !force {
-        return Err(InitError::AlreadyExists { path: manifest_path });
+    if !force {
+        if manifest_path.exists() {
+            return Err(InitError::AlreadyExists { path: manifest_path });
+        }
+        if lockfile_path.exists() {
+            return Err(InitError::AlreadyExists {
+                path: lockfile_path,
+            });
+        }
     }
 
     let (name, name_is_placeholder) = match dir.file_name().and_then(|s| s.to_str()) {
