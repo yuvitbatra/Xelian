@@ -17,19 +17,19 @@
 
 ## Phase 0 — Workspace & CLI skeleton
 
-- [ ] **H-001 — Initialize Cargo workspace**
+- [x] **H-001 — Initialize Cargo workspace**
   - Difficulty: S · Duration: 2h · Deps: none
   - Acceptance: `harbor-cli` (bin) + `harbor-core` (lib) build under one
     workspace; `cargo build` succeeds; binary is named `harbor`.
 
-- [ ] **H-002 — Wire clap command surface (all 9 commands + flags)**
+- [x] **H-002 — Wire clap command surface (all 9 commands + flags)**
   - Difficulty: M · Duration: 4h · Deps: H-001
   - Acceptance: `harbor --help` lists `init, push, run, add, list, rm, login,
     logout, yank` with correct flags — `rm` has `--env`/`--all` (§13.6), `yank`
     has `--version`/`--undo` (§13.9); each stub exits non-zero with "not
     implemented"; `-V` prints the binary version.
 
-- [ ] **H-003 — Cache layout module for `~/.harbor/`**
+- [x] **H-003 — Cache layout module for `~/.harbor/`**
   - Difficulty: S · Duration: 3h · Deps: H-001
   - Acceptance: helper resolves and lazily creates `packages/`, `runtimes/`,
     `envs/`, `models/`, `logs/`, `tmp/` under a resolved home dir (§11.1);
@@ -40,29 +40,29 @@
 
 ## Phase 1 — Manifest parse & validate
 
-- [ ] **H-010 — Manifest structs (serde/toml)**
+- [x] **H-010 — Manifest structs (serde/toml)**
   - Difficulty: M · Duration: 4h · Deps: H-001
   - Acceptance: typed structs cover all §6.1/§6.2 fields plus `[author]`,
     `[dependencies]`, `[environment]`, `[commands]`, opaque `[config]`; the §6.4
     example deserializes; `[config]` is captured but never interpreted (§6.3).
 
-- [ ] **H-011 — Required-field + spec-version validation**
+- [x] **H-011 — Required-field + spec-version validation**
   - Difficulty: M · Duration: 3h · Deps: H-010
   - Acceptance: missing required field yields a distinct per-field error;
     unsupported `spec-version` is rejected (§6.1, §8.1 step 1).
 
-- [ ] **H-012 — Closed-enum validation: permissions, features, os**
+- [x] **H-012 — Closed-enum validation: permissions, features, os**
   - Difficulty: M · Duration: 3h · Deps: H-010
   - Acceptance: `permissions` outside §16.1 fails; `features` outside §17 warns
     (not fail, §17); unrecognized `os` values rejected (§8.1 step 1).
 
-- [ ] **H-013 — Naming + environment-conflict rules**
+- [x] **H-013 — Naming + environment-conflict rules**
   - Difficulty: S · Duration: 3h · Deps: H-010
   - Acceptance: names enforced to lowercase ASCII/digits/`_`/`-`, length 3–64
     (§19.3); a variable declaring both `required = true` and `default` is
     rejected (§6.2.1); `runtime` string is captured but NOT parsed (§6.1).
 
-- [ ] **H-014 — Single `validate_manifest()` entry point + tests**
+- [x] **H-014 — Single `validate_manifest()` entry point + tests**
   - Difficulty: S · Duration: 3h · Deps: H-011, H-012, H-013
   - Acceptance: one reusable entry point (used later by push §8.1 and run §9.6);
     table-driven tests cover one valid + one invalid case per rule.
@@ -71,14 +71,14 @@
 
 ## Phase 2 — harbor init
 
-- [ ] **H-020 — Generate `harbor.toml` skeleton**
+- [x] **H-020 — Generate `harbor.toml` skeleton**
   - Difficulty: M · Duration: 4h · Deps: H-014
   - Acceptance: `harbor init` writes a `harbor.toml` with valid defaults +
     clearly marked placeholders (name from dir if §19.3-valid, else placeholder);
     output parses under H-014 (modulo intentional placeholders); no network
     (§13.1).
 
-- [ ] **H-021 — Generate `harbor.lock` skeleton + clobber guard**
+- [x] **H-021 — Generate `harbor.lock` skeleton + clobber guard**
   - Difficulty: S · Duration: 2h · Deps: H-020
   - Acceptance: a valid `harbor.lock` shell is written; existing `harbor.toml`
     is not silently overwritten (documented flag/prompt behavior); no network.
@@ -87,18 +87,18 @@
 
 ## Phase 3 — harbor.lock & checksums
 
-- [ ] **H-030 — SHA-256 helper + native-lock-checksum**
+- [x] **H-030 — SHA-256 helper + native-lock-checksum**
   - Difficulty: S · Duration: 3h · Deps: H-001
   - Acceptance: SHA-256 of a native lockfile matches independent `sha256sum`;
     computed only when a native lockfile is declared (§7.2, §7.3).
 
-- [ ] **H-031 — `package-checksum` excluding `harbor.lock`**
+- [x] **H-031 — `package-checksum` excluding `harbor.lock`**
   - Difficulty: M · Duration: 4h · Deps: H-030
   - Acceptance: checksum is deterministic for identical inputs; mutating
     `harbor.lock` does NOT change `package-checksum` (§7.3); `harbor.lock` is
     never itself hashed.
 
-- [ ] **H-032 — Populate all `harbor.lock` keys**
+- [x] **H-032 — Populate all `harbor.lock` keys**
   - Difficulty: M · Duration: 3h · Deps: H-031, H-010
   - Acceptance: every §7.2 key is present with correct values
     (`spec-version`, `harbor-version`, `package-version` copied from manifest,
@@ -108,18 +108,18 @@
 
 ## Phase 4 — Packaging / archive build
 
-- [ ] **H-040 — tar.gz archive builder**
+- [x] **H-040 — tar.gz archive builder**
   - Difficulty: M · Duration: 4h · Deps: H-032
   - Acceptance: builds a `.harbor` inspectable via `tar -tzf` with the §5.2/§5.3
     layout; deterministic enough to keep H-031 checksums stable.
 
-- [ ] **H-041 — `.gitignore` exclusion (use `ignore` crate)**
+- [x] **H-041 — `.gitignore` exclusion (use `ignore` crate)**
   - Difficulty: L · Duration: 6h · Deps: H-040
   - Acceptance: files matched by `.gitignore` never appear in the archive
     (§5.4), including nested cases; `.git/` and build scratch always excluded
     (§5.4); no force-include path exists.
 
-- [ ] **H-042 — §8.1 validation pipeline (ordered, fail-fast)**
+- [x] **H-042 — §8.1 validation pipeline (ordered, fail-fast)**
   - Difficulty: L · Duration: 6h · Deps: H-041, H-014
   - Acceptance: steps 1–8 run in order (§8.1); required files (§5.3) and
     entrypoint existence/non-exclusion (§5.4/step 4) enforced; `[commands]`
@@ -131,19 +131,19 @@
 
 ## Phase 5 — Local run: extract / re-validate / OS check
 
-- [ ] **H-050 — Local-archive run entry + checksum verify**
+- [x] **H-050 — Local-archive run entry + checksum verify**
   - Difficulty: M · Duration: 4h · Deps: H-042
   - Acceptance: `harbor run ./x.harbor` recomputes SHA-256 and aborts before
     extraction on mismatch (§9.4); a tampered archive never extracts.
 
-- [ ] **H-051 — Safe extraction into version-scoped cache**
+- [x] **H-051 — Safe extraction into version-scoped cache**
   - Difficulty: M · Duration: 4h · Deps: H-050, H-003
   - Acceptance: extracts into the source-based cache (decision 2026-07-16):
     `~/.harbor/packages/local/<name>/<version>/` for local archives (registry
     and GitHub sources get their own namespaces later); rejects `..`/absolute
     tar paths; skips re-extraction of an already-present version (§9.5).
 
-- [ ] **H-052 — Manifest re-validation + OS check**
+- [x] **H-052 — Manifest re-validation + OS check**
   - Difficulty: S · Duration: 3h · Deps: H-051, H-014
   - Acceptance: re-parses/re-validates `harbor.toml` (§9.6); if `os` is declared
     and current OS not listed, fails immediately with a clear message and goes no
