@@ -153,6 +153,18 @@ fn cmd_run(target: &str) -> anyhow::Result<()> {
         prepared.package_dir.display(),
         cached_suffix
     );
+
+    // Load manifest from extracted package directory to pass to prepare_environment
+    let manifest_path = prepared.package_dir.join("harbor.toml");
+    let manifest_str = std::fs::read_to_string(&manifest_path)
+        .map_err(|e| anyhow::anyhow!("Failed to read harbor.toml from cache: {}", e))?;
+    let manifest = harbor_core::manifest::Manifest::from_toml_str(&manifest_str)
+        .map_err(|e| anyhow::anyhow!("Failed to parse cached harbor.toml: {}", e))?;
+
+    let env_dir = harbor_core::run::prepare_environment(&prepared, &manifest, &home)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    println!("environment ready at {}", env_dir.display());
     println!("launch not yet implemented (Phase 8)");
 
     Ok(())

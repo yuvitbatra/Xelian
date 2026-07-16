@@ -20,6 +20,7 @@ use crate::lockfile::{compute_package_checksum_from_bytes, Lockfile, LockfileErr
 use crate::manifest::{self, Manifest};
 
 pub mod extract;
+pub mod runtime;
 
 /// Errors that can occur while preparing a local `.harbor` archive for
 /// launch (SPEC.md §9.4–§9.6.1).
@@ -107,6 +108,14 @@ pub enum RunError {
         packages_root = packages_root.display()
     )]
     UnsafeDestination { dest: PathBuf, packages_root: PathBuf },
+
+    /// Failed to provision language runtime (Phase 6)
+    #[error("failed to provision language runtime: {0}")]
+    RuntimeProvision(#[source] runtime::RuntimeError),
+
+    /// Failed to install dependencies (Phase 7)
+    #[error("failed to install dependencies: {0}")]
+    DependencyInstall(#[source] runtime::RuntimeError),
 }
 
 /// The outcome of successfully preparing a local `.harbor` archive: it has
@@ -237,6 +246,34 @@ pub fn run_local_archive(archive: &Path, home: &HarborHome) -> Result<Prepared, 
         warnings,
     })
 }
+
+/// Prepare the isolated runtime environment and install dependencies (SPEC.md §9.7, §9.8).
+/// Returns the path to the completed environment directory, or a `RunError` on failure.
+pub fn prepare_environment(
+    prepared: &Prepared,
+    manifest: &Manifest,
+    home: &HarborHome,
+) -> Result<PathBuf, RunError> {
+    let manager = runtime::get_runtime_manager(manifest.language);
+
+    let bin_dir = manager
+        .ensure_runtime(home, &manifest.runtime)
+        .map_err(RunError::RuntimeProvision)?;
+
+    // Keyed strictly on (name, version) under envs/local/<name>/<version>/
+    let env_dir = home.local_env_dir(&prepared.name, &prepared.version);
+
+    if env_dir.join("harbor-env.ok").is_file() {
+        return Ok(env_dir);
+    }
+
+    manager
+        .install_dependencies(home, &prepared.package_dir, &env_dir, manifest, &bin_dir)
+        .map_err(RunError::DependencyInstall)?;
+
+    Ok(env_dir)
+}
+
 
 /// Whether `current` (one of `"linux"`, `"macos"`, `"windows"`) is allowed to
 /// run a package that declares `declared` in its `os` field (SPEC.md §9.6.1).

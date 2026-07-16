@@ -48,7 +48,7 @@ manifest = "pyproject.toml"
     write_file(dir, "README.md", "# test\n");
     write_file(dir, "LICENSE", "MIT License\n");
     write_file(dir, "src/main.py", "print('hi')\n");
-    write_file(dir, "pyproject.toml", "[project]\nname = \"x\"\n");
+    write_file(dir, "pyproject.toml", "[project]\nname = \"x\"\nversion = \"0.1.0\"\n");
 }
 
 /// Spawn `harbor run <archive>` with `HOME` pointed at `home_dir` on the
