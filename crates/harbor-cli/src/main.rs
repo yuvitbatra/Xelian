@@ -123,6 +123,63 @@ fn cmd_push() -> anyhow::Result<()> {
     anyhow::bail!("error: registry upload not yet implemented (Phase 15)")
 }
 
+/// Shared pipeline tail for both `harbor run` and `harbor add` (SPEC.md
+/// §9.7 onward): environment preparation, first-run permission prompt, model
+/// management, env var resolution, launch, and exit-code mirroring.
+///
+/// `env_dir` and `grants_path` are caller-supplied so this function makes no
+/// assumption about a package's source: `cmd_run` derives them from
+/// `home.local_*`, `cmd_add` from `home.github_*` (SPEC.md §12.2 step 7).
+///
+/// Never returns on a non-zero child exit — it mirrors the exit code via
+/// `std::process::exit`, exactly as `cmd_run` always has, so callers of
+/// `harbor run`/`harbor add` can distinguish outcomes as if they had run the
+/// entrypoint directly.
+fn prepare_env_and_launch(
+    manifest: &harbor_core::manifest::Manifest,
+    name: &str,
+    version: &str,
+    package_dir: &std::path::Path,
+    env_dir: std::path::PathBuf,
+    grants_path: &std::path::Path,
+    home: &harbor_core::cache::HarborHome,
+) -> anyhow::Result<()> {
+    let prepared_env = harbor_core::run::prepare_environment(package_dir, manifest, home, env_dir)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    let env_dir = &prepared_env.env_dir;
+    let bin_dir = &prepared_env.bin_dir;
+
+    eprintln!("environment ready at {}", env_dir.display());
+
+    // --- Phase 9 / H-090: First-run permission prompt (disclosure-only). ---
+    harbor_core::permissions::check_and_prompt(name, version, &manifest.permissions, grants_path)
+        .map_err(|e| anyhow::anyhow!("permission error: {e}"))?;
+
+    // --- Phase 10 / H-100, H-101: Model management (pipeline step 10, §9.1). ---
+    harbor_core::run::model::ensure_model(manifest.primary_model.as_deref(), home)
+        .map_err(|e| anyhow::anyhow!("model error: {e}"))?;
+
+    // --- Phase 8 / H-080: Resolve required/default environment variables,
+    // immediately before launch per §9.10. ---
+    let env_pairs = harbor_core::run::env_vars::resolve_env_vars(&manifest.environment)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    // --- Phase 8 / H-081, H-082: Launch (agent REPL or MCP server). ---
+    let status =
+        harbor_core::run::launch::launch(manifest, package_dir, env_dir, bin_dir, &env_pairs)
+            .map_err(|e| anyhow::anyhow!("launch error: {e}"))?;
+
+    // Mirror the entrypoint's exit code so callers of `harbor run`/`harbor
+    // add` can distinguish outcomes exactly as if they had run the
+    // entrypoint directly.
+    if !status.success() {
+        std::process::exit(status.code().unwrap_or(1));
+    }
+
+    Ok(())
+}
+
 fn cmd_run(target: &str) -> anyhow::Result<()> {
     // Target discrimination (decision 2026-07-16): only the local `.harbor`
     // path form is implemented so far. Registry refs and GitHub URLs still
@@ -164,53 +221,63 @@ fn cmd_run(target: &str) -> anyhow::Result<()> {
     let manifest = harbor_core::manifest::Manifest::from_toml_str(&manifest_str)
         .map_err(|e| anyhow::anyhow!("Failed to parse cached harbor.toml: {}", e))?;
 
-    let prepared_env = harbor_core::run::prepare_environment(&prepared, &manifest, &home)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let env_dir = home.local_env_dir(&prepared.name, &prepared.version);
+    let grants_path = home.local_grants_path(&prepared.name, &prepared.version);
 
-    let env_dir = &prepared_env.env_dir;
-    let bin_dir = &prepared_env.bin_dir;
-
-    eprintln!("environment ready at {}", env_dir.display());
-
-    // --- Phase 9 / H-090: First-run permission prompt (disclosure-only). ---
-    harbor_core::permissions::check_and_prompt(
+    prepare_env_and_launch(
+        &manifest,
         &prepared.name,
         &prepared.version,
-        &manifest.permissions,
-        &home,
-    )
-    .map_err(|e| anyhow::anyhow!("permission error: {e}"))?;
-
-    // --- Phase 10 / H-100, H-101: Model management (pipeline step 10, §9.1). ---
-    harbor_core::run::model::ensure_model(manifest.primary_model.as_deref(), &home)
-        .map_err(|e| anyhow::anyhow!("model error: {e}"))?;
-
-    // --- Phase 8 / H-080: Resolve required/default environment variables,
-    // immediately before launch per §9.10. ---
-    let env_pairs = harbor_core::run::env_vars::resolve_env_vars(&manifest.environment)
-        .map_err(|e| anyhow::anyhow!(e))?;
-
-    // --- Phase 8 / H-081, H-082: Launch (agent REPL or MCP server). ---
-    let status = harbor_core::run::launch::launch(
-        &manifest,
         &prepared.package_dir,
         env_dir,
-        bin_dir,
-        &env_pairs,
+        &grants_path,
+        &home,
     )
-    .map_err(|e| anyhow::anyhow!("launch error: {e}"))?;
-
-    // Mirror the entrypoint's exit code so callers of `harbor run` can
-    // distinguish outcomes exactly as if they had run the entrypoint directly.
-    if !status.success() {
-        std::process::exit(status.code().unwrap_or(1));
-    }
-
-    Ok(())
 }
 
-fn cmd_add(_url: &str) -> anyhow::Result<()> {
-    not_implemented("add")
+/// `harbor add <github-url>` (SPEC.md §12): import a GitHub repository as a
+/// local Harbor package, then run it through the same execution pipeline as
+/// `harbor run`, starting from manifest validation (§9.6) onward (§12.2 step
+/// 7). Performs no publishing (§12.3).
+fn cmd_add(url: &str) -> anyhow::Result<()> {
+    let home = harbor_core::cache::HarborHome::resolve()?;
+    home.ensure_layout()?;
+
+    let outcome = harbor_core::github::import_github(url, &home).map_err(|e| anyhow::anyhow!(e))?;
+
+    let (manifest, warnings) =
+        harbor_core::run::validate_extracted(&outcome.package_dir).map_err(|e| anyhow::anyhow!(e))?;
+
+    // All of Harbor's own status output goes to stderr: for MCP packages the
+    // child inherits Harbor's stdout as the JSON-RPC stdio transport
+    // (SPEC.md §9.10.2), so stdout must carry nothing but the protocol.
+    for warning in &warnings {
+        eprintln!("warning: {warning}");
+    }
+
+    let cached_suffix = if outcome.from_cache { " (cached)" } else { "" };
+    let short_sha = &outcome.sha[..outcome.sha.len().min(7)];
+    eprintln!(
+        "imported {}/{}@{} at {}{}",
+        outcome.repo.owner,
+        outcome.repo.repo,
+        short_sha,
+        outcome.package_dir.display(),
+        cached_suffix
+    );
+
+    let env_dir = home.github_env_dir(&outcome.repo.owner, &outcome.repo.repo, &outcome.sha);
+    let grants_path = home.github_grants_path(&outcome.repo.owner, &outcome.repo.repo, &outcome.sha);
+
+    prepare_env_and_launch(
+        &manifest,
+        &manifest.name,
+        &manifest.version,
+        &outcome.package_dir,
+        env_dir,
+        &grants_path,
+        &home,
+    )
 }
 
 fn cmd_list() -> anyhow::Result<()> {

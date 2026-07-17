@@ -6,7 +6,7 @@
 //! not technically enforce permissions in V1 (§16.2, §20.4).
 //!
 //! Grant state is stored under `~/.harbor/permissions/local/<name>/<version>.toml`
-//! (see [`HarborHome::local_grants_path`]) — deliberately *outside* the
+//! (see [`crate::cache::HarborHome::local_grants_path`]) — deliberately *outside* the
 //! extracted package cache, so a package cannot ship a pre-filled grants file
 //! that suppresses its own first-run prompt.
 //!
@@ -19,8 +19,6 @@ use std::io::{self, BufRead, IsTerminal, Write};
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-
-use crate::cache::HarborHome;
 
 /// Errors from the permissions subsystem.
 #[derive(Debug, Error)]
@@ -115,18 +113,22 @@ fn prompt_permission(permission: &str) -> io::Result<Option<bool>> {
 /// is not consent — the next interactive run prompts normally.
 ///
 /// Call this function before launch (§9.10).
+///
+/// `grants_path` is caller-supplied rather than derived here: `cmd_run`
+/// passes `home.local_grants_path(name, version)`, `cmd_add` passes
+/// `home.github_grants_path(owner, repo, sha)` (SPEC.md §12.2 step 7).
+/// `name`/`version` are used only for the display banner.
 pub fn check_and_prompt(
     name: &str,
     version: &str,
     permissions: &[String],
-    home: &HarborHome,
+    grants_path: &std::path::Path,
 ) -> Result<(), PermissionError> {
     if permissions.is_empty() {
         return Ok(());
     }
 
-    let grants_path = home.local_grants_path(name, version);
-    let mut grants = read_grants(&grants_path)?.unwrap_or_default();
+    let mut grants = read_grants(grants_path)?.unwrap_or_default();
 
     // Deduplicate while preserving declaration order, then keep only the
     // permissions not yet decided in the persisted state.
@@ -165,21 +167,23 @@ pub fn check_and_prompt(
         }
     }
 
-    write_grants(&grants_path, &grants)?;
+    write_grants(grants_path, &grants)?;
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cache::HarborHome;
     use tempfile::tempdir;
 
     #[test]
     fn no_permissions_skips_everything() {
         let dir = tempdir().unwrap();
         let home = HarborHome::at(dir.path());
-        check_and_prompt("test", "1.0.0", &[], &home).unwrap();
-        assert!(!home.local_grants_path("test", "1.0.0").exists());
+        let grants_path = home.local_grants_path("test", "1.0.0");
+        check_and_prompt("test", "1.0.0", &[], &grants_path).unwrap();
+        assert!(!grants_path.exists());
     }
 
     #[test]
@@ -211,16 +215,15 @@ mod tests {
             granted: vec!["network".to_string()],
             denied: vec!["filesystem".to_string()],
         };
-        write_grants(&home.local_grants_path("test", "1.0.0"), &grants).unwrap();
+        let grants_path = home.local_grants_path("test", "1.0.0");
+        write_grants(&grants_path, &grants).unwrap();
 
         // Both permissions decided (one granted, one denied) — no prompting,
         // no stdin access, state unchanged.
         let perms: Vec<String> = vec!["network".into(), "filesystem".into()];
-        check_and_prompt("test", "1.0.0", &perms, &home).unwrap();
+        check_and_prompt("test", "1.0.0", &perms, &grants_path).unwrap();
 
-        let loaded = read_grants(&home.local_grants_path("test", "1.0.0"))
-            .unwrap()
-            .unwrap();
+        let loaded = read_grants(&grants_path).unwrap().unwrap();
         assert_eq!(loaded.granted, vec!["network"]);
         assert_eq!(loaded.denied, vec!["filesystem"]);
     }
@@ -233,12 +236,13 @@ mod tests {
             granted: vec!["network".to_string()],
             denied: vec![],
         };
-        write_grants(&home.local_grants_path("test", "1.0.0"), &grants).unwrap();
+        let grants_path = home.local_grants_path("test", "1.0.0");
+        write_grants(&grants_path, &grants).unwrap();
 
         // A duplicated entry must not be treated as an undecided permission
         // (the old count-based check re-prompted forever on this input).
         let perms: Vec<String> = vec!["network".into(), "network".into()];
-        check_and_prompt("test", "1.0.0", &perms, &home).unwrap();
+        check_and_prompt("test", "1.0.0", &perms, &grants_path).unwrap();
     }
 
     #[test]
@@ -248,11 +252,12 @@ mod tests {
         let dir = tempdir().unwrap();
         let home = HarborHome::at(dir.path());
 
+        let grants_path = home.local_grants_path("test", "1.0.0");
         let perms: Vec<String> = vec!["network".into()];
-        check_and_prompt("test", "1.0.0", &perms, &home).unwrap();
+        check_and_prompt("test", "1.0.0", &perms, &grants_path).unwrap();
 
         assert!(
-            !home.local_grants_path("test", "1.0.0").exists(),
+            !grants_path.exists(),
             "non-interactive sessions must never auto-grant"
         );
     }
@@ -267,15 +272,14 @@ mod tests {
             granted: vec!["camera".to_string(), "location".to_string()],
             denied: vec![],
         };
-        write_grants(&home.local_grants_path("test", "1.0.0"), &grants).unwrap();
+        let grants_path = home.local_grants_path("test", "1.0.0");
+        write_grants(&grants_path, &grants).unwrap();
 
         let perms: Vec<String> = vec!["network".into()];
         // Non-terminal stdin in tests → discloses without persisting; the key
         // assertion is that "network" is still treated as undecided.
-        check_and_prompt("test", "1.0.0", &perms, &home).unwrap();
-        let loaded = read_grants(&home.local_grants_path("test", "1.0.0"))
-            .unwrap()
-            .unwrap();
+        check_and_prompt("test", "1.0.0", &perms, &grants_path).unwrap();
+        let loaded = read_grants(&grants_path).unwrap().unwrap();
         assert!(!loaded.is_decided("network"));
     }
 }

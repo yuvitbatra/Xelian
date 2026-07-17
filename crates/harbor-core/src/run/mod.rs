@@ -225,7 +225,27 @@ pub fn run_local_archive(archive: &Path, home: &HarborHome) -> Result<Prepared, 
     // --- H-052: re-validate + OS check (§9.6, §9.6.1), from the EXTRACTED
     // directory (not the in-memory bytes) — this is what a "cached" run
     // re-validates too, so a manually-tampered cache entry is still caught.
-    let manifest_path = dest.join("harbor.toml");
+    let (manifest, warnings) = validate_extracted(&dest)?;
+
+    Ok(Prepared {
+        name: manifest.name,
+        version: manifest.version,
+        package_dir: dest,
+        from_cache,
+        warnings,
+    })
+}
+
+/// Re-parse and re-validate `harbor.toml` from an already-extracted package
+/// directory, and check OS compatibility (SPEC.md §9.6, §9.6.1).
+///
+/// This is the pipeline's shared entry point from manifest validation
+/// onward: [`run_local_archive`] calls it as its own post-extraction step,
+/// and `harbor add` (SPEC.md §12.2 step 7) calls it directly on a freshly
+/// imported package directory, since a GitHub import has no `.harbor`
+/// archive to check a package-checksum against in the first place.
+pub fn validate_extracted(package_dir: &Path) -> Result<(Manifest, Vec<ValidationWarning>), RunError> {
+    let manifest_path = package_dir.join("harbor.toml");
     let manifest_str = fs::read_to_string(&manifest_path).map_err(|e| RunError::Io {
         path: manifest_path.clone(),
         source: e,
@@ -241,13 +261,7 @@ pub fn run_local_archive(archive: &Path, home: &HarborHome) -> Result<Prepared, 
         });
     }
 
-    Ok(Prepared {
-        name: manifest.name,
-        version: manifest.version,
-        package_dir: dest,
-        from_cache,
-        warnings,
-    })
+    Ok((manifest, warnings))
 }
 
 /// The result of a successful environment preparation: the environment
@@ -259,11 +273,19 @@ pub struct PreparedEnvironment {
 }
 
 /// Prepare the isolated runtime environment and install dependencies (SPEC.md §9.7, §9.8).
+///
+/// `env_dir` is caller-supplied rather than derived here, so this function
+/// makes no assumption about a package's source: `cmd_run` passes
+/// `home.local_env_dir(name, version)`, `cmd_add` passes
+/// `home.github_env_dir(owner, repo, sha)` (SPEC.md §12.2 step 7). `home` is
+/// still needed for the runtime managers' own `runtimes/` and `tmp/` use.
+///
 /// Returns the environment info, or a `RunError` on failure.
 pub fn prepare_environment(
-    prepared: &Prepared,
+    package_dir: &Path,
     manifest: &Manifest,
     home: &HarborHome,
+    env_dir: PathBuf,
 ) -> Result<PreparedEnvironment, RunError> {
     let manager = runtime::get_runtime_manager(manifest.language);
 
@@ -271,18 +293,14 @@ pub fn prepare_environment(
         .ensure_runtime(home, &manifest.runtime)
         .map_err(RunError::RuntimeProvision)?;
 
-    // Keyed strictly on (name, version) under envs/local/<name>/<version>/
-    let env_dir = home.local_env_dir(&prepared.name, &prepared.version);
-
     if !env_dir.join("harbor-env.ok").is_file() {
         manager
-            .install_dependencies(home, &prepared.package_dir, &env_dir, manifest, &bin_dir)
+            .install_dependencies(home, package_dir, &env_dir, manifest, &bin_dir)
             .map_err(RunError::DependencyInstall)?;
     }
 
     Ok(PreparedEnvironment { env_dir, bin_dir })
 }
-
 
 /// Whether `current` (one of `"linux"`, `"macos"`, `"windows"`) is allowed to
 /// run a package that declares `declared` in its `os` field (SPEC.md §9.6.1).
@@ -742,6 +760,63 @@ manifest = "pyproject.toml"
 
         let prepared = run_local_archive(&archive_path, &home).expect("should succeed");
         assert_eq!(prepared.name, "os-ok-agent");
+    }
+
+    // ---- validate_extracted: the shared §9.6+ entry point (H-113) ----
+
+    #[test]
+    fn validate_extracted_happy_path_returns_manifest_and_no_warnings() {
+        let dir = tempdir().unwrap();
+        fs::create_dir_all(dir.path().join("src")).unwrap();
+        fs::write(
+            dir.path().join("harbor.toml"),
+            minimal_manifest_toml("standalone-agent", "1.0.0", &[]),
+        )
+        .unwrap();
+        fs::write(dir.path().join("src/main.py"), "print('hi')\n").unwrap();
+
+        let (manifest, warnings) = validate_extracted(dir.path()).expect("should validate");
+        assert_eq!(manifest.name, "standalone-agent");
+        assert_eq!(manifest.version, "1.0.0");
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn validate_extracted_surfaces_manifest_validation_errors() {
+        let dir = tempdir().unwrap();
+        // Invalid `name` per §19.3 (uppercase not allowed) — must be caught
+        // by re-validation, exactly as it would be inside run_local_archive.
+        fs::write(
+            dir.path().join("harbor.toml"),
+            minimal_manifest_toml("Not-A-Valid-Name", "1.0.0", &[]),
+        )
+        .unwrap();
+
+        let err = validate_extracted(dir.path()).unwrap_err();
+        assert!(matches!(err, RunError::ManifestValidation(_)), "got: {err:?}");
+    }
+
+    #[test]
+    fn validate_extracted_rejects_missing_harbor_toml() {
+        let dir = tempdir().unwrap();
+        let err = validate_extracted(dir.path()).unwrap_err();
+        assert!(matches!(err, RunError::Io { .. }), "got: {err:?}");
+    }
+
+    #[test]
+    fn validate_extracted_enforces_os_compatibility() {
+        let current = current_os();
+        let other = if current == "macos" { "linux" } else { "macos" };
+
+        let dir = tempdir().unwrap();
+        fs::write(
+            dir.path().join("harbor.toml"),
+            minimal_manifest_toml("os-mismatch-agent", "1.0.0", &[other]),
+        )
+        .unwrap();
+
+        let err = validate_extracted(dir.path()).unwrap_err();
+        assert!(matches!(err, RunError::UnsupportedOs { .. }), "got: {err:?}");
     }
 
     // ---- executable mode bits survive extraction (wave4-review.md) ----

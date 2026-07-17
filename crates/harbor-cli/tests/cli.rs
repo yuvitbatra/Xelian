@@ -45,12 +45,13 @@ fn version_flag_prints_binary_version() {
 /// implemented and covered in tests/init.rs; `push` now runs the real §8.1
 /// validation pipeline and is covered separately in tests/push.rs — its
 /// "not implemented" only applies to the registry upload step, with a
-/// distinct message, so it's excluded from this generic check.)
+/// distinct message, so it's excluded from this generic check. `add` is now
+/// implemented too — see tests/add.rs — and is excluded here since it would
+/// otherwise make real network calls with this test's un-isolated `HOME`.)
 #[test]
 fn each_subcommand_reports_not_implemented() {
     let cases: &[&[&str]] = &[
         &["run", "owner/package"],
-        &["add", "https://github.com/owner/repo"],
         &["list"],
         &["rm", "owner/package"],
         &["login"],
