@@ -237,18 +237,18 @@
 
 ## Phase 11 — GitHub import (harbor add)
 
-- [ ] **H-110 — Resolve default branch to SHA + download at SHA**
+- [x] **H-110 — Resolve default branch to SHA + download at SHA**
   - Difficulty: M · Duration: 5h · Deps: H-101
   - Acceptance: default branch resolved to a commit SHA; repo downloaded at that
     SHA; cached at `packages/github/<owner>/<repo>/<sha>/` — by SHA, not branch
     (§12.2 step 1; source-based cache decision 2026-07-16).
 
-- [ ] **H-111 — Language detection by precedence**
+- [x] **H-111 — Language detection by precedence**
   - Difficulty: S · Duration: 3h · Deps: H-110
   - Acceptance: `pyproject.toml`→python, `package.json`→node, `Cargo.toml`→clear
     "unsupported language" error (§12.2 step 2); detection list is extensible.
 
-- [ ] **H-112 — Infer `harbor.toml` with placeholders**
+- [x] **H-112 — Infer `harbor.toml` with placeholders**
   - Difficulty: L · Duration: 6h · Deps: H-111
   - Acceptance: infers `language`, `runtime`, `entrypoint`, `dependencies`;
     non-inferable fields get placeholders; import does not fail on placeholders

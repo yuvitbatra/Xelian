@@ -36,7 +36,11 @@ pub enum RuntimeError {
 }
 
 /// Helper to execute a command and handle errors.
-pub(super) fn run_command_checked(cmd: &mut Command) -> Result<std::process::Output, RuntimeError> {
+///
+/// `pub(crate)` (rather than `pub(super)`): reused outside `run::` by
+/// `github.rs` (§12.2) to invoke `git`/`curl` with the same error-wrapping
+/// behavior as the runtime provisioning code.
+pub(crate) fn run_command_checked(cmd: &mut Command) -> Result<std::process::Output, RuntimeError> {
     let output = cmd.output().map_err(RuntimeError::Io)?;
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
@@ -352,7 +356,12 @@ struct NodeRelease {
 
 impl NodeRuntimeManager {
     /// Validate that the range constraint contains no unsupported npm-isms.
-    fn validate_constraint_syntax(&self, constraint: &str) -> Result<(), RuntimeError> {
+    ///
+    /// `pub(crate)`: reused by `github.rs` (§12.2 step 3) to decide whether
+    /// an inferred `engines.node` value from a repo's `package.json` is safe
+    /// to carry into the generated manifest's `runtime` field, or whether it
+    /// must fall back to a placeholder.
+    pub(crate) fn validate_constraint_syntax(&self, constraint: &str) -> Result<(), RuntimeError> {
         let c = constraint.trim();
         if c.contains("||") {
             return Err(RuntimeError::UnsupportedConstraintSyntax {

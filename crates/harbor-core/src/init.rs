@@ -58,7 +58,11 @@ pub struct InitOutcome {
 
 /// Whether `name` satisfies the package naming rules (SPEC.md §19.3):
 /// lowercase ASCII letters, digits, `_`, `-`; 3-64 characters.
-fn is_valid_package_name(name: &str) -> bool {
+///
+/// `pub(crate)`: reused by `github.rs` (§12.2 step 3) to validate a package
+/// name slugified from a repository name, rather than duplicating this rule
+/// a third time.
+pub(crate) fn is_valid_package_name(name: &str) -> bool {
     let valid_charset = !name.is_empty()
         && name
             .chars()

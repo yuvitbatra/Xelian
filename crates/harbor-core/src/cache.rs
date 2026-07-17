@@ -18,10 +18,12 @@
 //! - `local/<name>/<version>/` — packages built/run from a local directory
 //!   (no owner namespace, since there's no remote source to disambiguate).
 //!
-//! This module only implements helpers for the `local/` namespace
-//! (`local_package_dir`, `local_env_dir`); later tasks that implement registry
-//! pulls and `harbor add` will add the `registry/` and `github/` equivalents
-//! following the same shape.
+//! This module implements helpers for the `local/` namespace
+//! (`local_package_dir`, `local_env_dir`, `local_grants_path`) and the
+//! `github/` namespace (`github_package_dir`, `github_env_dir`,
+//! `github_grants_path`, used by `harbor add`, §12.2); a later task that
+//! implements registry pulls will add the `registry/` equivalents following
+//! the same shape.
 
 use std::io;
 use std::path::{Path, PathBuf};
@@ -149,6 +151,47 @@ impl HarborHome {
             .join(format!("{version}.toml"))
     }
 
+    /// The on-disk directory for a package imported from GitHub at a
+    /// specific commit SHA: `packages/github/<owner>/<repo>/<sha>` (SPEC.md
+    /// §12.2 step 1).
+    ///
+    /// Addressed by commit SHA, not branch name, so re-imports of the same
+    /// commit are reproducible and immutable the same way registry packages
+    /// are (§9.11) — the cache decision behind this shape is recorded at the
+    /// top of this module.
+    ///
+    /// Does not create anything on disk.
+    pub fn github_package_dir(&self, owner: &str, repo: &str, sha: &str) -> PathBuf {
+        self.packages().join("github").join(owner).join(repo).join(sha)
+    }
+
+    /// The on-disk directory for the isolated environment of a package
+    /// imported from GitHub at a specific commit SHA:
+    /// `envs/github/<owner>/<repo>/<sha>`.
+    ///
+    /// Does not create anything on disk.
+    pub fn github_env_dir(&self, owner: &str, repo: &str, sha: &str) -> PathBuf {
+        self.envs().join("github").join(owner).join(repo).join(sha)
+    }
+
+    /// The grant-state file for a package imported from GitHub at a specific
+    /// commit SHA: `permissions/github/<owner>/<repo>/<sha>.toml` (§16.2).
+    ///
+    /// Grant state lives under `~/.harbor/` — never inside the extracted
+    /// package cache, whose contents are checksum-verified archive content a
+    /// package author controls (same rationale as
+    /// [`local_grants_path`](Self::local_grants_path)).
+    ///
+    /// Does not create anything on disk.
+    pub fn github_grants_path(&self, owner: &str, repo: &str, sha: &str) -> PathBuf {
+        self.root
+            .join("permissions")
+            .join("github")
+            .join(owner)
+            .join(repo)
+            .join(format!("{sha}.toml"))
+    }
+
     /// Lazily creates the root directory and all six standard subdirectories
     /// (`packages/`, `runtimes/`, `envs/`, `models/`, `logs/`, `tmp/`).
     ///
@@ -254,6 +297,37 @@ mod tests {
 
         assert!(!pkg_dir.exists());
         assert!(!env_dir.exists());
+    }
+
+    #[test]
+    fn github_package_env_and_grants_dir_shape() {
+        let home = HarborHome::at("/fake/root");
+        let sha = "a".repeat(40);
+
+        assert_eq!(
+            home.github_package_dir("octocat", "hello-world", &sha),
+            Path::new(&format!("/fake/root/packages/github/octocat/hello-world/{sha}"))
+        );
+        assert_eq!(
+            home.github_env_dir("octocat", "hello-world", &sha),
+            Path::new(&format!("/fake/root/envs/github/octocat/hello-world/{sha}"))
+        );
+        assert_eq!(
+            home.github_grants_path("octocat", "hello-world", &sha),
+            Path::new(&format!(
+                "/fake/root/permissions/github/octocat/hello-world/{sha}.toml"
+            ))
+        );
+    }
+
+    #[test]
+    fn github_package_dir_does_not_create_anything() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+        let sha = "b".repeat(40);
+
+        let pkg_dir = home.github_package_dir("octocat", "hello-world", &sha);
+        assert!(!pkg_dir.exists());
     }
 
     #[test]

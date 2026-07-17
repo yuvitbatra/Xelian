@@ -5,6 +5,7 @@
 pub mod cache;
 pub mod checksum;
 pub mod errors;
+pub mod github;
 pub mod init;
 pub mod lockfile;
 pub mod manifest;
