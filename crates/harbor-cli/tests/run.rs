@@ -78,10 +78,18 @@ fn run_local_archive_extracts_and_prepares_the_package() {
         "harbor run should succeed; stderr:\n{}",
         String::from_utf8_lossy(&output.stderr)
     );
+    // Harbor's own diagnostics go to stderr (stdout is reserved for the
+    // child: an MCP server's stdout is its JSON-RPC transport); the agent's
+    // own output is the only thing on stdout.
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("my-agent"), "stdout:\n{stdout}");
-    assert!(stdout.contains("1.0.0"), "stdout:\n{stdout}");
-    assert!(stdout.contains("launch not yet implemented"), "stdout:\n{stdout}");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("my-agent"), "stderr:\n{stderr}");
+    assert!(stderr.contains("1.0.0"), "stderr:\n{stderr}");
+    assert!(stdout.contains("hi"), "the agent entrypoint should have run and printed 'hi':\n{stdout}");
+    assert!(
+        !stdout.contains("prepared"),
+        "harbor diagnostics must not pollute stdout:\n{stdout}"
+    );
 
     let extracted = home_dir.path().join(".harbor/packages/local/my-agent/1.0.0");
     assert!(extracted.join("harbor.toml").is_file());
@@ -144,8 +152,8 @@ fn second_identical_run_reuses_the_cache() {
         "first run should succeed; stderr:\n{}",
         String::from_utf8_lossy(&first.stderr)
     );
-    let first_stdout = String::from_utf8_lossy(&first.stdout);
-    assert!(!first_stdout.contains("cached"), "first run must not be a cache hit:\n{first_stdout}");
+    let first_stderr = String::from_utf8_lossy(&first.stderr);
+    assert!(!first_stderr.contains("cached"), "first run must not be a cache hit:\n{first_stderr}");
 
     let second = run_harbor_with_home(&outcome.archive_path, home_dir.path());
     assert!(
@@ -153,10 +161,10 @@ fn second_identical_run_reuses_the_cache() {
         "second run should succeed; stderr:\n{}",
         String::from_utf8_lossy(&second.stderr)
     );
-    let second_stdout = String::from_utf8_lossy(&second.stdout);
+    let second_stderr = String::from_utf8_lossy(&second.stderr);
     assert!(
-        second_stdout.to_lowercase().contains("cached"),
-        "second run should report cache reuse:\n{second_stdout}"
+        second_stderr.to_lowercase().contains("cached"),
+        "second run should report cache reuse:\n{second_stderr}"
     );
 
     let extracted = home_dir.path().join(".harbor/packages/local/cache-agent/1.0.0");

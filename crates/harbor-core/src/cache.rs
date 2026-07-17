@@ -133,6 +133,22 @@ impl HarborHome {
         self.envs().join("local").join(name).join(version)
     }
 
+    /// The grant-state file for a package pulled from a local directory
+    /// source: `permissions/local/<name>/<version>.toml` (§16.2).
+    ///
+    /// Grant state lives under `~/.harbor/` — never inside the extracted
+    /// package cache, whose contents are checksum-verified archive content a
+    /// package author controls.
+    ///
+    /// Does not create anything on disk.
+    pub fn local_grants_path(&self, name: &str, version: &str) -> PathBuf {
+        self.root
+            .join("permissions")
+            .join("local")
+            .join(name)
+            .join(format!("{version}.toml"))
+    }
+
     /// Lazily creates the root directory and all six standard subdirectories
     /// (`packages/`, `runtimes/`, `envs/`, `models/`, `logs/`, `tmp/`).
     ///

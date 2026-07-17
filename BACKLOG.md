@@ -189,18 +189,18 @@
 
 ## Phase 8 — Launch (env vars, agent REPL, MCP stdio + port)
 
-- [ ] **H-080 — Required/default env-var resolution before launch**
+- [x] **H-080 — Required/default env-var resolution before launch**
   - Difficulty: S · Duration: 3h · Deps: H-071
   - Acceptance: missing `required = true` var aborts before launch with a clear
     message; `default` applied to unset non-required vars (§6.2.1, §9.10).
 
-- [ ] **H-081 — Agent launch: attach REPL to terminal**
+- [x] **H-081 — Agent launch: attach REPL to terminal**
   - Difficulty: M · Duration: 5h · Deps: H-080
   - Acceptance: `agent` entrypoint runs with stdin/stdout/stderr attached to the
     terminal as an interactive REPL; `harbor run` blocks for the session
     (§9.10.1).
 
-- [ ] **H-082 — MCP launch: stdio server + port fallback**
+- [x] **H-082 — MCP launch: stdio server + port fallback**
   - Difficulty: L · Duration: 6h · Deps: H-080
   - Acceptance: `mcp` entrypoint launches over stdio (§9.10.2); `port` governs
     local HTTP exposure (decision 2026-07-16 — resolve the bridge-vs-passthrough
@@ -211,7 +211,7 @@
 
 ## Phase 9 — Permissions first-run prompt
 
-- [ ] **H-090 — First-run permission prompt (disclosure-only)**
+- [x] **H-090 — First-run permission prompt (disclosure-only)**
   - Difficulty: S · Duration: 3h · Deps: H-081
   - Acceptance: first run of a `(name, version)` prompts grant/deny per declared
     permission (§16.1/§16.2); decision persisted; no re-prompt on later runs of
@@ -222,12 +222,12 @@
 
 ## Phase 10 — Ollama model management
 
-- [ ] **H-100 — Auto-install Ollama when absent**
+- [x] **H-100 — Auto-install Ollama when absent**
   - Difficulty: M · Duration: 4h · Deps: H-081
   - Acceptance: if Ollama binary/daemon is absent, it is installed automatically
     before any model download (§9.9, §18).
 
-- [ ] **H-101 — Download + cache `primary-model` before launch**
+- [x] **H-101 — Download + cache `primary-model` before launch**
   - Difficulty: M · Duration: 4h · Deps: H-100
   - Acceptance: declared `primary-model` is downloaded if missing from
     `~/.harbor/models/`/Ollama store and reused on later runs (§9.9, §18);

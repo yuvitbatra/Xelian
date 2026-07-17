@@ -19,7 +19,10 @@ use crate::errors::{ManifestError, ValidationError, ValidationWarning};
 use crate::lockfile::{compute_package_checksum_from_bytes, Lockfile, LockfileError};
 use crate::manifest::{self, Manifest};
 
+pub mod env_vars;
 pub mod extract;
+pub mod launch;
+pub mod model;
 pub mod runtime;
 
 /// Errors that can occur while preparing a local `.harbor` archive for
@@ -247,13 +250,21 @@ pub fn run_local_archive(archive: &Path, home: &HarborHome) -> Result<Prepared, 
     })
 }
 
+/// The result of a successful environment preparation: the environment
+/// directory and the language runtime's bin directory.
+#[derive(Debug, Clone)]
+pub struct PreparedEnvironment {
+    pub env_dir: PathBuf,
+    pub bin_dir: PathBuf,
+}
+
 /// Prepare the isolated runtime environment and install dependencies (SPEC.md §9.7, §9.8).
-/// Returns the path to the completed environment directory, or a `RunError` on failure.
+/// Returns the environment info, or a `RunError` on failure.
 pub fn prepare_environment(
     prepared: &Prepared,
     manifest: &Manifest,
     home: &HarborHome,
-) -> Result<PathBuf, RunError> {
+) -> Result<PreparedEnvironment, RunError> {
     let manager = runtime::get_runtime_manager(manifest.language);
 
     let bin_dir = manager
@@ -263,15 +274,13 @@ pub fn prepare_environment(
     // Keyed strictly on (name, version) under envs/local/<name>/<version>/
     let env_dir = home.local_env_dir(&prepared.name, &prepared.version);
 
-    if env_dir.join("harbor-env.ok").is_file() {
-        return Ok(env_dir);
+    if !env_dir.join("harbor-env.ok").is_file() {
+        manager
+            .install_dependencies(home, &prepared.package_dir, &env_dir, manifest, &bin_dir)
+            .map_err(RunError::DependencyInstall)?;
     }
 
-    manager
-        .install_dependencies(home, &prepared.package_dir, &env_dir, manifest, &bin_dir)
-        .map_err(RunError::DependencyInstall)?;
-
-    Ok(env_dir)
+    Ok(PreparedEnvironment { env_dir, bin_dir })
 }
 
 

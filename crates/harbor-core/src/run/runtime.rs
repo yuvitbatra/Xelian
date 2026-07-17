@@ -36,7 +36,7 @@ pub enum RuntimeError {
 }
 
 /// Helper to execute a command and handle errors.
-fn run_command_checked(cmd: &mut Command) -> Result<std::process::Output, RuntimeError> {
+pub(super) fn run_command_checked(cmd: &mut Command) -> Result<std::process::Output, RuntimeError> {
     let output = cmd.output().map_err(RuntimeError::Io)?;
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).to_string();
@@ -72,8 +72,17 @@ fn create_symlink(src: &Path, dst: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
+/// Helper to check that a binary at `path` runs and exits 0 for `--version`.
+pub(super) fn binary_reports_version(path: &Path) -> bool {
+    Command::new(path)
+        .arg("--version")
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
 /// Helper to check if a binary is in the system PATH.
-fn find_in_path(binary_name: &str) -> Option<PathBuf> {
+pub(super) fn find_in_path(binary_name: &str) -> Option<PathBuf> {
     if let Some(paths) = std::env::var_os("PATH") {
         for path in std::env::split_paths(&paths) {
             let candidate = path.join(binary_name);
@@ -172,18 +181,12 @@ impl PythonRuntimeManager {
 
     /// Check if a `uv` binary is executable and runs successfully.
     fn check_uv_executable(&self, path: &Path) -> bool {
-        let mut cmd = Command::new(path);
-        cmd.arg("--version");
-        if let Ok(output) = cmd.output() {
-            output.status.success()
-        } else {
-            false
-        }
+        binary_reports_version(path)
     }
 
     /// Download and run the Astral `uv` installer.
     fn install_uv(&self, home: &HarborHome) -> Result<PathBuf, RuntimeError> {
-        println!("uv not found. Installing uv automatically under {}...", home.runtimes().join("bin").display());
+        eprintln!("uv not found. Installing uv automatically under {}...", home.runtimes().join("bin").display());
 
         std::fs::create_dir_all(home.runtimes().join("bin"))?;
         std::fs::create_dir_all(home.tmp())?;
@@ -271,7 +274,7 @@ impl RuntimeManager for PythonRuntimeManager {
             std::fs::create_dir_all(env_dir)?;
 
             // 1. Create the virtual environment using `uv venv` directly in target location.
-            println!("Creating Python virtual environment in {}...", env_dir.display());
+            eprintln!("Creating Python virtual environment in {}...", env_dir.display());
             let mut venv_cmd = Command::new(&uv_path);
             venv_cmd
                 .arg("venv")
@@ -285,7 +288,7 @@ impl RuntimeManager for PythonRuntimeManager {
             if let Some(ref lockfile_name) = manifest.dependencies.lockfile {
                 let lockfile_path = package_dir.join(lockfile_name);
                 if lockfile_path.is_file() {
-                    println!("Syncing dependencies from lockfile: {}...", lockfile_name);
+                    eprintln!("Syncing dependencies from lockfile: {}...", lockfile_name);
                     let mut sync_cmd = Command::new(&uv_path);
                     sync_cmd
                         .arg("sync")
@@ -300,7 +303,7 @@ impl RuntimeManager for PythonRuntimeManager {
             // Fallback: no lockfile or lockfile not found on disk.
             let manifest_name = &manifest.dependencies.manifest;
             if manifest_name == "pyproject.toml" {
-                println!("Installing dependencies from pyproject.toml...");
+                eprintln!("Installing dependencies from pyproject.toml...");
                 let mut pip_cmd = Command::new(&uv_path);
                 pip_cmd
                     .arg("pip")
@@ -310,7 +313,7 @@ impl RuntimeManager for PythonRuntimeManager {
                     .arg(package_dir);
                 run_command_checked(&mut pip_cmd)?;
             } else {
-                println!("Installing dependencies from {}...", manifest_name);
+                eprintln!("Installing dependencies from {}...", manifest_name);
                 let mut pip_cmd = Command::new(&uv_path);
                 pip_cmd
                     .arg("pip")
@@ -492,7 +495,7 @@ impl NodeRuntimeManager {
 
     /// Download and install a specific Node.js version.
     fn download_node(&self, home: &HarborHome, version: &str) -> Result<PathBuf, RuntimeError> {
-        println!("Downloading Node.js version {}...", version);
+        eprintln!("Downloading Node.js version {}...", version);
         let (os, arch) = self.get_platform_arch()?;
         let archive_name = format!("node-{}-{}-{}.tar.gz", version, os, arch);
         let url = format!("https://nodejs.org/dist/{}/{}", version, archive_name);
@@ -535,7 +538,7 @@ impl NodeRuntimeManager {
         }
 
         // 5. Extract tarball
-        println!("Extracting Node.js tarball...");
+        eprintln!("Extracting Node.js tarball...");
         let tar_file = std::fs::File::open(&tmp_archive)?;
         let tar_decoder = flate2::read::GzDecoder::new(tar_file);
         let mut archive = tar::Archive::new(tar_decoder);
@@ -596,7 +599,7 @@ impl RuntimeManager for NodeRuntimeManager {
 
         // 4. Fallback if network failed
         if !fetched_ok {
-            println!("Network request failed. Using fallback Node.js release list...");
+            eprintln!("Network request failed. Using fallback Node.js release list...");
             let fallback_list: Vec<String> = vec![
                 "v22.2.0".to_string(),
                 "v20.11.1".to_string(),
@@ -664,7 +667,7 @@ impl RuntimeManager for NodeRuntimeManager {
             }
 
             // 2. Run npm install inside staging directory
-            println!("Installing Node.js dependencies in staging environment...");
+            eprintln!("Installing Node.js dependencies in staging environment...");
             let is_lock = stage_dir.join("package-lock.json").is_file();
             let npm_binary = bin_dir.join("npm");
             let mut npm_cmd = Command::new(&npm_binary);

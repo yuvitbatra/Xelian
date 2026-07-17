@@ -141,12 +141,15 @@ fn cmd_run(target: &str) -> anyhow::Result<()> {
     let prepared =
         harbor_core::run::run_local_archive(path, &home).map_err(|e| anyhow::anyhow!(e))?;
 
+    // All of Harbor's own status output goes to stderr: for MCP packages the
+    // child inherits Harbor's stdout as the JSON-RPC stdio transport
+    // (SPEC.md §9.10.2), so stdout must carry nothing but the protocol.
     for warning in &prepared.warnings {
-        println!("warning: {warning}");
+        eprintln!("warning: {warning}");
     }
 
     let cached_suffix = if prepared.from_cache { " (cached)" } else { "" };
-    println!(
+    eprintln!(
         "prepared {}@{} at {}{}",
         prepared.name,
         prepared.version,
@@ -161,11 +164,47 @@ fn cmd_run(target: &str) -> anyhow::Result<()> {
     let manifest = harbor_core::manifest::Manifest::from_toml_str(&manifest_str)
         .map_err(|e| anyhow::anyhow!("Failed to parse cached harbor.toml: {}", e))?;
 
-    let env_dir = harbor_core::run::prepare_environment(&prepared, &manifest, &home)
+    let prepared_env = harbor_core::run::prepare_environment(&prepared, &manifest, &home)
         .map_err(|e| anyhow::anyhow!(e))?;
 
-    println!("environment ready at {}", env_dir.display());
-    println!("launch not yet implemented (Phase 8)");
+    let env_dir = &prepared_env.env_dir;
+    let bin_dir = &prepared_env.bin_dir;
+
+    eprintln!("environment ready at {}", env_dir.display());
+
+    // --- Phase 9 / H-090: First-run permission prompt (disclosure-only). ---
+    harbor_core::permissions::check_and_prompt(
+        &prepared.name,
+        &prepared.version,
+        &manifest.permissions,
+        &home,
+    )
+    .map_err(|e| anyhow::anyhow!("permission error: {e}"))?;
+
+    // --- Phase 10 / H-100, H-101: Model management (pipeline step 10, §9.1). ---
+    harbor_core::run::model::ensure_model(manifest.primary_model.as_deref(), &home)
+        .map_err(|e| anyhow::anyhow!("model error: {e}"))?;
+
+    // --- Phase 8 / H-080: Resolve required/default environment variables,
+    // immediately before launch per §9.10. ---
+    let env_pairs = harbor_core::run::env_vars::resolve_env_vars(&manifest.environment)
+        .map_err(|e| anyhow::anyhow!(e))?;
+
+    // --- Phase 8 / H-081, H-082: Launch (agent REPL or MCP server). ---
+    let status = harbor_core::run::launch::launch(
+        &manifest,
+        &prepared.package_dir,
+        env_dir,
+        bin_dir,
+        &env_pairs,
+    )
+    .map_err(|e| anyhow::anyhow!("launch error: {e}"))?;
+
+    // Mirror the entrypoint's exit code so callers of `harbor run` can
+    // distinguish outcomes exactly as if they had run the entrypoint directly.
+    if !status.success() {
+        std::process::exit(status.code().unwrap_or(1));
+    }
 
     Ok(())
 }

@@ -9,6 +9,7 @@ pub mod init;
 pub mod lockfile;
 pub mod manifest;
 pub mod package;
+pub mod permissions;
 pub mod run;
 pub mod validate;
 

@@ -478,7 +478,9 @@ lockfile exists when it may not (§6.1.2 says `lockfile` is SHOULD, not MUST).
 
 ---
 
-# Phase 8 — Launch: env vars, agent REPL, MCP stdio + port fallback
+# Phase 8 ✅ — Launch: env vars, agent REPL, MCP stdio + port fallback
+
+**Status: implemented (H-080, H-081, H-082).**
 
 **Goal.** Implement the launch step (§9.10) for **both** package types: validate
 required env vars and apply defaults (§6.2.1, §9.10); launch `agent` attached to
@@ -528,19 +530,25 @@ real terminal. The interaction between MCP-over-stdio and a `port` field is
 conceptually muddy — stdio has no port; clarify what `port` means for a stdio
 server (open question, §9.10.2). Zombie/orphan child processes on abnormal exit.
 
-**Open items intersecting this phase — PARTIALLY RESOLVED (2026-07-16).**
+**Open items intersecting this phase — RESOLVED (2026-07-17).**
 Decision: `port` governs local **HTTP** exposure of the MCP server; stdio
-remains the required process transport. Still open before coding: whether
-Harbor itself bridges stdio↔HTTP or passes the port through to servers that
-speak HTTP natively. Note this pulls minimal HTTP exposure into V1 — SPEC.md
-§9.10.2/§23 need a matching amendment to remove the contradiction.
+remains the required process transport. Bridge-vs-passthrough: **passthrough**
+— Harbor resolves the port (declared → probed, busy → OS-assigned free port,
+announced on stderr) and passes it via `PORT`; the child does the actual bind.
+`PORT` is injected **only when the manifest declares `port`** — stdio-only
+servers see no synthetic env vars. All Harbor diagnostics for `run` go to
+**stderr**: an MCP child inherits Harbor's stdout as its JSON-RPC transport,
+so stdout must carry nothing but the protocol. SPEC.md §9.10.2/§23 still need
+a matching amendment.
 
 **Estimated difficulty.** Hard.
 **Estimated time.** (a) 2 days · (b) 3.5 days.
 
 ---
 
-# Phase 9 — Permissions: first-run prompting (disclosure-only)
+# Phase 9 ✅ — Permissions: first-run prompting (disclosure-only)
+
+**Status: implemented (H-090).**
 
 **Goal.** Prompt the user to grant/deny each declared permission on the **first
 run of a given package version** (§16.2); do not re-prompt on later runs of an
@@ -579,17 +587,24 @@ grant. *Manual:* run twice, observe prompt then silence.
 location that survives `harbor rm` semantics sensibly (open question).
 Over-building toward enforcement (explicitly future work, §23).
 
-**Open items intersecting this phase.** §16.2 says the user is prompted to
-"grant or deny" each permission but never specifies what a **deny** does: abort
-the launch, or proceed anyway (consistent with disclosure-only §20.4)? Record
-and resolve before coding the prompt.
+**Open items intersecting this phase — RESOLVED (2026-07-17).**
+Grant state lives at `~/.harbor/permissions/local/<name>/<version>.toml`
+(`HarborHome::local_grants_path`) — deliberately **outside** the extracted
+package cache, so a package cannot ship a pre-filled grants file that
+suppresses its own first-run prompt, and cache removal doesn't silently
+destroy consent history. A **deny** is recorded but launch proceeds
+(disclosure-only, §20.4). Non-interactive stdin (CI, pipes, MCP clients):
+permissions are disclosed on stderr, nothing is prompted or persisted —
+stdin belongs to the child and silence is not consent.
 
 **Estimated difficulty.** Easy.
 **Estimated time.** (a) 0.5 day · (b) 1 day.
 
 ---
 
-# Phase 10 — Ollama model management
+# Phase 10 ✅ — Ollama model management
+
+**Status: implemented (H-100, H-101).**
 
 **Goal.** Implement the model step (§9.9, §18): if `primary-model` is declared and
 absent, download it before launch; if Ollama itself is absent, auto-install it
