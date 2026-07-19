@@ -42,12 +42,30 @@ pub enum PackageType {
     Mcp,
 }
 
+impl std::fmt::Display for PackageType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PackageType::Agent => write!(f, "agent"),
+            PackageType::Mcp => write!(f, "mcp"),
+        }
+    }
+}
+
 /// `language` (SPEC.md §6.1) — determines which runtime manager Harbor invokes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Language {
     Python,
     Node,
+}
+
+impl std::fmt::Display for Language {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Language::Python => write!(f, "python"),
+            Language::Node => write!(f, "node"),
+        }
+    }
 }
 
 /// `[author]` table (SPEC.md §6.1.1).

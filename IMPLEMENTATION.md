@@ -1104,6 +1104,95 @@ routes and excludes registry *search* — clarify how website search is served
 
 ---
 
+# Phases 20–25 — Productionization & launch (added 2026-07-18)
+
+> V1 behavior is code-complete (Phases 0–18). These phases contain no new
+> product features — they make the existing product shippable, trustworthy, and
+> discovered. Task-level detail lives in `BACKLOG.md` (H-200…H-255); this
+> section records the goals and the decisions.
+
+**Infrastructure decision of record (revised 2026-07-18: $0/month until
+traction).** Everything on free tiers, launch included: GitHub (code, CI,
+release binaries), Vercel (Next.js website), **Neon managed Postgres free tier
+as the one and only database from day one — no SQLite anywhere** (SQLAlchemy
+behind a single `DATABASE_URL`; dev and CI run against real Postgres via a
+Docker service container so tests exercise the exact engine prod uses),
+Cloudflare R2 (archive blobs, 10 GB free), PyPI (SDK), and the registry API on
+a free host (e.g. Render free tier). Two consequences of free hosting are
+accepted knowingly: (1) idle spin-down cold starts — mitigated cheaply by a
+free uptime pinger hitting `/health` every 5 minutes to keep the instance warm;
+(2) **ephemeral disks — which makes R2 for archive storage REQUIRED, not
+optional**, or published packages vanish on every redeploy. Archives are never
+stored in the database — metadata rows only. Paid always-on hosting is
+revisited only after users (and then funding) justify it.
+
+**Phase 20 — Rename & repo foundation.** Resolve the name collision with CNCF
+Harbor (goharbor.io — a famous *registry* where `harbor push` already means
+something else) before any public artifact exists; claim GitHub/domain/PyPI/
+crates/Homebrew names. Then the storefront: a README a stranger can go
+zero-to-running-agent from (30s GIF, 3-command quickstart, package-in-5-minutes
+guide), LICENSE, CONTRIBUTING, SECURITY, issue/PR templates, Discussions.
+*Why first:* renaming after launch is a disaster; the README is the highest-
+leverage artifact in the repo. **Demo:** a friend stars the repo and gets an
+agent running without asking you anything.
+
+**Phase 21 — CI & testing to an "insane" bar.** Unit/clippy/fmt CI on macOS +
+Linux; a full E2E job that boots the real registry and drives the real binary
+through login→push→409→clean-run→yank→unyank→rm; a cross-implementation
+checksum golden-fixture test (Rust and Python must agree byte-for-byte — the
+class of test that would have caught the checksum-dialect bug that shipped
+green); a Docker clean-machine job running the public install script verbatim;
+fuzz/abuse tests (tar bombs, oversize uploads, traversal payloads, concurrent
+publishes); SDK-against-real-binary integration tests; a load sanity test.
+*Rule:* the two sides of every contract are tested against each other, never
+only against themselves. **Demo:** CI goes red when any of it lies.
+
+**Phase 22 — Production registry.** Postgres data layer (`DATABASE_URL`, Neon
+free tier in prod, Docker Postgres in CI — no SQLite); real signup with hashed
+passwords and DB-persisted revocable tokens (the in-memory token dict currently
+logs everyone out on restart; the `admin/admin` fallback is removed — refuse to
+start unconfigured); upload caps, decompression-bomb guards, streamed
+downloads, timeouts, rate limits; non-interactive login (`--password-stdin` /
+`HARBOR_TOKEN` — rpassword hard-fails without a TTY today) and env-var URL
+precedence; a `/search` endpoint + `harbor search` (there is currently no way
+to discover packages at all); deploy at `registry.<domain>` over HTTPS on a
+free host with R2-backed archive storage (ephemeral free-tier disks make R2
+mandatory), backups, a keep-warm `/health` pinger, and a compiled-in production
+default URL. **Demo:** a stranger signs up, publishes, and someone else runs
+their package — with you on vacation.
+
+**Phase 23 — Distribution.** Release workflow cross-compiling macOS/Linux
+binaries to GitHub Releases; a product-quality `curl | sh` install script;
+Homebrew tap; SDK on PyPI (PATH-first binary lookup — the repo-relative
+`target/debug` lookup must not ship); Windows either verified in CI or
+explicitly and gracefully scoped out. **Demo:** `brew install` → `harbor run`
+→ chatting, on a machine you've never touched.
+
+**Phase 24 — Seed content & private beta.** 15–20 real packages under an
+official namespace (the most-wanted MCP servers + a few genuinely fun agents) —
+an empty registry is a dead registry and this outranks all remaining polish;
+5–10 clean-machine beta users with every stumble filed and fixed, until two of
+them publish independently; pre-package the tools of the specific creators you
+plan to contact, so outreach opens with "your project already runs on this."
+**Demo:** the registry looks alive to a first-time visitor.
+
+**Phase 25 — Launch & growth.** Launch assets (GIF + blog post); coordinated
+Show HN + r/LocalLLaMA/r/mcp/r/selfhosted/r/rust + X within 48h, with the
+quickstart verified green that morning; personalized DM campaign to 20–30
+tracked creators using the pre-packaged-their-tool hook (expect 10–20% replies
+— 3–6 pieces of coverage is a win); MCP ecosystem placement (awesome-lists,
+directories, tutorials) targeting the tutorial-default position — `harbor run
+x/y` as the easy line in MCP setup guides is the same mechanism that made
+Ollama the default; Product Hunt + framework-docs PRs a week later; then a
+first-month operating loop of <24h issue responses, weekly releases, hands-on
+help for the first 10 external publishers, and one tracked north-star metric:
+**weekly registry pulls** (stars measure attention; pulls measure product).
+*Strategic note:* MCP is the wave — lead the messaging with "ollama-for-MCP-
+servers," keep agents as the arc. **Demo:** people you've never met are
+publishing packages for each other.
+
+---
+
 # Dependency graph
 
 ```mermaid

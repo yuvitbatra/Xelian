@@ -1,14 +1,21 @@
-//! Integration tests for `harbor push` (H-040/H-041/H-042): the §8.1
-//! validation pipeline and archive build, exercised via the compiled
-//! `harbor` binary (upload itself is out of scope / not yet implemented).
+//! Integration tests for `harbor push` (H-150/H-151): the §8.1 validation
+//! pipeline, archive build, and authenticated upload, exercised via the
+//! compiled `harbor` binary.
+//!
+//! Tests that need to bypass the auth check create disposable credentials
+//! in a `HOME`-isolated tempdir and point `HARBOR_REGISTRY_URL` at a
+//! non-routable address so upload attempts fail fast without real network.
 
 use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-fn harbor_in(dir: &Path) -> Command {
+fn harbor_push_in(dir: &Path, home_dir: &Path) -> Command {
     let mut cmd = Command::new(env!("CARGO_BIN_EXE_harbor"));
-    cmd.current_dir(dir);
+    cmd.current_dir(dir)
+        .arg("push")
+        .env("HOME", home_dir)
+        .env("HARBOR_REGISTRY_URL", "http://127.0.0.1:1");
     cmd
 }
 
@@ -18,6 +25,23 @@ fn write_file(dir: &Path, rel: &str, contents: &str) {
         fs::create_dir_all(parent).unwrap();
     }
     fs::write(&full, contents).unwrap();
+}
+
+/// Write a minimal credentials.toml at the temp harbor home so the auth
+/// check passes. The registry URL points at a non-routable address so any
+/// upload attempt fails fast without real network.
+fn setup_credentials(home_dir: impl AsRef<Path>) {
+    let home_dir = home_dir.as_ref();
+    let creds_dir = home_dir.join(".harbor");
+    fs::create_dir_all(&creds_dir).unwrap();
+    fs::write(
+        creds_dir.join("credentials.toml"),
+        r#"token = "test-token"
+username = "testuser"
+registry_url = "http://127.0.0.1:1"
+"#,
+    )
+    .unwrap();
 }
 
 /// Scaffold a full, valid Harbor package (per manifest rules, §5.3 required
@@ -77,23 +101,27 @@ fn list_archive_entries(path: &Path) -> Vec<String> {
 }
 
 #[test]
-fn push_builds_archive_but_fails_at_the_unimplemented_upload_step() {
-    let tmp = tempfile::tempdir().expect("create tempdir");
-    scaffold_valid_package(tmp.path());
+fn push_validates_and_builds_archive_then_fails_on_upload() {
+    let fixture = tempfile::tempdir().expect("fixture dir");
+    scaffold_valid_package(fixture.path());
 
-    let output = harbor_in(tmp.path()).arg("push").output().expect("run harbor push");
+    let home_dir = tempfile::tempdir().expect("home dir");
+    setup_credentials(&home_dir);
 
-    assert!(
-        !output.status.success(),
-        "push should exit non-zero (upload is unimplemented)"
-    );
+    let output = harbor_push_in(fixture.path(), home_dir.path())
+        .output()
+        .expect("run harbor push");
+
+    // Validation and build succeeded; the error should be from the upload
+    // step trying to reach a non-routable registry.
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
-        stderr.contains("not yet implemented"),
-        "stderr should mention the upload is unimplemented, got:\n{stderr}"
+        !output.status.success(),
+        "push should exit non-zero (upload to non-routable registry); stderr:\n{stderr}"
     );
 
-    let archive_path = tmp.path().join("my-agent-1.0.0.harbor");
+    // The archive must exist even though the upload fails.
+    let archive_path = fixture.path().join("my-agent-1.0.0.harbor");
     assert!(
         archive_path.is_file(),
         "archive must exist even though upload failed"
@@ -102,14 +130,19 @@ fn push_builds_archive_but_fails_at_the_unimplemented_upload_step() {
 
 #[test]
 fn built_archive_contains_required_files_and_excludes_gitignored_and_git_metadata() {
-    let tmp = tempfile::tempdir().expect("create tempdir");
-    scaffold_valid_package(tmp.path());
+    let fixture = tempfile::tempdir().expect("fixture dir");
+    scaffold_valid_package(fixture.path());
     // A .git/ directory should always be excluded regardless of .gitignore.
-    write_file(tmp.path(), ".git/HEAD", "ref: refs/heads/main\n");
+    write_file(fixture.path(), ".git/HEAD", "ref: refs/heads/main\n");
 
-    harbor_in(tmp.path()).arg("push").output().expect("run harbor push");
+    let home_dir = tempfile::tempdir().expect("home dir");
+    setup_credentials(&home_dir);
 
-    let archive_path = tmp.path().join("my-agent-1.0.0.harbor");
+    harbor_push_in(fixture.path(), home_dir.path())
+        .output()
+        .expect("run harbor push");
+
+    let archive_path = fixture.path().join("my-agent-1.0.0.harbor");
     assert!(archive_path.is_file());
 
     let entries = list_archive_entries(&archive_path);
@@ -126,12 +159,17 @@ fn built_archive_contains_required_files_and_excludes_gitignored_and_git_metadat
 
 #[test]
 fn harbor_lock_in_cwd_has_all_keys_populated() {
-    let tmp = tempfile::tempdir().expect("create tempdir");
-    scaffold_valid_package(tmp.path());
+    let fixture = tempfile::tempdir().expect("fixture dir");
+    scaffold_valid_package(fixture.path());
 
-    harbor_in(tmp.path()).arg("push").output().expect("run harbor push");
+    let home_dir = tempfile::tempdir().expect("home dir");
+    setup_credentials(&home_dir);
 
-    let lock_path = tmp.path().join("harbor.lock");
+    harbor_push_in(fixture.path(), home_dir.path())
+        .output()
+        .expect("run harbor push");
+
+    let lock_path = fixture.path().join("harbor.lock");
     assert!(lock_path.is_file());
     let lock_str = fs::read_to_string(&lock_path).unwrap();
     let lock = harbor_core::lockfile::Lockfile::from_toml_str(&lock_str)
@@ -152,34 +190,67 @@ fn harbor_lock_in_cwd_has_all_keys_populated() {
 
 #[test]
 fn missing_required_file_fails_validation_before_building_anything() {
-    let tmp = tempfile::tempdir().expect("create tempdir");
-    scaffold_valid_package(tmp.path());
-    fs::remove_file(tmp.path().join("LICENSE")).unwrap();
+    let fixture = tempfile::tempdir().expect("fixture dir");
+    scaffold_valid_package(fixture.path());
+    fs::remove_file(fixture.path().join("LICENSE")).unwrap();
 
-    let output = harbor_in(tmp.path()).arg("push").output().expect("run harbor push");
+    let home_dir = tempfile::tempdir().expect("home dir");
+    setup_credentials(&home_dir);
+
+    let output = harbor_push_in(fixture.path(), home_dir.path())
+        .output()
+        .expect("run harbor push");
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("LICENSE"), "stderr:\n{stderr}");
     assert!(
-        !tmp.path().join("my-agent-1.0.0.harbor").exists(),
+        !fixture.path().join("my-agent-1.0.0.harbor").exists(),
         "no archive should be produced on validation failure"
     );
 }
 
 #[test]
 fn gitignored_entrypoint_fails_validation_with_a_specific_error() {
-    let tmp = tempfile::tempdir().expect("create tempdir");
-    scaffold_valid_package(tmp.path());
-    write_file(tmp.path(), ".gitignore", "secret.txt\nsrc/main.py\n");
+    let fixture = tempfile::tempdir().expect("fixture dir");
+    scaffold_valid_package(fixture.path());
+    write_file(fixture.path(), ".gitignore", "secret.txt\nsrc/main.py\n");
 
-    let output = harbor_in(tmp.path()).arg("push").output().expect("run harbor push");
+    let home_dir = tempfile::tempdir().expect("home dir");
+    setup_credentials(&home_dir);
+
+    let output = harbor_push_in(fixture.path(), home_dir.path())
+        .output()
+        .expect("run harbor push");
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("entrypoint"), "stderr:\n{stderr}");
     assert!(
-        !tmp.path().join("my-agent-1.0.0.harbor").exists(),
+        !fixture.path().join("my-agent-1.0.0.harbor").exists(),
         "no archive should be produced on validation failure"
+    );
+}
+
+#[test]
+fn push_without_login_fails_with_helpful_message() {
+    let fixture = tempfile::tempdir().expect("fixture dir");
+    scaffold_valid_package(fixture.path());
+
+    // No credentials set up — push should fail with a "not logged in" error.
+    let home_dir = tempfile::tempdir().expect("home dir");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_harbor"))
+        .current_dir(fixture.path())
+        .arg("push")
+        .env("HOME", home_dir.path())
+        .output()
+        .expect("run harbor push");
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("not logged in"),
+        "expected not-logged-in error, got:\n{stderr}"
     );
 }

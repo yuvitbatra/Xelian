@@ -254,7 +254,7 @@
     non-inferable fields get placeholders; import does not fail on placeholders
     (§12.2 step 3); nothing is published (§12.3).
 
-- [ ] **H-113 — Build package + run from step 6 onward**
+- [x] **H-113 — Build package + run from step 6 onward**
   - Difficulty: M · Duration: 4h · Deps: H-112, H-042
   - Acceptance: generates `harbor.lock` + `.harbor` (§12.2 steps 4–5), caches by
     SHA (step 6), and runs via the existing pipeline from manifest validation
@@ -264,12 +264,12 @@
 
 ## Phase 12 — harbor list & harbor rm
 
-- [ ] **H-120 — `harbor list` (local cache only)**
+- [x] **H-120 — `harbor list` (local cache only)**
   - Difficulty: S · Duration: 3h · Deps: H-113
   - Acceptance: lists locally cached packages only, no registry search (§13.5,
     §22).
 
-- [ ] **H-121 — `harbor rm` variants + credential isolation**
+- [x] **H-121 — `harbor rm` variants + credential isolation**
   - Difficulty: M · Duration: 4h · Deps: H-120
   - Acceptance: `rm owner/package` removes cached versions but keeps envs;
     `--env` also removes the env; `--all` clears `packages/`/`envs/`/`runtimes/`/
@@ -280,13 +280,13 @@
 
 ## Phase 13 — Registry backend (FastAPI)
 
-- [ ] **H-130 — FastAPI project + data model**
+- [x] **H-130 — FastAPI project + data model**
   - Difficulty: M · Duration: 4h · Deps: none (Python; can start after H-042 exists to produce test archives)
   - Acceptance: `Account`/`Package`/`Versions[]` modeled per §14.2 with storage
     for archive, checksum, `harbor.lock`, README, metadata, `published_at`,
     `yanked`.
 
-- [ ] **H-131 — `POST /packages` with publish-time checks**
+- [x] **H-131 — `POST /packages` with publish-time checks**
   - Difficulty: L · Duration: 6h · Deps: H-130
   - Acceptance: accepts an upload; verifies archive SHA-256 matches
     `package-checksum` in the accompanying `harbor.lock` (§14.5); rejects an
@@ -294,13 +294,13 @@
     package (§14.1). Request/response schema documented as the client contract
     (§14.8).
 
-- [ ] **H-132 — `GET /packages/{owner}/{package}` + resolution**
+- [x] **H-132 — `GET /packages/{owner}/{package}` + resolution**
   - Difficulty: M · Duration: 4h · Deps: H-131
   - Acceptance: returns metadata for the resolved latest version = highest
     SemVer that is not yanked and not pre-release; clear error if none (§14.3,
     §19.1).
 
-- [ ] **H-133 — `GET /download/{owner}/{package}/{version}`**
+- [x] **H-133 — `GET /download/{owner}/{package}/{version}`**
   - Difficulty: S · Duration: 3h · Deps: H-131
   - Acceptance: returns the exact version's archive bytes (§14.8); immutability
     holds (no in-place edit path, §14.6/§19.2).
@@ -309,97 +309,99 @@
 
 ## Phase 14 — login/logout + credentials
 
-- [ ] **H-140 — Registry auth route(s) (OAuth token/callback)**
+- [x] **H-140 — Registry auth route(s) (OAuth token/callback)**
   - Difficulty: M · Duration: 5h · Deps: H-130
-  - Acceptance: OAuth token/callback route pair exists (TODO-15 sketch,
-    non-normative); issues a credential the CLI can store and later present
-    (§14.4).
+  - Acceptance: `POST /auth/token` issues bearer tokens via env-var-configured
+    credentials. Auth middleware protects `POST /packages`. Owner namespace
+    enforcement matches authenticated user (§14.4).
 
-- [ ] **H-141 — `harbor login` browser flow + `credentials.toml` (0600)**
+- [x] **H-141 — `harbor login` browser flow + `credentials.toml` (0600)**
   - Difficulty: M · Duration: 5h · Deps: H-140, H-003
-  - Acceptance: `harbor login` completes a browser OAuth flow (§13.7) and writes
-    `~/.harbor/credentials.toml` at `0600`, top-level (§11.1, §14.4/§11.3).
+  - Acceptance: prompts for username/password, exchanges for token at
+    `POST /auth/token`, writes `~/.harbor/credentials.toml` at `0600` atomically.
+    Stores registry URL for reuse.
 
-- [ ] **H-142 — `harbor logout`**
+- [x] **H-142 — `harbor logout`**
   - Difficulty: S · Duration: 2h · Deps: H-141
-  - Acceptance: removes the stored credential (§13.8); confirmed that
-    `harbor rm --all` still leaves it intact (cross-check H-121).
+  - Acceptance: removes `credentials.toml`; `harbor rm --all` preserves it
+    (cross-check H-121 passes). Idempotent — no error if already logged out.
 
 ---
 
 ## Phase 15 — harbor push end-to-end
 
-- [ ] **H-150 — Registry HTTP client (authenticated)**
+- [x] **H-150 — Registry HTTP client (authenticated)**
   - Difficulty: M · Duration: 4h · Deps: H-142
-  - Acceptance: client can send authenticated requests using the stored
-    credential (§14.4); handles archive upload.
+  - Acceptance: `RegistryClient` in `registry_client.rs` with typed `login()`
+    and `publish()` methods. Multipart upload with `Authorization: Bearer`
+    header. Error handling for 401/403/409/422 responses.
 
-- [ ] **H-151 — `harbor push`: validate then upload**
+- [x] **H-151 — `harbor push`: validate then upload**
   - Difficulty: M · Duration: 5h · Deps: H-150, H-042, H-131
-  - Acceptance: runs full §8.1 validation before any network call (§13.2, §8.2 —
-    assert no socket opened on validation failure); uploads to `POST /packages`;
-    republishing an existing `(name, version)` fails (§19.2); pushing to a
-    non-owned namespace is rejected server-side (§14.4).
+  - Acceptance: reads credentials first (fails with "not logged in" if missing),
+    runs full §8.1 validation before any network call, uploads to
+    `POST /packages` with authenticated user as owner. Republishing an existing
+    `(name, version)` returns 409; wrong-namespace returns 403.
 
 ---
 
 ## Phase 16 — harbor run from registry
 
-- [ ] **H-160 — Target-form discrimination**
+- [x] **H-160 — Target-form discrimination**
   - Difficulty: S · Duration: 3h · Deps: H-052
   - Acceptance: registry-ref vs. GitHub-URL vs. local `.harbor` path (decision
-    2026-07-16) distinguished syntactically before resolution; any other input
-    fails clearly rather than guessing (§9.2); no `@version` pin syntax accepted
-    (§9.2, §22).
+     2026-07-16) distinguished syntactically before resolution; any other input
+     fails clearly rather than guessing (§9.2); no `@version` pin syntax accepted
+     (§9.2, §22).
 
-- [ ] **H-161 — Registry resolution + cache-check + download**
+- [x] **H-161 — Registry resolution + cache-check + download**
   - Difficulty: M · Duration: 5h · Deps: H-160, H-150, H-132, H-133
   - Acceptance: `owner/package` resolves to latest stable non-yanked
-    non-pre-release (§9.2, §14.3); cache is checked before any network request
-    and download is skipped on hit (§9.3); missing archive downloaded via
-    `GET /download/...` staged through `tmp/` (§9.3, §11.1).
+     non-pre-release (§9.2, §14.3); cache is checked before any network request
+     and download is skipped on hit (§9.3); missing archive downloaded via
+     `GET /download/...` staged through `tmp/` (§9.3, §11.1).
 
-- [ ] **H-162 — Wire download into local run pipeline**
+- [x] **H-162 — Wire download into local run pipeline**
   - Difficulty: M · Duration: 4h · Deps: H-161, H-101
   - Acceptance: downloaded archive is checksum-verified (§9.4) then flows through
-    the existing extract→…→launch pipeline; end-to-end `harbor push` then, on a
-    clean cache, `harbor run owner/package` launches (Appendix C.1–C.2); cache
-    persists (§9.11).
+     the existing extract→…→launch pipeline; end-to-end `harbor push` then, on a
+     clean cache, `harbor run owner/package` launches (Appendix C.1–C.2); cache
+     persists (§9.11).
 
 ---
 
 ## Phase 17 — harbor yank
 
-- [ ] **H-170 — Registry yank/unyank route (owner-authorized)**
+- [x] **H-170 — Registry yank/unyank route (owner-authorized)**
   - Difficulty: M · Duration: 4h · Deps: H-132, H-140
   - Acceptance: a route marks `yanked = true`/`false` for a version (TODO-15
-    sketch: `PATCH /packages/{owner}/{package}/{version}`); authorized only for
-    the owning account (§14.4); never deletes archive/checksum/metadata
-    (§14.7.1).
+     sketch: `PATCH /packages/{owner}/{package}/{version}`); authorized only for
+     the owning account (§14.4); never deletes archive/checksum/metadata
+     (§14.7.1).
 
-- [ ] **H-171 — `harbor yank` CLI (+ `--undo`)**
+- [x] **H-171 — `harbor yank` CLI (+ `--undo`)**
   - Difficulty: S · Duration: 3h · Deps: H-170, H-150
   - Acceptance: `harbor yank owner/package --version <v>` yanks; `--undo`
-    reverses (§13.9); after yanking the latest, `harbor run` resolves to the next
-    non-yanked version or fails clearly (§14.3, §14.7.1); already-cached clients
-    unaffected; no hard delete (§14.7.2, §22).
+     reverses (§13.9); after yanking the latest, `harbor run` resolves to the next
+     non-yanked version or fails clearly (§14.3, §14.7.1); already-cached clients
+     unaffected; no hard delete (§14.7.2, §22).
 
 ---
 
 ## Phase 18 — Python SDK
 
-- [ ] **H-180 — SDK skeleton wrapping the CLI**
+- [x] **H-180 — SDK skeleton wrapping the CLI**
   - Difficulty: M · Duration: 4h · Deps: H-162
   - Acceptance: `sdk/` Python package shells out to the `harbor` binary; no
     reimplementation of resolution/validation/execution (§15.1).
 
-- [ ] **H-181 — `install` / `run` / `agent` / `mcp` entry points**
+- [x] **H-181 — `install` / `run` / `agent` / `mcp` entry points**
   - Difficulty: M · Duration: 5h · Deps: H-180
   - Acceptance: `install` performs steps 1–9 without launching (§15.2); `run`
     performs the full pipeline and returns a type-appropriate handle; `agent`/
     `mcp` raise on package-type mismatch (§15.2).
 
-- [ ] **H-182 — Handles: `.chat()` and `.expose()`**
+- [x] **H-182 — Handles: `.chat()` and `.expose()`**
   - Difficulty: L · Duration: 6h · Deps: H-181
   - Acceptance: agent handle `.chat()` returns a response; MCP handle `.expose()`
     makes the local server available to an MCP client (§15.2); surface beyond
@@ -422,6 +424,280 @@
 
 ---
 
+> **Phases 20–25 below are the productionization & launch plan** (added
+> 2026-07-18; infra decision revised same day). V1 code is feature-complete;
+> these phases make it shippable, discoverable, and adopted. Infra decision of
+> record: **$0/month until real traction** — GitHub (code/CI/releases), Vercel
+> (website), **Neon Postgres free tier as the one and only database from day
+> one (no SQLite anywhere)** via a single `DATABASE_URL`, Cloudflare R2
+> (archive storage, 10 GB free), PyPI (SDK), and the registry API on a free
+> host (e.g. Render free tier) with idle spin-down cold starts **accepted** as
+> the cost of free — mitigate cheaply with a free uptime pinger (e.g.
+> UptimeRobot on `/health` every 5 min keeps the instance warm) and revisit
+> paid always-on hosting only after users/funding justify it. Archives are
+> NEVER stored in the database — metadata rows only.
+
+## Phase 20 — Rename & repo foundation
+
+- [ ] **H-200 — Project rename decision + asset grab**
+  - Difficulty: S · Duration: 3h · Deps: none — **gates every public artifact;
+    do first**
+  - Acceptance: name collision with CNCF Harbor (goharbor.io — a famous
+    registry where `harbor push` already means something else) is explicitly
+    resolved: either a new name is chosen or keeping "Harbor" is a recorded
+    decision. For the chosen name: GitHub org/repo, domain, PyPI, crates.io,
+    and Homebrew formula names are confirmed available and claimed; binary
+    name, `~/.harbor` dir name, and docs updated if renamed. Domain at $0:
+    claim the GitHub Student Developer Pack free domain (Namecheap `.me`, 1
+    year) — fall back to `is-a.dev`/`eu.org` if unavailable; Vercel/Render
+    free subdomains are acceptable for the website but the domain MUST be
+    owned before the first release, because the registry URL is compiled into
+    every shipped binary (H-225) and a later domain change strands old
+    installs (a domain you own can redirect forever; a host subdomain you
+    don't control cannot).
+
+- [ ] **H-201 — Great README**
+  - Difficulty: M · Duration: 5h · Deps: H-200
+  - Acceptance: README has (top to bottom): one-line pitch, a ≤30s terminal
+    GIF/asciinema of install→run→chat, a 3-command quickstart that works on a
+    clean machine, "package your own agent in 5 minutes" section, SDK snippet,
+    package-format overview linking SPEC.md, CI/release badges. A stranger can
+    go from zero to a running agent using only the README.
+
+- [ ] **H-202 — Repo hygiene for open source**
+  - Difficulty: S · Duration: 3h · Deps: H-200
+  - Acceptance: LICENSE (MIT or Apache-2.0) at root and in both Python
+    packages; CONTRIBUTING.md (build/test instructions); SECURITY.md (report
+    channel); issue templates (bug/feature/package-report) + PR template;
+    GitHub Discussions enabled; repo description + topics set (mcp, ai-agents,
+    registry, ollama, rust); `.github/` committed.
+
+---
+
+## Phase 21 — CI & insane testing
+
+- [ ] **H-210 — Core CI workflow**
+  - Difficulty: M · Duration: 4h · Deps: none
+  - Acceptance: on every PR + main push: `cargo fmt --check`, `cargo clippy`
+    (deny warnings), `cargo test --workspace` on macOS + Linux runners,
+    registry `pytest`, SDK syntax/import check. Red CI blocks merge.
+
+- [ ] **H-211 — E2E CI job: real push→run loop**
+  - Difficulty: M · Duration: 5h · Deps: H-210
+  - Acceptance: CI boots the actual FastAPI registry, then drives the real
+    binary through: login (non-interactive) → push → duplicate-push (expect
+    409) → clean-cache run (agent responds) → yank → run (expect no-version
+    failure) → unyank → rm. This is the test class that would have caught the
+    checksum-dialect bug that shipped with 100% green unit tests — the two
+    sides must be tested against each other, never only against themselves.
+
+- [ ] **H-212 — Cross-implementation checksum interop test**
+  - Difficulty: S · Duration: 2h · Deps: H-210
+  - Acceptance: a shared golden fixture (archive + expected §7.3 checksum) is
+    asserted identical by BOTH the Rust `compute_package_checksum` tests and
+    the registry's Python `compute_package_checksum` tests; any drift in
+    either implementation fails CI.
+
+- [ ] **H-213 — Clean-machine quickstart test**
+  - Difficulty: M · Duration: 4h · Deps: H-230
+  - Acceptance: a CI job runs the public install script inside a bare Docker
+    image (no Rust, no repo checkout), then `harbor run <seed-package>` against
+    a live registry and asserts a response — proving the README quickstart
+    verbatim. Runs nightly + before every release.
+
+- [ ] **H-214 — Abuse & fuzz suite (registry + archive handling)**
+  - Difficulty: M · Duration: 6h · Deps: H-210
+  - Acceptance: tests cover tar decompression bombs, oversized uploads
+    (rejected at the declared cap), malformed/truncated archives, malformed
+    manifests/lockfiles, path-traversal payloads in every route param and tar
+    entry name, and concurrent duplicate publishes (exactly one 201). Registry
+    never crashes, never writes outside its storage root.
+
+- [ ] **H-215 — SDK integration tests**
+  - Difficulty: S · Duration: 3h · Deps: H-210
+  - Acceptance: pytest suite runs `harbor.install/run/agent/mcp` against the
+    real built binary and a local registry: agent `.chat()` round-trips, mcp
+    `.expose()` returns usable transport info, type mismatch raises,
+    missing-binary and not-logged-in errors are clear. Wired into CI.
+
+- [ ] **H-216 — Registry load sanity test**
+  - Difficulty: S · Duration: 3h · Deps: H-211
+  - Acceptance: a scripted burst (e.g. 50 concurrent downloads + metadata
+    reads of a mid-size package) completes with zero 5xx and bounded memory —
+    guards the streaming work (H-222) against regression.
+
+---
+
+## Phase 22 — Production registry (accounts, DB, limits, deploy)
+
+- [ ] **H-220 — Data layer: Postgres via SQLAlchemy + `DATABASE_URL`**
+  - Difficulty: M · Duration: 6h · Deps: H-130..H-133 (done)
+  - Acceptance: accounts/tokens/packages/versions move from JSON-on-disk to a
+    Postgres data layer configured by a single `DATABASE_URL` (**Postgres
+    only — no SQLite fallback anywhere**); Neon free tier in production;
+    local dev + CI run against a real Postgres (Docker service container in
+    CI, `docker run postgres` or a Neon dev branch locally) so tests exercise
+    the exact engine prod uses. Archive bytes stay on disk/object-storage,
+    never in the DB. Existing pytest suite passes against Postgres in CI.
+
+- [ ] **H-221 — Real accounts + persisted tokens**
+  - Difficulty: L · Duration: 8h · Deps: H-220
+  - Acceptance: signup endpoint (username/password, hashed with
+    argon2/bcrypt); per-user bearer tokens persisted in the DB (survive server
+    restart — today's in-memory dict logs everyone out on redeploy) with
+    expiry + revocation; the `admin`/`admin` env-var fallback is REMOVED — the
+    server refuses to start with default/unset credentials; owner-namespace
+    enforcement unchanged (§14.4).
+
+- [ ] **H-222 — Registry limits + streaming**
+  - Difficulty: M · Duration: 5h · Deps: H-221
+  - Acceptance: upload size cap (start ~100 MB, configurable) enforced before
+    buffering; decompression-bomb guard on server-side tar reads; downloads
+    streamed (FileResponse) not buffered; request timeouts; basic per-IP rate
+    limiting on auth + publish; CLI streams downloads to disk instead of
+    holding whole archives in memory.
+
+- [ ] **H-223 — Non-interactive auth + URL precedence**
+  - Difficulty: S · Duration: 3h · Deps: H-221
+  - Acceptance: `harbor login --username X --password-stdin` and
+    `HARBOR_TOKEN` env var work without a TTY (rpassword currently hard-fails
+    in scripts/CI/SDK contexts); `harbor login` honors `HARBOR_REGISTRY_URL`
+    over the stored credentials URL (today the env var is silently ignored
+    once any credentials file exists); signup reachable from CLI or website.
+
+- [ ] **H-224 — Search: registry endpoint + `harbor search`**
+  - Difficulty: M · Duration: 5h · Deps: H-220
+  - Acceptance: `GET /search?q=` over name/description/tags (SQL LIKE is
+    fine); `harbor search <term>` renders results; website search (H-191)
+    consumes the same endpoint. Without this there is literally no way to
+    discover what exists.
+
+- [ ] **H-225 — Deploy the registry publicly (free tier)**
+  - Difficulty: M · Duration: 5h · Deps: H-221, H-222
+  - Acceptance: registry live at `registry.<domain>` over HTTPS on a free
+    host (e.g. Render free tier); Neon `DATABASE_URL` in prod; archives on
+    R2 (free hosts have ephemeral disks — object storage is REQUIRED here,
+    not optional, or published packages vanish on redeploy); automated
+    DB + storage backups; the CLI's compiled-in default registry URL points
+    at the real domain (not `http://localhost:8000`); a free uptime pinger
+    hits `/health` every 5 min to keep the instance warm (cold starts
+    accepted by decision of record until traction justifies paid hosting).
+
+- [ ] **H-226 — Ops baseline**
+  - Difficulty: S · Duration: 3h · Deps: H-225
+  - Acceptance: structured request logging; error alerting (Sentry free tier
+    or equivalent); a documented restore-from-backup drill actually performed
+    once; uptime check on `/health`.
+
+---
+
+## Phase 23 — Distribution (binaries, install, PyPI)
+
+- [ ] **H-230 — Release workflow + install script**
+  - Difficulty: L · Duration: 8h · Deps: H-210, H-200
+  - Acceptance: tagging a release cross-compiles macOS (arm64 + x86_64) and
+    Linux (x86_64, arm64) binaries, attaches them to GitHub Releases with
+    checksums; `curl -fsSL https://get.<domain>/install.sh | sh` detects
+    OS/arch, installs to PATH, and prints a success next-step; the script is
+    treated as product-quality UX (clear errors, no sudo surprises).
+
+- [ ] **H-231 — Homebrew tap**
+  - Difficulty: S · Duration: 2h · Deps: H-230
+  - Acceptance: `brew install <org>/tap/<name>` works on both Mac
+    architectures; formula auto-bumped by the release workflow.
+
+- [ ] **H-232 — SDK on PyPI**
+  - Difficulty: S · Duration: 3h · Deps: H-200, H-215
+  - Acceptance: package published under the confirmed name; `pip install` +
+    two-line quickstart works; `find_binary` is PATH-first with a clear
+    install hint when missing (the current `target/debug` repo-relative lookup
+    is dev-only and must not ship); SDK version pinned/compatible with a
+    stated minimum CLI version.
+
+- [ ] **H-233 — Windows: verify or explicitly scope out**
+  - Difficulty: M · Duration: 6h · Deps: H-230
+  - Acceptance: either Windows binaries ship with paths/permissions/runtime
+    provisioning verified in CI, or the README + install script state
+    "macOS/Linux now, Windows soon" and fail gracefully — no silent breakage.
+
+---
+
+## Phase 24 — Seed content & private beta
+
+- [ ] **H-240 — Seed the registry (15–20 real packages)**
+  - Difficulty: L · Duration: 3d · Deps: H-225
+  - Acceptance: an official namespace publishes the most-wanted MCP servers
+    (filesystem, fetch, github, slack, postgres, memory, …) plus 3–5 genuinely
+    fun/useful agents; each verified end-to-end on a clean machine; each has a
+    README rendered on its package page. An empty registry is a dead registry
+    — this outranks any remaining code polish.
+
+- [ ] **H-241 — Private beta: 5–10 clean-machine users**
+  - Difficulty: M · Duration: ongoing 1w · Deps: H-240, H-230
+  - Acceptance: 5–10 people you don't share a laptop with run the README
+    quickstart on their own machines; every failure or point of confusion is
+    filed and fixed; at least 2 of them publish a package of their own with no
+    help beyond the docs.
+
+- [ ] **H-242 — Pre-package influencer/tool-author projects**
+  - Difficulty: M · Duration: 4h · Deps: H-240
+  - Acceptance: 10+ packages that wrap tools built by the specific people you
+    intend to contact in H-252 (`harbor run <them>/<their-tool>` works) — the
+    outreach hook is "your project already runs on this," which converts far
+    better than "please try my thing."
+
+---
+
+## Phase 25 — Launch & growth
+
+- [ ] **H-250 — Launch assets**
+  - Difficulty: M · Duration: 5h · Deps: H-201, H-240
+  - Acceptance: ≤30s terminal GIF (install → run → chat); a launch blog post
+    ("agents need a package manager" / "ollama-for-MCP-servers" angle) hosted
+    on the website; both linked from the README.
+
+- [ ] **H-251 — Coordinated launch: Show HN + Reddit + X**
+  - Difficulty: M · Duration: 1d + follow-up · Deps: H-241, H-250, H-213
+  - Acceptance: Show HN post (Tue–Thu, US morning) with the one-liner demo;
+    r/LocalLLaMA + r/mcp + r/selfhosted + r/rust posts within the same 48h;
+    X thread; you are available to answer comments all day; quickstart
+    verified green in CI that morning.
+
+- [ ] **H-252 — Influencer/creator outreach (DMs)**
+  - Difficulty: M · Duration: 6h + follow-up · Deps: H-242, H-250
+  - Acceptance: a tracked list of 20–30 targets (local-AI YouTubers, MCP
+    tutorial writers, AI-newsletter authors, agent-framework maintainers);
+    each gets a personalized DM/email with (a) the 30s GIF, (b) the hook that
+    their own tool is already runnable via `harbor run them/their-tool`
+    (H-242), (c) early-access/founder framing and an offer of a walkthrough.
+    Track sends/replies/coverage; follow up once, politely, after ~5 days.
+    Expect a 10–20% reply rate — that's 3–6 pieces of coverage, which is a
+    successful campaign.
+
+- [ ] **H-253 — MCP ecosystem placement**
+  - Difficulty: M · Duration: 4h + ongoing · Deps: H-240
+  - Acceptance: PRs merged into `awesome-mcp-servers`-style lists; listed in
+    MCP directories; at least one "set up MCP with harbor" tutorial published
+    (yours counts, a third party's counts double). Goal: `harbor run x/y`
+    appears as the easy path in MCP setup docs — the tutorial-default position
+    is how Ollama became Ollama.
+
+- [ ] **H-254 — Second-wave: Product Hunt + framework docs**
+  - Difficulty: S · Duration: 3h · Deps: H-251
+  - Acceptance: Product Hunt launch ~1 week after HN; PRs/examples submitted
+    to agent-framework ecosystems (LangChain/CrewAI/etc.) showing the SDK
+    two-liner.
+
+- [ ] **H-255 — Post-launch operating loop (first month)**
+  - Difficulty: M · Duration: ongoing · Deps: H-251
+  - Acceptance: issues get a first response <24h; a visible release ships
+    weekly; the first 10 external publishers get hands-on help; a simple
+    dashboard/query tracks the one metric that matters — weekly `harbor run`
+    downloads from the registry (stars measure attention; pulls measure
+    product).
+
+---
+
 ## Notes on ordering and parallelism
 
 - The strict critical path is
@@ -435,3 +711,15 @@
 - Everything else (init H-020/021, permissions H-090, models H-100/101, GitHub
   import H-11x, list/rm H-12x, yank H-17x, SDK H-18x, website H-19x) is off the
   strict core-loop path but required for full V1 spec conformance.
+- **Launch critical path (Phases 20–25):**
+  **H-200 (rename — gates all public artifacts) → H-210/H-211 (CI + E2E) →
+  H-201/H-202 (README/hygiene) → H-220 → H-221 → H-222/H-223 → H-225 (live
+  registry) → H-230 (binaries + install) → H-232 (PyPI) → H-240 (seed
+  content) → H-241 (beta) → H-250 → H-251 (launch) → H-252/H-253 (outreach).**
+  H-210–H-216 (testing) and H-224 (search) can run in parallel with the
+  registry work. Do not announce anything publicly before H-213 (clean-machine
+  quickstart) is green — the launch-day audience gets exactly one first
+  impression.
+- Suggested cadence: Phases 20–21 in week 1, Phases 22–23 in week 2, Phase 24
+  in week 3, launch (Phase 25) when H-241 has produced two independent
+  publishers — not before.

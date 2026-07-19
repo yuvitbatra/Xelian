@@ -172,10 +172,11 @@ fn second_identical_run_reuses_the_cache() {
 }
 
 #[test]
-fn nonexistent_local_path_falls_through_to_not_implemented() {
+fn registry_ref_target_is_not_mistaken_for_local_archive() {
     // A bare `owner/package`-shaped target (no `.harbor` suffix, not an
-    // existing file) must still hit the pre-existing "not implemented" stub
-    // for registry refs, not be misdetected as a local archive.
+    // existing file) should be recognized as a registry reference, not as
+    // a local archive. With no registry running it should fail with a
+    // registry resolution error, not a checksum/file error.
     let home_dir = tempfile::tempdir().expect("home dir");
     let output = Command::new(env!("CARGO_BIN_EXE_harbor"))
         .arg("run")
@@ -186,5 +187,13 @@ fn nonexistent_local_path_falls_through_to_not_implemented() {
 
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("not implemented"), "stderr:\n{stderr}");
+    assert!(
+        !stderr.contains("not implemented"),
+        "registry ref should no longer be a stub:\n{stderr}"
+    );
+    // The error should be about registry resolution, not about local files.
+    assert!(
+        stderr.contains("failed to resolve") || stderr.contains("network error"),
+        "expected registry error for owner/package run, got:\n{stderr}"
+    );
 }

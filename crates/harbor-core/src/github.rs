@@ -196,9 +196,14 @@ pub fn parse_github_url(url: &str) -> Result<RepoRef, GithubError> {
 }
 
 /// Whether `s` is safe to use as a single cache path component: non-empty,
-/// not `..`, not starting with `.`, and containing no path separators.
+/// not starting with `.`, and drawn from GitHub's actual owner/repo charset
+/// (`[A-Za-z0-9_.-]`). Restricting to that charset (rather than merely
+/// rejecting path separators) also guarantees the value cannot smuggle TOML
+/// metacharacters (`"`, `\`) into the generated manifest.
 fn is_safe_repo_component(s: &str) -> bool {
-    !s.is_empty() && s != ".." && !s.starts_with('.') && !s.contains('/') && !s.contains('\\')
+    !s.is_empty()
+        && !s.starts_with('.')
+        && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.' || c == '-')
 }
 
 /// Whether `name` is a well-formed `<binary> --version`-style availability
@@ -339,12 +344,13 @@ fn read_github_tarball_entries(tarball_path: &Path) -> Result<Vec<(String, Vec<u
 /// If the destination already exists and is non-empty, returns it
 /// immediately without any network activity — packages are immutable once
 /// cached (§9.11), and imports are addressed by commit SHA specifically so
-/// this is safe.
-pub fn fetch_repo(repo: &RepoRef, sha: &str, home: &HarborHome) -> Result<PathBuf, GithubError> {
+/// this is safe. The `bool` in the return value is `true` for that cache-hit
+/// case and `false` for a fresh download.
+pub fn fetch_repo(repo: &RepoRef, sha: &str, home: &HarborHome) -> Result<(PathBuf, bool), GithubError> {
     let dest = home.github_package_dir(&repo.owner, &repo.repo, sha);
     if dir_is_nonempty(&dest) {
         eprintln!("(cached) {}/{} @ {sha} — {}", repo.owner, repo.repo, dest.display());
-        return Ok(dest);
+        return Ok((dest, true));
     }
 
     ensure_binary_available("curl")?;
@@ -380,7 +386,7 @@ pub fn fetch_repo(repo: &RepoRef, sha: &str, home: &HarborHome) -> Result<PathBu
     let _ = fs::remove_file(&tarball_path);
 
     result?;
-    Ok(dest)
+    Ok((dest, false))
 }
 
 /// Language detection marker table (SPEC.md §12.2 step 2, H-111): checked in
@@ -556,6 +562,13 @@ fn derive_package_name(repo_name: &str) -> String {
     }
 }
 
+/// Escape a value for interpolation inside a TOML basic (double-quoted)
+/// string: `\` and `"` are the only characters that need escaping for the
+/// values Harbor renders (repo-derived text and version constraints).
+fn toml_escape(s: &str) -> String {
+    s.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
 /// Render the inferred `harbor.toml` contents (SPEC.md §12.2 step 3).
 #[allow(clippy::too_many_arguments)]
 fn render_manifest_toml(
@@ -568,6 +581,9 @@ fn render_manifest_toml(
     dep_lockfile: Option<&str>,
 ) -> String {
     use std::fmt::Write as _;
+
+    let (description, runtime, entrypoint) =
+        (toml_escape(description), toml_escape(runtime), toml_escape(entrypoint));
 
     let mut s = String::new();
     let _ = writeln!(s, "spec-version = 1");
@@ -759,13 +775,18 @@ pub fn import_github(url: &str, home: &HarborHome) -> Result<ImportOutcome, Gith
     let sha = resolve_head_sha(&repo)?;
     eprintln!("Resolved to commit {sha}");
 
-    let checkout = fetch_repo(&repo, &sha, home)?;
+    let (checkout, was_cached) = fetch_repo(&repo, &sha, home)?;
 
-    // An already-imported SHA directory already contains harbor.toml and
-    // harbor.lock from a previous complete import — packages are immutable
-    // (§9.11), so there is nothing further to do.
-    let already_imported = checkout.join("harbor.toml").is_file() && checkout.join("harbor.lock").is_file();
-    if already_imported {
+    // A cache hit means a previous import of this SHA already completed
+    // inference, lock generation, and the archive build — packages are
+    // immutable (§9.11), so there is nothing further to do. Gated on the
+    // fetch itself rather than on harbor.toml/harbor.lock presence: a
+    // freshly downloaded repo may *ship* those files (it is already a Harbor
+    // package), but its committed harbor.lock can be stale relative to the
+    // checkout, so a fresh import must still regenerate the lock and archive
+    // (§12.2 steps 4–5) — `infer_manifest` keeps a shipped harbor.toml
+    // verbatim either way.
+    if was_cached {
         return Ok(ImportOutcome {
             repo,
             sha,

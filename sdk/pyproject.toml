@@ -1,0 +1,13 @@
+[project]
+name = "harbor-sdk"
+version = "0.1.0"
+description = "Python SDK for Harbor — a local-first registry and runtime for AI agents and MCP servers"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]

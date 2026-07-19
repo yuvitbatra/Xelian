@@ -40,43 +40,48 @@ fn version_flag_prints_binary_version() {
     assert!(stdout_long.contains(env!("CARGO_PKG_VERSION")));
 }
 
-/// Each not-yet-implemented subcommand, given minimal valid arguments, should
-/// currently exit non-zero and mention "not implemented". (`init` is
-/// implemented and covered in tests/init.rs; `push` now runs the real §8.1
-/// validation pipeline and is covered separately in tests/push.rs — its
-/// "not implemented" only applies to the registry upload step, with a
-/// distinct message, so it's excluded from this generic check. `add` is now
-/// implemented too — see tests/add.rs — and is excluded here since it would
-/// otherwise make real network calls with this test's un-isolated `HOME`.)
+/// Commands that previously returned "not implemented" are now fully wired
+/// (Phase 16/17). `harbor run owner/package` attempts registry resolution
+/// and fails with a network/registry error (no registry running) — not a
+/// "not implemented" stub. `harbor yank` fails with a credential error.
 #[test]
-fn each_subcommand_reports_not_implemented() {
-    let cases: &[&[&str]] = &[
-        &["run", "owner/package"],
-        &["list"],
-        &["rm", "owner/package"],
-        &["login"],
-        &["logout"],
-        &["yank", "owner/package", "--version", "1.2.0"],
-    ];
-
-    // Run in a tempdir so no command can leave stray files in the repo.
+fn registry_run_fails_with_network_error_when_no_registry() {
     let dir = tempfile::tempdir().expect("create tempdir");
-    for args in cases {
-        let output = harbor()
-            .current_dir(dir.path())
-            .args(*args)
-            .output()
-            .expect("run harbor subcommand");
-        assert!(
-            !output.status.success(),
-            "expected non-zero exit for {args:?}, got success"
-        );
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        assert!(
-            stderr.contains("not implemented"),
-            "expected 'not implemented' in stderr for {args:?}, got:\n{stderr}"
-        );
-    }
+    let output = harbor()
+        .current_dir(dir.path())
+        .args(["run", "owner/package"])
+        .env("HOME", dir.path())
+        .env("HARBOR_REGISTRY_URL", "http://127.0.0.1:1")
+        .output()
+        .expect("run harbor run owner/package");
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    // Should mention "failed to resolve" or "network error", not "not implemented".
+    assert!(
+        !stderr.contains("not implemented"),
+        "registry run should no longer be a stub; got:\n{stderr}"
+    );
+    assert!(
+        stderr.contains("failed to resolve") || stderr.contains("network error"),
+        "expected registry/network error, got:\n{stderr}"
+    );
+}
+
+#[test]
+fn yank_fails_with_login_error_when_not_authenticated() {
+    let dir = tempfile::tempdir().expect("create tempdir");
+    let output = harbor()
+        .current_dir(dir.path())
+        .args(["yank", "owner/package", "--version", "1.2.0"])
+        .env("HOME", dir.path())
+        .output()
+        .expect("run harbor yank");
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("not logged in"),
+        "expected 'not logged in' error, got:\n{stderr}"
+    );
 }
 
 #[test]
@@ -102,15 +107,19 @@ fn rm_env_requires_target() {
 }
 
 #[test]
-fn rm_all_alone_is_accepted_by_clap() {
-    // --all with no target is valid at the parser level; the command itself
-    // isn't implemented yet, so it should still fail, but via the
-    // "not implemented" path (exit 1), not a clap usage error (exit 2).
-    let output = harbor().args(["rm", "--all"]).output().expect("run harbor rm --all");
-    assert!(!output.status.success());
-    assert_eq!(output.status.code(), Some(1));
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("not implemented"));
+fn rm_all_succeeds_even_on_empty_cache() {
+    // --all with no target is valid at the parser level. With an empty temp
+    // home it should succeed (clear nothing, print confirmation).
+    let dir = tempfile::tempdir().expect("create tempdir");
+    let output = harbor()
+        .current_dir(dir.path())
+        .args(["rm", "--all"])
+        .env("HOME", dir.path())
+        .output()
+        .expect("run harbor rm --all");
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("Cleared packages"));
 }
 
 #[test]
@@ -123,6 +132,20 @@ fn yank_without_version_fails_with_clap_usage_error() {
     assert_eq!(output.status.code(), Some(2), "clap usage errors exit with code 2");
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("--version"), "stderr:\n{stderr}");
+}
+
+#[test]
+fn logout_succeeds_even_without_credentials() {
+    let dir = tempfile::tempdir().expect("create tempdir");
+    let output = harbor()
+        .current_dir(dir.path())
+        .args(["logout"])
+        .env("HOME", dir.path())
+        .output()
+        .expect("run harbor logout");
+    assert!(output.status.success(), "logout without credentials should succeed");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("Logged out"), "stdout:\n{stdout}");
 }
 
 #[test]

@@ -25,8 +25,39 @@
 //! implements registry pulls will add the `registry/` equivalents following
 //! the same shape.
 
+use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+
+/// Describes a cached package's origin (SPEC.md §11.1 source-based layout).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PackageSource {
+    /// `packages/local/<name>/<version>/` — built/run from a local directory.
+    Local,
+    /// `packages/github/<owner>/<repo>/<sha>/` — imported via `harbor add`.
+    Github { owner: String, repo: String },
+    /// `packages/registry/<owner>/<name>/<version>/` — pulled from the registry.
+    Registry { owner: String },
+}
+
+/// A single cached package version found under `~/.harbor/packages/`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CachedPackage {
+    pub source: PackageSource,
+    pub name: String,
+    pub version: String,
+    /// Full path to the extracted package directory on disk.
+    pub path: PathBuf,
+    /// Corresponding environment directory, if it exists.
+    pub env_path: Option<PathBuf>,
+}
+
+/// Outcome of removing cached packages.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RemoveOutcome {
+    pub removed_packages: Vec<PathBuf>,
+    pub removed_envs: Vec<PathBuf>,
+}
 
 /// Errors that can occur while resolving a [`HarborHome`].
 #[derive(Debug, thiserror::Error)]
@@ -174,6 +205,44 @@ impl HarborHome {
         self.envs().join("github").join(owner).join(repo).join(sha)
     }
 
+    /// The on-disk directory for a package pulled from the registry:
+    /// `packages/registry/<owner>/<name>/<version>` (SPEC.md §11.1,
+    /// decision 2026-07-16).
+    ///
+    /// Does not create anything on disk.
+    pub fn registry_package_dir(&self, owner: &str, name: &str, version: &str) -> PathBuf {
+        self.packages()
+            .join("registry")
+            .join(owner)
+            .join(name)
+            .join(version)
+    }
+
+    /// The on-disk directory for the isolated environment of a package pulled
+    /// from the registry: `envs/registry/<owner>/<name>/<version>`.
+    ///
+    /// Does not create anything on disk.
+    pub fn registry_env_dir(&self, owner: &str, name: &str, version: &str) -> PathBuf {
+        self.envs()
+            .join("registry")
+            .join(owner)
+            .join(name)
+            .join(version)
+    }
+
+    /// The grant-state file for a package pulled from the registry:
+    /// `permissions/registry/<owner>/<name>/<version>.toml` (§16.2).
+    ///
+    /// Does not create anything on disk.
+    pub fn registry_grants_path(&self, owner: &str, name: &str, version: &str) -> PathBuf {
+        self.root
+            .join("permissions")
+            .join("registry")
+            .join(owner)
+            .join(name)
+            .join(format!("{version}.toml"))
+    }
+
     /// The grant-state file for a package imported from GitHub at a specific
     /// commit SHA: `permissions/github/<owner>/<repo>/<sha>.toml` (§16.2).
     ///
@@ -211,6 +280,301 @@ impl HarborHome {
         }
         Ok(())
     }
+}
+
+/// Walk `packages/` and return every cached package found across all sources
+/// (local, github, registry). Omits directories that do not contain a
+/// `harbor.toml` (i.e., are not valid extracted packages).
+pub fn list_cached_packages(home: &HarborHome) -> io::Result<Vec<CachedPackage>> {
+    let mut packages = Vec::new();
+
+    let pkgs_root = home.packages();
+    if !pkgs_root.is_dir() {
+        return Ok(packages);
+    }
+
+    // --- local/<name>/<version>/ ---
+    let local_dir = pkgs_root.join("local");
+    if local_dir.is_dir() {
+        for name_entry in fs::read_dir(&local_dir)? {
+            let name_entry = name_entry?;
+            let name_path = name_entry.path();
+            if !name_path.is_dir() {
+                continue;
+            }
+            let name = name_entry
+                .file_name()
+                .to_string_lossy()
+                .into_owned();
+            for ver_entry in fs::read_dir(&name_path)? {
+                let ver_entry = ver_entry?;
+                let ver_path = ver_entry.path();
+                if !ver_path.is_dir() {
+                    continue;
+                }
+                if !ver_path.join("harbor.toml").is_file() {
+                    continue;
+                }
+                let version = ver_entry
+                    .file_name()
+                    .to_string_lossy()
+                    .into_owned();
+                let env_path = home.local_env_dir(&name, &version);
+                packages.push(CachedPackage {
+                    source: PackageSource::Local,
+                    name: name.clone(),
+                    version,
+                    path: ver_path,
+                    env_path: env_path.is_dir().then_some(env_path),
+                });
+            }
+        }
+    }
+
+    // --- github/<owner>/<repo>/<sha>/ ---
+    let github_dir = pkgs_root.join("github");
+    if github_dir.is_dir() {
+        for owner_entry in fs::read_dir(&github_dir)? {
+            let owner_entry = owner_entry?;
+            let owner_path = owner_entry.path();
+            if !owner_path.is_dir() {
+                continue;
+            }
+            let owner = owner_entry.file_name().to_string_lossy().into_owned();
+            for repo_entry in fs::read_dir(&owner_path)? {
+                let repo_entry = repo_entry?;
+                let repo_path = repo_entry.path();
+                if !repo_path.is_dir() {
+                    continue;
+                }
+                let repo = repo_entry.file_name().to_string_lossy().into_owned();
+                for sha_entry in fs::read_dir(&repo_path)? {
+                    let sha_entry = sha_entry?;
+                    let sha_path = sha_entry.path();
+                    if !sha_path.is_dir() {
+                        continue;
+                    }
+                    if !sha_path.join("harbor.toml").is_file() {
+                        continue;
+                    }
+                    let sha = sha_entry.file_name().to_string_lossy().into_owned();
+                    let env_path = home.github_env_dir(&owner, &repo, &sha);
+                    packages.push(CachedPackage {
+                        source: PackageSource::Github {
+                            owner: owner.clone(),
+                            repo: repo.clone(),
+                        },
+                        name: repo.clone(),
+                        version: sha,
+                        path: sha_path,
+                        env_path: env_path.is_dir().then_some(env_path),
+                    });
+                }
+            }
+        }
+    }
+
+    // --- registry/<owner>/<name>/<version>/ ---
+    let reg_dir = pkgs_root.join("registry");
+    if reg_dir.is_dir() {
+        for owner_entry in fs::read_dir(&reg_dir)? {
+            let owner_entry = owner_entry?;
+            let owner_path = owner_entry.path();
+            if !owner_path.is_dir() {
+                continue;
+            }
+            let owner = owner_entry.file_name().to_string_lossy().into_owned();
+            for name_entry in fs::read_dir(&owner_path)? {
+                let name_entry = name_entry?;
+                let name_path = name_entry.path();
+                if !name_path.is_dir() {
+                    continue;
+                }
+                let name = name_entry.file_name().to_string_lossy().into_owned();
+                for ver_entry in fs::read_dir(&name_path)? {
+                    let ver_entry = ver_entry?;
+                    let ver_path = ver_entry.path();
+                    if !ver_path.is_dir() {
+                        continue;
+                    }
+                    if !ver_path.join("harbor.toml").is_file() {
+                        continue;
+                    }
+                    let version = ver_entry.file_name().to_string_lossy().into_owned();
+                    let env_path = home.envs().join("registry").join(&owner).join(&name).join(&version);
+                    let name_clone = name.clone();
+                    packages.push(CachedPackage {
+                        source: PackageSource::Registry {
+                            owner: owner.clone(),
+                        },
+                        name: name_clone,
+                        version,
+                        path: ver_path,
+                        env_path: env_path.is_dir().then_some(env_path),
+                    });
+                }
+            }
+        }
+    }
+
+    Ok(packages)
+}
+
+/// Remove all cached versions of `owner/name` from `packages/`. If
+/// `remove_env` is true, also remove from `envs/`. Only affects local cache
+/// — never contacts the registry (§13.6).
+///
+/// Every path is verified to stay within `~/.harbor/` before any deletion.
+pub fn remove_packages(
+    home: &HarborHome,
+    owner: &str,
+    name: &str,
+    remove_env: bool,
+) -> io::Result<RemoveOutcome> {
+    let mut outcome = RemoveOutcome {
+        removed_packages: Vec::new(),
+        removed_envs: Vec::new(),
+    };
+
+    // --- github/<owner>/<name>/ ---
+    let github_pkg = home.packages().join("github").join(owner).join(name);
+    if github_pkg.is_dir() {
+        for entry in fs::read_dir(&github_pkg)? {
+            let entry = entry?;
+            let sha_path = entry.path();
+            if !sha_path.is_dir() || !confined_to_home(&sha_path, home) {
+                continue;
+            }
+            fs::remove_dir_all(&sha_path)?;
+            outcome.removed_packages.push(sha_path);
+        }
+    }
+
+    // --- registry/<owner>/<name>/ ---
+    let reg_pkg = home.packages().join("registry").join(owner).join(name);
+    if reg_pkg.is_dir() {
+        for entry in fs::read_dir(&reg_pkg)? {
+            let entry = entry?;
+            let ver_path = entry.path();
+            if !ver_path.is_dir() || !confined_to_home(&ver_path, home) {
+                continue;
+            }
+            fs::remove_dir_all(&ver_path)?;
+            outcome.removed_packages.push(ver_path);
+        }
+    }
+
+    // --- environments ---
+    if remove_env {
+        let github_env = home.envs().join("github").join(owner).join(name);
+        if github_env.is_dir() {
+            for entry in fs::read_dir(&github_env)? {
+                let entry = entry?;
+                let sha_path = entry.path();
+                if !sha_path.is_dir() || !confined_to_home(&sha_path, home) {
+                    continue;
+                }
+                fs::remove_dir_all(&sha_path)?;
+                outcome.removed_envs.push(sha_path);
+            }
+        }
+        let reg_env = home.envs().join("registry").join(owner).join(name);
+        if reg_env.is_dir() {
+            for entry in fs::read_dir(&reg_env)? {
+                let entry = entry?;
+                let ver_path = entry.path();
+                if !ver_path.is_dir() || !confined_to_home(&ver_path, home) {
+                    continue;
+                }
+                fs::remove_dir_all(&ver_path)?;
+                outcome.removed_envs.push(ver_path);
+            }
+        }
+    }
+
+    Ok(outcome)
+}
+
+/// Remove all cached versions of a local package (built/run from a local
+/// `.harbor` path) by `name`, from `packages/local/<name>/`. Local packages
+/// have no owner namespace, so they cannot be addressed by the `owner/name`
+/// form [`remove_packages`] expects — this is their removal path (§13.6).
+///
+/// If `remove_env` is true, also removes `envs/local/<name>/`. Every path is
+/// verified to stay within `~/.harbor/` before deletion.
+pub fn remove_local_packages(
+    home: &HarborHome,
+    name: &str,
+    remove_env: bool,
+) -> io::Result<RemoveOutcome> {
+    let mut outcome = RemoveOutcome {
+        removed_packages: Vec::new(),
+        removed_envs: Vec::new(),
+    };
+
+    let local_pkg = home.packages().join("local").join(name);
+    if local_pkg.is_dir() {
+        for entry in fs::read_dir(&local_pkg)? {
+            let ver_path = entry?.path();
+            if !ver_path.is_dir() || !confined_to_home(&ver_path, home) {
+                continue;
+            }
+            fs::remove_dir_all(&ver_path)?;
+            outcome.removed_packages.push(ver_path);
+        }
+    }
+
+    if remove_env {
+        let local_env = home.envs().join("local").join(name);
+        if local_env.is_dir() {
+            for entry in fs::read_dir(&local_env)? {
+                let ver_path = entry?.path();
+                if !ver_path.is_dir() || !confined_to_home(&ver_path, home) {
+                    continue;
+                }
+                fs::remove_dir_all(&ver_path)?;
+                outcome.removed_envs.push(ver_path);
+            }
+        }
+    }
+
+    Ok(outcome)
+}
+
+/// Remove all children of `packages/`, `envs/`, `runtimes/`, `models/`.
+/// Never touches `credentials.toml` (§11.3) or any other root-level file.
+/// Every removed path is verified to stay within `~/.harbor/`.
+pub fn remove_all(home: &HarborHome) -> io::Result<()> {
+    for cache_dir in [home.packages(), home.envs(), home.runtimes(), home.models()] {
+        if !cache_dir.is_dir() {
+            continue;
+        }
+        for entry in fs::read_dir(&cache_dir)? {
+            let entry = entry?;
+            let child = entry.path();
+            if !confined_to_home(&child, home) {
+                continue;
+            }
+            if child.is_dir() {
+                fs::remove_dir_all(&child)?;
+            } else {
+                fs::remove_file(&child)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// `true` if `path` is a strict descendant of `home.root()`. Acts as a
+/// belt-and-braces guard against path-traversal bugs in removal logic.
+fn confined_to_home(path: &Path, home: &HarborHome) -> bool {
+    path.canonicalize()
+        .ok()
+        .and_then(|canon| {
+            let root = home.root().canonicalize().ok()?;
+            Some(canon.starts_with(&root))
+        })
+        .unwrap_or(false)
 }
 
 #[cfg(test)]
@@ -328,6 +692,257 @@ mod tests {
 
         let pkg_dir = home.github_package_dir("octocat", "hello-world", &sha);
         assert!(!pkg_dir.exists());
+    }
+
+    // ---- registry package path helpers (H-161) ----
+
+    #[test]
+    fn registry_package_env_and_grants_dir_shape() {
+        let home = HarborHome::at("/fake/root");
+
+        assert_eq!(
+            home.registry_package_dir("testuser", "my-pkg", "1.2.3"),
+            Path::new("/fake/root/packages/registry/testuser/my-pkg/1.2.3")
+        );
+        assert_eq!(
+            home.registry_env_dir("testuser", "my-pkg", "1.2.3"),
+            Path::new("/fake/root/envs/registry/testuser/my-pkg/1.2.3")
+        );
+        assert_eq!(
+            home.registry_grants_path("testuser", "my-pkg", "1.2.3"),
+            Path::new("/fake/root/permissions/registry/testuser/my-pkg/1.2.3.toml")
+        );
+    }
+
+    #[test]
+    fn registry_package_dir_does_not_create_anything() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+
+        let pkg_dir = home.registry_package_dir("user", "pkg", "1.0.0");
+        assert!(!pkg_dir.exists());
+    }
+
+    // ---- list_cached_packages (H-120) ----
+
+    #[test]
+    fn list_empty_when_no_packages() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+        home.ensure_layout().unwrap();
+
+        let pkgs = list_cached_packages(&home).unwrap();
+        assert!(pkgs.is_empty());
+    }
+
+    #[test]
+    fn list_finds_local_packages() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+        home.ensure_layout().unwrap();
+
+        // Simulate a cached local package.
+        let pkg_dir = home.local_package_dir("my-agent", "1.0.0");
+        fs::create_dir_all(&pkg_dir).unwrap();
+        fs::write(pkg_dir.join("harbor.toml"), b"dummy").unwrap();
+
+        let pkgs = list_cached_packages(&home).unwrap();
+        assert_eq!(pkgs.len(), 1);
+        assert_eq!(pkgs[0].name, "my-agent");
+        assert_eq!(pkgs[0].version, "1.0.0");
+        assert_eq!(pkgs[0].source, PackageSource::Local);
+    }
+
+    #[test]
+    fn list_finds_github_imports() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+        home.ensure_layout().unwrap();
+
+        let sha = "a".repeat(40);
+        let pkg_dir = home.github_package_dir("octocat", "hello-world", &sha);
+        fs::create_dir_all(&pkg_dir).unwrap();
+        fs::write(pkg_dir.join("harbor.toml"), b"dummy").unwrap();
+
+        let pkgs = list_cached_packages(&home).unwrap();
+        assert_eq!(pkgs.len(), 1);
+        assert_eq!(pkgs[0].name, "hello-world");
+        assert_eq!(pkgs[0].version, sha);
+        assert_eq!(
+            pkgs[0].source,
+            PackageSource::Github {
+                owner: "octocat".into(),
+                repo: "hello-world".into()
+            }
+        );
+    }
+
+    #[test]
+    fn list_skips_directories_without_harbor_toml() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+        home.ensure_layout().unwrap();
+
+        // A directory that exists but lacks harbor.toml must be ignored.
+        let pkg_dir = home.local_package_dir("incomplete", "0.1.0");
+        fs::create_dir_all(&pkg_dir).unwrap();
+        // No harbor.toml written.
+
+        let pkgs = list_cached_packages(&home).unwrap();
+        assert!(pkgs.is_empty());
+    }
+
+    // ---- remove_packages (H-121) ----
+
+    #[test]
+    fn remove_package_keeps_env_without_flag() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+        home.ensure_layout().unwrap();
+
+        let sha = "b".repeat(40);
+        let pkg_dir = home.github_package_dir("testuser", "my-pkg", &sha);
+        fs::create_dir_all(&pkg_dir).unwrap();
+        fs::write(pkg_dir.join("harbor.toml"), b"dummy").unwrap();
+
+        let env_dir = home.github_env_dir("testuser", "my-pkg", &sha);
+        fs::create_dir_all(&env_dir).unwrap();
+        fs::write(env_dir.join("harbor-env.ok"), b"").unwrap();
+
+        let outcome = remove_packages(&home, "testuser", "my-pkg", false).unwrap();
+        assert_eq!(outcome.removed_packages.len(), 1);
+        assert!(outcome.removed_envs.is_empty());
+        assert!(env_dir.is_dir(), "env must survive without --env");
+    }
+
+    #[test]
+    fn remove_package_removes_env_with_flag() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+        home.ensure_layout().unwrap();
+
+        let sha = "c".repeat(40);
+        let pkg_dir = home.github_package_dir("testuser", "my-pkg", &sha);
+        fs::create_dir_all(&pkg_dir).unwrap();
+        fs::write(pkg_dir.join("harbor.toml"), b"dummy").unwrap();
+
+        let env_dir = home.github_env_dir("testuser", "my-pkg", &sha);
+        fs::create_dir_all(&env_dir).unwrap();
+        fs::write(env_dir.join("harbor-env.ok"), b"").unwrap();
+
+        let outcome = remove_packages(&home, "testuser", "my-pkg", true).unwrap();
+        assert_eq!(outcome.removed_packages.len(), 1);
+        assert_eq!(outcome.removed_envs.len(), 1);
+        assert!(!env_dir.is_dir(), "env must be removed with --env");
+    }
+
+    #[test]
+    fn remove_package_no_match_is_safe_noop() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+        home.ensure_layout().unwrap();
+
+        let outcome = remove_packages(&home, "nonexistent", "pkg", false).unwrap();
+        assert!(outcome.removed_packages.is_empty());
+        assert!(outcome.removed_envs.is_empty());
+    }
+
+    #[test]
+    fn remove_local_package_by_bare_name() {
+        // Local packages (built/run from a local .harbor path) have no owner
+        // namespace, so they are addressed by bare `name` — `remove_packages`'s
+        // owner/name form can never reach them.
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+        home.ensure_layout().unwrap();
+
+        let pkg_dir = home.local_package_dir("my-agent", "1.0.0");
+        fs::create_dir_all(&pkg_dir).unwrap();
+        fs::write(pkg_dir.join("harbor.toml"), b"dummy").unwrap();
+
+        let env_dir = home.local_env_dir("my-agent", "1.0.0");
+        fs::create_dir_all(&env_dir).unwrap();
+
+        // Without --env: package removed, env kept.
+        let outcome = remove_local_packages(&home, "my-agent", false).unwrap();
+        assert_eq!(outcome.removed_packages.len(), 1);
+        assert!(outcome.removed_envs.is_empty());
+        assert!(!pkg_dir.is_dir(), "local package must be removed");
+        assert!(env_dir.is_dir(), "env must survive without --env");
+
+        // With --env on a re-created package: env removed too.
+        fs::create_dir_all(&pkg_dir).unwrap();
+        fs::write(pkg_dir.join("harbor.toml"), b"dummy").unwrap();
+        let outcome = remove_local_packages(&home, "my-agent", true).unwrap();
+        assert_eq!(outcome.removed_packages.len(), 1);
+        assert_eq!(outcome.removed_envs.len(), 1);
+        assert!(!env_dir.is_dir(), "env must be removed with --env");
+    }
+
+    // ---- remove_all (H-121) ----
+
+    #[test]
+    fn remove_all_clears_four_cache_dirs() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+        home.ensure_layout().unwrap();
+
+        // Populate something in each cacheable dir.
+        fs::create_dir_all(home.packages().join("local/a/1.0.0")).unwrap();
+        fs::create_dir_all(home.envs().join("local/a/1.0.0")).unwrap();
+        fs::create_dir_all(home.runtimes().join("python")).unwrap();
+        fs::create_dir_all(home.models().join("llama3")).unwrap();
+
+        remove_all(&home).unwrap();
+
+        assert!(home.packages().is_dir(), "packages dir itself still exists");
+        assert!(home.envs().is_dir(), "envs dir itself still exists");
+        assert!(home.runtimes().is_dir(), "runtimes dir itself still exists");
+        assert!(home.models().is_dir(), "models dir itself still exists");
+        // But their children should be gone.
+        assert_eq!(
+            fs::read_dir(home.packages()).unwrap().count(),
+            0,
+            "packages must be empty"
+        );
+        assert_eq!(
+            fs::read_dir(home.envs()).unwrap().count(),
+            0,
+            "envs must be empty"
+        );
+        assert_eq!(
+            fs::read_dir(home.runtimes()).unwrap().count(),
+            0,
+            "runtimes must be empty"
+        );
+        assert_eq!(
+            fs::read_dir(home.models()).unwrap().count(),
+            0,
+            "models must be empty"
+        );
+    }
+
+    #[test]
+    fn remove_all_preserves_credentials_toml() {
+        let tmp = tempfile::tempdir().unwrap();
+        let home = HarborHome::at(tmp.path());
+        home.ensure_layout().unwrap();
+
+        // Write a credentials.toml.
+        fs::write(home.credentials_path(), b"token = \"secret\"").unwrap();
+        // Write something in packages/ to clear.
+        fs::create_dir_all(home.packages().join("local/x/1.0.0")).unwrap();
+
+        remove_all(&home).unwrap();
+
+        assert!(
+            home.credentials_path().is_file(),
+            "credentials.toml must survive remove_all"
+        );
+        assert_eq!(
+            fs::read_to_string(home.credentials_path()).unwrap(),
+            "token = \"secret\""
+        );
     }
 
     #[test]

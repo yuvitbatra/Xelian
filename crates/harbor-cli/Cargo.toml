@@ -12,6 +12,7 @@ path = "src/main.rs"
 harbor-core = { workspace = true }
 clap = { workspace = true }
 anyhow = { workspace = true }
+rpassword = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

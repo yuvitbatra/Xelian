@@ -2,6 +2,7 @@
 //!
 //! The CLI crate (`harbor-cli`) is a thin dispatcher over this library.
 
+pub mod auth;
 pub mod cache;
 pub mod checksum;
 pub mod errors;
@@ -11,6 +12,7 @@ pub mod lockfile;
 pub mod manifest;
 pub mod package;
 pub mod permissions;
+pub mod registry_client;
 pub mod run;
 pub mod validate;
 

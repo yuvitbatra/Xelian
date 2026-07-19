@@ -1,3 +1,9 @@
 /target
 .superpowers/
 *.harbor
+
+# Python (registry backend + SDK)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

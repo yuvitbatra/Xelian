@@ -17,6 +17,7 @@ chrono = { workspace = true }
 semver = { workspace = true }
 thiserror = { workspace = true }
 dirs = { workspace = true }
+ureq = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

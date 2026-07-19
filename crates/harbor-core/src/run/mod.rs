@@ -19,6 +19,66 @@ use crate::errors::{ManifestError, ValidationError, ValidationWarning};
 use crate::lockfile::{compute_package_checksum_from_bytes, Lockfile, LockfileError};
 use crate::manifest::{self, Manifest};
 
+/// The three target forms that `harbor run` accepts (SPEC.md §9.2).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RunTarget {
+    /// A local `.harbor` archive path.
+    LocalArchive(PathBuf),
+    /// A registry reference `owner/name`.
+    RegistryRef { owner: String, name: String },
+    /// A GitHub URL (https://github.com/owner/repo).
+    GitHubUrl(String),
+}
+
+/// Parse a `harbor run` target string into one of the three accepted forms
+/// (SPEC.md §9.2). Rejects any input that doesn't match any form.
+pub fn parse_run_target(target: &str) -> Result<RunTarget, RunError> {
+    // GitHub URL: must start with https://github.com/ or http://github.com/
+    if target.starts_with("https://github.com/") || target.starts_with("http://github.com/") {
+        return Ok(RunTarget::GitHubUrl(target.to_string()));
+    }
+
+    // Local archive: ends with .harbor or is an existing file
+    let path = Path::new(target);
+    if target.ends_with(".harbor") || path.is_file() {
+        return Ok(RunTarget::LocalArchive(path.to_path_buf()));
+    }
+
+    // Registry reference: must contain exactly one `/` to separate owner/name,
+    // and must not look like a URL or a file path.
+    if let Some(slash_pos) = target.find('/') {
+        let owner = &target[..slash_pos];
+        let name = &target[slash_pos + 1..];
+        // Both components must be safe path segments. `@` is rejected on the
+        // name so `owner/pkg@1.0.0` fails loudly rather than being resolved as
+        // a package literally named `pkg@1.0.0` — there is no `@version` pin
+        // syntax in V1 (SPEC.md §9.2, §22). `.`/`..` and separators are
+        // rejected so a ref can never fold up a cache directory level.
+        if is_safe_ref_component(owner) && is_safe_ref_component(name) {
+            return Ok(RunTarget::RegistryRef {
+                owner: owner.to_string(),
+                name: name.to_string(),
+            });
+        }
+    }
+
+    Err(RunError::InvalidTarget {
+        target: target.to_string(),
+    })
+}
+
+/// `true` if `s` is a safe single path segment for a registry `owner`/`name`:
+/// non-empty, not `.`/`..`, and free of path separators, `@` pins, and `.`.
+fn is_safe_ref_component(s: &str) -> bool {
+    !s.is_empty()
+        && s != "."
+        && s != ".."
+        && !s.contains('/')
+        && !s.contains('\\')
+        && !s.contains('.')
+        && !s.contains('@')
+}
+
 pub mod env_vars;
 pub mod extract;
 pub mod launch;
@@ -119,6 +179,12 @@ pub enum RunError {
     /// Failed to install dependencies (Phase 7)
     #[error("failed to install dependencies: {0}")]
     DependencyInstall(#[source] runtime::RuntimeError),
+
+    /// The run target could not be parsed as a valid registry reference,
+    /// local archive, or GitHub URL (SPEC.md §9.2).
+    #[error("unrecognized run target {target:?}: expected a registry reference (owner/name), \
+             a GitHub URL, or a local .harbor path")]
+    InvalidTarget { target: String },
 }
 
 /// The outcome of successfully preparing a local `.harbor` archive: it has
@@ -225,6 +291,88 @@ pub fn run_local_archive(archive: &Path, home: &HarborHome) -> Result<Prepared, 
     // --- H-052: re-validate + OS check (§9.6, §9.6.1), from the EXTRACTED
     // directory (not the in-memory bytes) — this is what a "cached" run
     // re-validates too, so a manually-tampered cache entry is still caught.
+    let (manifest, warnings) = validate_extracted(&dest)?;
+
+    Ok(Prepared {
+        name: manifest.name,
+        version: manifest.version,
+        package_dir: dest,
+        from_cache,
+        warnings,
+    })
+}
+
+/// Run the preparation pipeline for a `.harbor` archive that was downloaded
+/// from the registry (SPEC.md §9.2–§9.6.1). Mirrors `run_local_archive` but
+/// uses the registry-scoped cache under `packages/registry/<owner>/<name>/<version>/`.
+pub fn run_registry_archive(
+    archive: &Path,
+    owner: &str,
+    name: &str,
+    home: &HarborHome,
+) -> Result<Prepared, RunError> {
+    let entries = read_archive_entries(archive)?;
+
+    // --- checksum verify (§9.4) ---
+    let (_, lock_bytes, _) = entries
+        .iter()
+        .find(|(p, _, _)| p == "harbor.lock")
+        .ok_or_else(|| RunError::MissingLockfile {
+            path: archive.to_path_buf(),
+        })?;
+    let lock_str = String::from_utf8_lossy(lock_bytes).into_owned();
+    let lock = Lockfile::from_toml_str(&lock_str).map_err(RunError::LockfileParse)?;
+
+    let expected_checksum = lock
+        .package_checksum
+        .clone()
+        .ok_or(RunError::MissingPackageChecksum)?;
+    let checksum_entries: Vec<(String, Vec<u8>)> =
+        entries.iter().map(|(p, c, _)| (p.clone(), c.clone())).collect();
+    let actual_checksum = compute_package_checksum_from_bytes(&checksum_entries);
+    if actual_checksum != expected_checksum {
+        return Err(RunError::ChecksumMismatch {
+            expected: expected_checksum,
+            actual: actual_checksum,
+        });
+    }
+
+    // --- Parse harbor.toml for cache addressing ---
+    let (_, manifest_bytes, _) = entries
+        .iter()
+        .find(|(p, _, _)| p == "harbor.toml")
+        .ok_or_else(|| RunError::MissingManifest {
+            path: archive.to_path_buf(),
+        })?;
+    let manifest_str = String::from_utf8_lossy(manifest_bytes).into_owned();
+    let manifest_for_addressing = Manifest::from_toml_str(&manifest_str)?;
+    manifest::validate_manifest(&manifest_for_addressing)?;
+
+    // Use the registry name for cache path, not the manifest name (they
+    // should match, but registry is the authoritative namespace).
+    let pkg_version = &manifest_for_addressing.version;
+
+    // --- destination in registry-scoped cache ---
+    let dest = home.registry_package_dir(owner, name, pkg_version);
+    let packages_root = home.packages();
+    if !dest.starts_with(&packages_root) {
+        return Err(RunError::UnsafeDestination {
+            dest,
+            packages_root,
+        });
+    }
+
+    let mut from_cache =
+        dir_is_nonempty(&dest).map_err(|e| RunError::Io {
+            path: dest.clone(),
+            source: e,
+        })?;
+
+    if !from_cache {
+        from_cache = extract::extract_entries(&entries, &dest, &home.tmp())?;
+    }
+
+    // --- re-validate + OS check (§9.6, §9.6.1) ---
     let (manifest, warnings) = validate_extracted(&dest)?;
 
     Ok(Prepared {
@@ -385,7 +533,126 @@ fn read_archive_entries(archive: &Path) -> Result<Vec<(String, Vec<u8>, u32)>, R
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
     use tempfile::tempdir;
+
+    // ---- H-160: parse_run_target ----
+
+    #[test]
+    fn parse_local_archive_by_extension() {
+        let result = parse_run_target("./my-agent.harbor").unwrap();
+        assert_eq!(
+            result,
+            RunTarget::LocalArchive(PathBuf::from("./my-agent.harbor"))
+        );
+    }
+
+    #[test]
+    fn parse_local_archive_by_existing_file() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("my-archive");
+        fs::write(&file_path, b"not a real archive").unwrap();
+        let result = parse_run_target(file_path.to_str().unwrap()).unwrap();
+        assert_eq!(
+            result,
+            RunTarget::LocalArchive(file_path)
+        );
+    }
+
+    #[test]
+    fn parse_registry_ref_simple() {
+        let result = parse_run_target("owner/my-agent").unwrap();
+        assert_eq!(
+            result,
+            RunTarget::RegistryRef {
+                owner: "owner".to_string(),
+                name: "my-agent".to_string(),
+            }
+        );
+    }
+
+    #[test]
+    fn parse_registry_ref_with_digits_and_hyphens() {
+        let result = parse_run_target("user123/my-pkg-v2").unwrap();
+        assert_eq!(
+            result,
+            RunTarget::RegistryRef {
+                owner: "user123".to_string(),
+                name: "my-pkg-v2".to_string(),
+            }
+        );
+    }
+
+    #[test]
+    fn parse_github_url_https() {
+        let result =
+            parse_run_target("https://github.com/octocat/hello-world").unwrap();
+        assert_eq!(
+            result,
+            RunTarget::GitHubUrl("https://github.com/octocat/hello-world".to_string())
+        );
+    }
+
+    #[test]
+    fn parse_github_url_http() {
+        let result =
+            parse_run_target("http://github.com/octocat/repo").unwrap();
+        assert_eq!(
+            result,
+            RunTarget::GitHubUrl("http://github.com/octocat/repo".to_string())
+        );
+    }
+
+    #[test]
+    fn parse_github_url_with_path_suffix() {
+        let result =
+            parse_run_target("https://github.com/octocat/hello-world/tree/main").unwrap();
+        assert_eq!(
+            result,
+            RunTarget::GitHubUrl(
+                "https://github.com/octocat/hello-world/tree/main".to_string()
+            )
+        );
+    }
+
+    #[test]
+    fn parse_invalid_target_no_slash_is_rejected() {
+        let err = parse_run_target("justaname").unwrap_err();
+        assert!(matches!(err, RunError::InvalidTarget { .. }));
+    }
+
+    #[test]
+    fn parse_invalid_target_empty_parts() {
+        let err = parse_run_target("/name").unwrap_err();
+        assert!(matches!(err, RunError::InvalidTarget { .. }));
+    }
+
+    #[test]
+    fn parse_invalid_target_triple_slash() {
+        let err = parse_run_target("a/b/c").unwrap_err();
+        assert!(matches!(err, RunError::InvalidTarget { .. }));
+    }
+
+    #[test]
+    fn parse_rejects_version_pin_syntax() {
+        // SPEC.md §9.2/§22: there is no `owner/package@version` pin syntax in
+        // V1 — it must fail loudly, not resolve a package named `pkg@1.0.0`.
+        let err = parse_run_target("owner/pkg@1.0.0").unwrap_err();
+        assert!(matches!(err, RunError::InvalidTarget { .. }));
+    }
+
+    #[test]
+    fn parse_rejects_traversal_in_name() {
+        // A `..` component could fold up a cache directory level.
+        assert!(matches!(
+            parse_run_target("owner/..").unwrap_err(),
+            RunError::InvalidTarget { .. }
+        ));
+        assert!(matches!(
+            parse_run_target("../name").unwrap_err(),
+            RunError::InvalidTarget { .. }
+        ));
+    }
 
     fn minimal_manifest_toml(name: &str, version: &str, os: &[&str]) -> String {
         let os_line = if os.is_empty() {
