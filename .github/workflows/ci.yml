@@ -32,11 +32,25 @@ jobs:
   registry:
     name: Registry tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: xelian_test
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: Tests (incl. abuse/fuzz, load, golden interop)
+      - name: Tests (incl. abuse/fuzz, load, golden interop) against real Postgres
         working-directory: registry
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5433/xelian_test
         run: |
           uv sync
           uv run pytest tests -q
@@ -73,6 +87,20 @@ jobs:
   e2e:
     name: E2E push->run loop + SDK integration
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: xelian
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5433/xelian
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -83,7 +111,7 @@ jobs:
       - name: Registry deps
         working-directory: registry
         run: uv sync
-      - name: E2E loop (signup -> login -> push -> 409 -> run -> yank -> unyank -> rm)
+      - name: E2E loop (signup -> login -> push -> 409 -> run -> search -> yank -> unyank -> rm)
         run: PYTHON="$PWD/registry/.venv/bin/python" scripts/e2e.sh
       - name: SDK integration tests (against the real binary + registry)
         working-directory: sdk

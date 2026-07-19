@@ -375,13 +375,12 @@ fn prepare_backend(home: &XelianHome, owner: &str, name: &str) -> anyhow::Result
         (manifest, pkg_dir)
     } else {
         eprintln!("gateway: downloading {owner}/{name} v{version} ...");
-        let archive_bytes = client
-            .download_archive(owner, name, &version)
-            .map_err(|e| anyhow::anyhow!("failed to download {owner}/{name} v{version}: {e}"))?;
         let tmp_dir = home.tmp();
         std::fs::create_dir_all(&tmp_dir)?;
         let archive_path = tmp_dir.join(format!("{owner}-{name}-{version}.xelian"));
-        std::fs::write(&archive_path, &archive_bytes)?;
+        client
+            .download_archive_to(owner, name, &version, &archive_path)
+            .map_err(|e| anyhow::anyhow!("failed to download {owner}/{name} v{version}: {e}"))?;
         let prepared = xelian_core::run::run_registry_archive(&archive_path, owner, name, home)
             .map_err(|e| anyhow::anyhow!(e))?;
         let _ = std::fs::remove_file(&archive_path);

@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { listPackages, type PackageSummary } from "@/lib/api";
+import {
+  listPackages,
+  searchPackages,
+  type PackageSummary,
+} from "@/lib/api";
 import PackageCard from "@/components/package-card";
 import CopyCommand from "@/components/copy-command";
 
@@ -13,31 +17,38 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
 
+  // Search goes through the registry's /search endpoint (H-224) — the same
+  // surface `xelian search` uses — debounced; empty query lists everything.
   useEffect(() => {
-    listPackages()
-      .then(setPackages)
-      .catch((e: Error) => setError(e.message));
-  }, []);
+    const q = query.trim();
+    let cancelled = false;
+    const timer = setTimeout(
+      () => {
+        (q ? searchPackages(q) : listPackages())
+          .then((rows) => {
+            if (!cancelled) {
+              setPackages(rows);
+              setError(null);
+            }
+          })
+          .catch((e: Error) => {
+            if (!cancelled) setError(e.message);
+          });
+      },
+      q ? 200 : 0,
+    );
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [query]);
 
   const visible = useMemo(() => {
     if (!packages) return [];
-    const q = query.trim().toLowerCase();
-    return packages.filter((p) => {
-      if (filter !== "all" && p.package_type !== filter) return false;
-      if (!q) return true;
-      const haystack = [
-        p.owner,
-        p.name,
-        `${p.owner}/${p.name}`,
-        p.description,
-        p.language,
-        ...(p.tags ?? []),
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [packages, query, filter]);
+    return packages.filter(
+      (p) => filter === "all" || p.package_type === filter,
+    );
+  }, [packages, filter]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -99,9 +110,9 @@ export default function Home() {
             </p>
           ) : visible.length === 0 ? (
             <p className="py-12 text-center text-sm text-gray-500">
-              {packages.length === 0
-                ? "No packages published yet. Publish one from the CLI with xelian push, or on this site."
-                : "No packages match your search."}
+              {query.trim() || packages.length > 0
+                ? "No packages match your search."
+                : "No packages published yet. Publish one from the CLI with xelian push, or on this site."}
             </p>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

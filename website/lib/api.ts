@@ -70,6 +70,15 @@ export async function listPackages(): Promise<PackageSummary[]> {
   return res.json();
 }
 
+export async function searchPackages(query: string): Promise<PackageSummary[]> {
+  const res = await fetch(
+    `${REGISTRY_URL}/search?q=${encodeURIComponent(query)}`,
+    { cache: "no-store" },
+  );
+  if (!res.ok) return fail(res);
+  return res.json();
+}
+
 export async function getPackage(
   owner: string,
   name: string,

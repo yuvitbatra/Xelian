@@ -11,8 +11,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 import app.main
-from app.auth import AuthStore
-from app.storage import Storage
+from app import auth as app_auth
+from app import db as app_db
+from sqlalchemy import select
 
 
 # The shared autouse test_env fixture lives in conftest.py so every test
@@ -21,8 +22,21 @@ from app.storage import Storage
 client = TestClient(app.main.app)
 
 
-def storage() -> Storage:
-    return app.main.storage
+def _set_yanked(owner: str, name: str, version: str, yanked: bool = True):
+    """Flip a version's yanked flag directly in the DB (test shortcut)."""
+    with app_db.session() as s:
+        row = s.scalar(
+            select(app_db.Version)
+            .join(app_db.Package)
+            .where(
+                app_db.Package.owner == owner,
+                app_db.Package.name == name,
+                app_db.Version.version == version,
+            )
+        )
+        assert row is not None
+        row.yanked = yanked
+        s.commit()
 
 
 def _make_tarinfo(name: str, data: bytes) -> tarfile.TarInfo:
@@ -256,7 +270,7 @@ class TestResolution:
         )
 
         # Yank 2.0.0
-        storage().set_yanked("testuser", "yank-pkg", "2.0.0", True)
+        _set_yanked("testuser", "yank-pkg", "2.0.0", True)
 
         # Resolution should fall back to 1.0.0
         resp = client.get("/packages/testuser/yank-pkg")
@@ -313,7 +327,7 @@ class TestResolution:
             data={"owner": "testuser", "name": "all-yanked"},
             headers=headers,
         )
-        storage().set_yanked("testuser", "all-yanked", "1.0.0", True)
+        _set_yanked("testuser", "all-yanked", "1.0.0", True)
 
         resp = client.get("/packages/testuser/all-yanked")
         assert resp.status_code == 404
@@ -546,13 +560,30 @@ class TestSignupAndAccounts:
 
     def test_accounts_and_tokens_survive_restart(self):
         token = self._signup().json()["token"]
-        # Simulate a registry restart: fresh AuthStore over the same directory.
-        app.main.auth_store = AuthStore(app.main.auth_store.root)
-        assert app.main.auth_store.verify_token(token) == "alice"
+        # Simulate a registry restart: drop every in-process handle to the DB
+        # and reconnect — accounts and tokens must come back from Postgres.
+        app_db.reset_engine()
+        assert app_auth.verify_token(token) == "alice"
         login = client.post(
             "/auth/token", json={"username": "alice", "password": "password123"}
         )
         assert login.status_code == 200
+
+    def test_revoked_token_stops_working(self):
+        token = self._signup().json()["token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        # Token works, revoke it, then it must be rejected.
+        assert client.delete("/auth/token", headers=headers).status_code == 200
+        resp = client.post(
+            "/packages",
+            files={
+                "archive": ("pkg.xelian", b"x", "application/octet-stream"),
+                "lockfile": ("xelian.lock", b"y", "application/toml"),
+            },
+            data={"owner": "alice", "name": "test-pkg"},
+            headers=headers,
+        )
+        assert resp.status_code == 401
 
     def test_signup_token_cannot_publish_other_namespace(self):
         token = self._signup().json()["token"]
@@ -613,3 +644,43 @@ class TestListPackages:
         assert yank.status_code == 200, yank.text
         resp = client.get("/packages")
         assert resp.json() == []
+
+
+class TestSearch:
+    def _publish(self, name, tags='["demo"]', description="Test package"):
+        archive_bytes = _make_archive("1.0.0", name=name)
+        cs = compute_package_checksum(archive_bytes)
+        resp = client.post(
+            "/packages",
+            files={
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("1.0.0", cs), "application/toml"),
+            },
+            data={"owner": "testuser", "name": name},
+            headers=_auth_headers(),
+        )
+        assert resp.status_code == 201, resp.text
+
+    def test_search_by_name_owner_description_tags(self):
+        self._publish("weather-agent")
+        self._publish("calc-tool")
+
+        by_name = client.get("/search", params={"q": "weather"}).json()
+        assert [r["name"] for r in by_name] == ["weather-agent"]
+
+        by_owner = client.get("/search", params={"q": "testuser"}).json()
+        assert {r["name"] for r in by_owner} == {"weather-agent", "calc-tool"}
+
+        # _make_archive fixes description to "Test package" and no tags field;
+        # description matching covers both packages.
+        by_desc = client.get("/search", params={"q": "test package"}).json()
+        assert len(by_desc) == 2
+
+    def test_search_empty_query_returns_nothing(self):
+        self._publish("some-pkg")
+        assert client.get("/search", params={"q": ""}).json() == []
+        assert client.get("/search").json() == []
+
+    def test_search_no_match(self):
+        self._publish("some-pkg")
+        assert client.get("/search", params={"q": "zzz-nothing"}).json() == []

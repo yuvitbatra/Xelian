@@ -24,9 +24,14 @@ fi
 WORK="$(mktemp -d)"
 PORT=$((20000 + RANDOM % 20000))
 REGISTRY_URL="http://127.0.0.1:$PORT"
+RUN_ID="$RANDOM$RANDOM"
+USER_NAME="e2e-$RUN_ID"
 export HOME="$WORK/home"
 export XELIAN_REGISTRY_URL="$REGISTRY_URL"
 export XELIAN_REGISTRY_ROOT="$WORK/registry-root"
+# Postgres is required (no SQLite fallback — decision of record). Default to
+# the local dev container; CI provides its own service DATABASE_URL.
+export DATABASE_URL="${DATABASE_URL:-postgresql+psycopg://postgres:postgres@localhost:5433/xelian}"
 mkdir -p "$HOME"
 
 cleanup() {
@@ -48,8 +53,8 @@ curl -sf "$REGISTRY_URL/health" >/dev/null || { echo "FATAL: registry did not co
 
 step "signup + non-interactive login"
 curl -sf -X POST "$REGISTRY_URL/auth/signup" -H 'Content-Type: application/json' \
-  -d '{"username":"e2e","password":"password123"}' >/dev/null
-echo password123 | "$BINARY" login --username e2e --password-stdin
+  -d "{\"username\":\"$USER_NAME\",\"password\":\"password123\"}" >/dev/null
+echo password123 | "$BINARY" login --username "$USER_NAME" --password-stdin
 
 step "author a real agent package"
 PKG="$WORK/e2e-agent"
@@ -94,25 +99,28 @@ fi
 grep -q "already published" "$WORK/dup.log" || { echo "FATAL: wrong duplicate-push error:"; cat "$WORK/dup.log"; exit 1; }
 
 step "clean-cache run: agent must respond"
-RESPONSE="$(printf 'hi\n' | "$BINARY" run e2e/e2e-agent 2>"$WORK/run.log")"
+RESPONSE="$(printf 'hi\n' | "$BINARY" run "$USER_NAME/e2e-agent" 2>"$WORK/run.log")"
 echo "agent said: $RESPONSE"
 [ "$RESPONSE" = "echo: hi" ] || { echo "FATAL: expected 'echo: hi'"; cat "$WORK/run.log"; exit 1; }
 
+step "xelian search finds the package"
+"$BINARY" search e2e-agent | grep -q "$USER_NAME/e2e-agent" || { echo "FATAL: search did not find the package"; exit 1; }
+
 step "yank, then run must fail with no-resolvable-version"
-"$BINARY" yank e2e/e2e-agent --version 0.1.0
-"$BINARY" rm e2e/e2e-agent >/dev/null   # drop the cache so resolution is exercised
-if printf 'hi\n' | "$BINARY" run e2e/e2e-agent >"$WORK/yanked.log" 2>&1; then
+"$BINARY" yank "$USER_NAME/e2e-agent" --version 0.1.0
+"$BINARY" rm "$USER_NAME/e2e-agent" >/dev/null   # drop the cache so resolution is exercised
+if printf 'hi\n' | "$BINARY" run "$USER_NAME/e2e-agent" >"$WORK/yanked.log" 2>&1; then
   echo "FATAL: run succeeded on a fully-yanked package"; exit 1
 fi
 grep -qi "no resolvable" "$WORK/yanked.log" || { echo "FATAL: wrong yanked-run error:"; cat "$WORK/yanked.log"; exit 1; }
 
 step "unyank, run works again"
-"$BINARY" yank e2e/e2e-agent --version 0.1.0 --undo
-RESPONSE="$(printf 'back\n' | "$BINARY" run e2e/e2e-agent 2>/dev/null)"
+"$BINARY" yank "$USER_NAME/e2e-agent" --version 0.1.0 --undo
+RESPONSE="$(printf 'back\n' | "$BINARY" run "$USER_NAME/e2e-agent" 2>/dev/null)"
 [ "$RESPONSE" = "echo: back" ] || { echo "FATAL: run after unyank failed"; exit 1; }
 
 step "rm cleans the cache"
-"$BINARY" rm e2e/e2e-agent
+"$BINARY" rm "$USER_NAME/e2e-agent"
 "$BINARY" list | grep -q e2e-agent && { echo "FATAL: rm left the package cached"; exit 1; }
 
 echo

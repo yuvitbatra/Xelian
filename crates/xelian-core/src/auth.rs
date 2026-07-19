@@ -13,8 +13,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::cache::XelianHome;
 
-/// The default registry URL used when none is configured.
-pub const DEFAULT_REGISTRY_URL: &str = "http://localhost:8000";
+/// The default registry URL used when none is configured (H-225): release
+/// builds bake the production URL in via the `XELIAN_DEFAULT_REGISTRY_URL`
+/// build-time env var; dev builds default to a local registry.
+pub const DEFAULT_REGISTRY_URL: &str = match option_env!("XELIAN_DEFAULT_REGISTRY_URL") {
+    Some(url) => url,
+    None => "http://localhost:8000",
+};
 
 /// The stored credential: a token, the username it belongs to, and the
 /// registry URL it was obtained from.
@@ -120,21 +125,44 @@ pub fn delete_credentials(home: &XelianHome) -> Result<(), CredentialError> {
     Ok(())
 }
 
-/// Determine the registry URL to use, following priority:
+/// Determine the registry URL to use, following priority (H-223):
 ///
-/// 1. The URL stored in `credentials.toml` (authenticated session).
-/// 2. The `XELIAN_REGISTRY_URL` environment variable.
-/// 3. The compile-time default (`http://localhost:8000`).
-///
-/// Use `read_credentials` first; if credentials exist, use their URL.
-/// Otherwise fall back to env var → default.
+/// 1. The `XELIAN_REGISTRY_URL` environment variable — an explicit override
+///    must always win; previously a stored credentials file silently pinned
+///    the URL forever.
+/// 2. The URL stored in `credentials.toml` (authenticated session).
+/// 3. The compile-time default.
 pub fn resolve_registry_url(home: &XelianHome) -> String {
-    // Check stored credentials first.
+    if let Ok(url) = std::env::var("XELIAN_REGISTRY_URL") {
+        if !url.is_empty() {
+            return url;
+        }
+    }
     if let Ok(Some(creds)) = read_credentials(home) {
         return creds.registry_url;
     }
-    // Fall back to env var.
-    std::env::var("XELIAN_REGISTRY_URL").unwrap_or_else(|_| DEFAULT_REGISTRY_URL.to_string())
+    DEFAULT_REGISTRY_URL.to_string()
+}
+
+/// Credentials for authenticated operations (H-223): the `XELIAN_TOKEN` +
+/// `XELIAN_USERNAME` environment pair wins (CI/scripts — no credentials file
+/// needed), else the stored `credentials.toml`.
+pub fn effective_credentials(
+    home: &XelianHome,
+) -> Result<Option<StoredCredentials>, CredentialError> {
+    if let (Ok(token), Ok(username)) = (
+        std::env::var("XELIAN_TOKEN"),
+        std::env::var("XELIAN_USERNAME"),
+    ) {
+        if !token.is_empty() && !username.is_empty() {
+            return Ok(Some(StoredCredentials {
+                token,
+                username,
+                registry_url: resolve_registry_url(home),
+            }));
+        }
+    }
+    read_credentials(home)
 }
 
 #[cfg(test)]
@@ -226,8 +254,10 @@ mod tests {
     }
 
     #[test]
-    fn resolve_url_from_credentials_takes_priority() {
+    fn resolve_url_from_credentials_when_env_unset() {
+        let _lock = ENV_LOCK.lock().unwrap();
         let (home, _tmp) = test_home();
+        std::env::remove_var("XELIAN_REGISTRY_URL");
         let creds = StoredCredentials {
             token: "t".into(),
             username: "u".into(),
@@ -237,6 +267,35 @@ mod tests {
 
         let url = resolve_registry_url(&home);
         assert_eq!(url, "https://registry.example.com");
+    }
+
+    #[test]
+    fn env_url_overrides_stored_credentials_url() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let (home, _tmp) = test_home();
+        let creds = StoredCredentials {
+            token: "t".into(),
+            username: "u".into(),
+            registry_url: "https://stored.example.com".into(),
+        };
+        write_credentials(&home, &creds).unwrap();
+        std::env::set_var("XELIAN_REGISTRY_URL", "https://env.example.com");
+        let url = resolve_registry_url(&home);
+        std::env::remove_var("XELIAN_REGISTRY_URL");
+        assert_eq!(url, "https://env.example.com");
+    }
+
+    #[test]
+    fn xelian_token_env_pair_beats_credentials_file() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        let (home, _tmp) = test_home();
+        std::env::set_var("XELIAN_TOKEN", "env-token");
+        std::env::set_var("XELIAN_USERNAME", "env-user");
+        let creds = effective_credentials(&home).unwrap().unwrap();
+        std::env::remove_var("XELIAN_TOKEN");
+        std::env::remove_var("XELIAN_USERNAME");
+        assert_eq!(creds.token, "env-token");
+        assert_eq!(creds.username, "env-user");
     }
 
     #[test]

@@ -52,6 +52,17 @@ pub struct PackageInfoResponse {
     pub versions: Vec<VersionRecordResponse>,
 }
 
+/// One row from `GET /search` (H-224).
+#[derive(Debug, Clone, Deserialize)]
+pub struct SearchResult {
+    pub owner: String,
+    pub name: String,
+    pub latest_version: String,
+    pub description: String,
+    pub package_type: String,
+    pub language: String,
+}
+
 /// Error response from the registry.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ApiError {
@@ -146,6 +157,43 @@ impl RegistryClient {
             .read_to_end(&mut body)
             .map_err(|e| RegistryError::Network(e.to_string()))?;
         Ok(body)
+    }
+
+    /// Download a specific version's archive, streamed straight to `dest`
+    /// (H-222) — the archive is never held whole in memory.
+    pub fn download_archive_to(
+        &self,
+        owner: &str,
+        name: &str,
+        version: &str,
+        dest: &Path,
+    ) -> Result<u64, RegistryError> {
+        let url = format!("{}/download/{}/{}/{}", self.base_url, owner, name, version);
+
+        let response = ureq::get(&url).call().map_err(map_ureq_error)?;
+
+        let mut reader = response.into_reader();
+        let mut file = std::fs::File::create(dest)
+            .map_err(|e| RegistryError::Network(format!("cannot create {}: {e}", dest.display())))?;
+        let written = std::io::copy(&mut reader, &mut file)
+            .map_err(|e| RegistryError::Network(e.to_string()))?;
+        Ok(written)
+    }
+
+    /// Search packages by name/owner/description/tags (H-224).
+    ///
+    /// Calls `GET /search?q=...` and returns summary rows.
+    pub fn search(&self, query: &str) -> Result<Vec<SearchResult>, RegistryError> {
+        let url = format!("{}/search", self.base_url);
+
+        let response = ureq::get(&url)
+            .query("q", query)
+            .call()
+            .map_err(map_ureq_error)?;
+
+        response
+            .into_json::<Vec<SearchResult>>()
+            .map_err(|e| RegistryError::ResponseParse(e.to_string()))
     }
 
     /// Yank or unyank a specific version (SPEC.md §14.7, Phase 17 / H-170).

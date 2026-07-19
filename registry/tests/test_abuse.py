@@ -12,7 +12,6 @@ from tests.test_api import (  # reuse the shared fixtures/helpers
     _make_lockfile,
     _make_tarinfo,
     client,
-    storage,
 )
 
 import app.main
@@ -115,7 +114,7 @@ class TestPathTraversal:
             resp = _post_package(payload, _make_lockfile("1.0.0", "sha256:" + "0" * 64))
             assert resp.status_code == 400, f"{evil!r}: {resp.status_code} {resp.text}"
             # Nothing may have escaped the storage root.
-            root = storage().root
+            root = app.main.archive_storage.root
             assert not (root.parent / "evil.txt").exists()
 
     def test_traversal_in_every_route_param(self):

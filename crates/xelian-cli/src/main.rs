@@ -46,6 +46,12 @@ enum Command {
         prepare: bool,
     },
 
+    /// Search the registry for packages.
+    Search {
+        /// Search term, matched against name, owner, description, and tags.
+        query: String,
+    },
+
     /// Import a GitHub repository as a local Xelian package and run it.
     Add {
         /// GitHub repository URL.
@@ -173,9 +179,13 @@ fn cmd_push() -> anyhow::Result<()> {
     let home = xelian_core::cache::XelianHome::resolve()?;
     let registry_url = xelian_core::auth::resolve_registry_url(&home);
 
-    let creds = xelian_core::auth::read_credentials(&home)
+    let creds = xelian_core::auth::effective_credentials(&home)
         .map_err(|e| anyhow::anyhow!("failed to read credentials: {e}"))?
-        .ok_or_else(|| anyhow::anyhow!("not logged in — run `xelian login` first"))?;
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "not logged in — run `xelian login` first, or set XELIAN_TOKEN and XELIAN_USERNAME"
+            )
+        })?;
 
     println!("Validating package (manifest, lockfile, required files, entrypoint, commands)...");
 
@@ -244,8 +254,6 @@ fn cmd_push() -> anyhow::Result<()> {
 }
 
 fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()> {
-    use std::io::Write;
-
     let home = xelian_core::cache::XelianHome::resolve()?;
     home.ensure_layout()?;
 
@@ -402,19 +410,16 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                 )
             } else {
                 eprintln!("downloading {}/{} v{} ...", owner, name, version);
-                let archive_bytes =
-                    client
-                        .download_archive(&owner, &name, &version)
-                        .map_err(|e| {
-                            anyhow::anyhow!("failed to download {owner}/{name} v{version}: {e}")
-                        })?;
-
                 let tmp_dir = home.tmp();
                 std::fs::create_dir_all(&tmp_dir)?;
                 let archive_path = tmp_dir.join(format!("{}-{}-{}.xelian", owner, name, version));
-                let mut f = std::fs::File::create(&archive_path)?;
-                f.write_all(&archive_bytes)?;
-                f.flush()?;
+                // Streamed to disk (H-222): the archive is never held whole
+                // in memory.
+                client
+                    .download_archive_to(&owner, &name, &version, &archive_path)
+                    .map_err(|e| {
+                        anyhow::anyhow!("failed to download {owner}/{name} v{version}: {e}")
+                    })?;
 
                 let prepared =
                     xelian_core::run::run_registry_archive(&archive_path, &owner, &name, &home)
@@ -730,6 +735,40 @@ fn cmd_rm(target: Option<&str>, remove_env: bool, all: bool) -> anyhow::Result<(
     Ok(())
 }
 
+/// `xelian search <query>` (H-224): discovery from the terminal.
+fn cmd_search(query: &str) -> anyhow::Result<()> {
+    let home = xelian_core::cache::XelianHome::resolve()?;
+    let registry_url = xelian_core::auth::resolve_registry_url(&home);
+    let client = xelian_core::registry_client::RegistryClient::new(&registry_url);
+
+    let results = client
+        .search(query)
+        .map_err(|e| anyhow::anyhow!("search failed against {registry_url}: {e}"))?;
+
+    if results.is_empty() {
+        println!("no packages match {query:?}");
+        return Ok(());
+    }
+    let widest = results
+        .iter()
+        .map(|r| r.owner.len() + r.name.len() + 1)
+        .max()
+        .unwrap_or(0);
+    for r in &results {
+        let full = format!("{}/{}", r.owner, r.name);
+        let mut desc = r.description.replace('\n', " ");
+        if desc.len() > 60 {
+            desc.truncate(59);
+            desc.push('…');
+        }
+        println!(
+            "{full:<widest$}  {:<5}  v{:<10}  {desc}",
+            r.package_type, r.latest_version
+        );
+    }
+    Ok(())
+}
+
 fn cmd_login(username_arg: Option<String>, password_stdin: bool) -> anyhow::Result<()> {
     use anyhow::Context;
 
@@ -809,9 +848,13 @@ fn cmd_yank(target: &str, version: &str, undo: bool) -> anyhow::Result<()> {
     let home = xelian_core::cache::XelianHome::resolve()?;
     let registry_url = xelian_core::auth::resolve_registry_url(&home);
 
-    let creds = xelian_core::auth::read_credentials(&home)
+    let creds = xelian_core::auth::effective_credentials(&home)
         .map_err(|e| anyhow::anyhow!("failed to read credentials: {e}"))?
-        .ok_or_else(|| anyhow::anyhow!("not logged in — run `xelian login` first"))?;
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "not logged in — run `xelian login` first, or set XELIAN_TOKEN and XELIAN_USERNAME"
+            )
+        })?;
 
     let client = xelian_core::registry_client::RegistryClient::new(&registry_url);
     let yanked = !undo;
@@ -867,6 +910,7 @@ fn main() {
             password_stdin,
         } => cmd_login(username.clone(), *password_stdin),
         Command::Logout => cmd_logout(),
+        Command::Search { query } => cmd_search(query),
         Command::Gateway { action } => match action {
             GatewayAction::Add { target } => gateway::cmd_add(target),
             GatewayAction::Remove { target } => gateway::cmd_remove(target),

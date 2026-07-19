@@ -1,148 +1,136 @@
+"""Archive byte storage (H-220/H-222/H-225): disk locally, Cloudflare R2 in
+production. Metadata lives in Postgres (db.py) — archives are NEVER stored in
+the database.
+
+Backend selection is by environment:
+- XELIAN_R2_BUCKET + XELIAN_R2_ENDPOINT + XELIAN_R2_ACCESS_KEY_ID +
+  XELIAN_R2_SECRET_ACCESS_KEY  -> R2 (S3-compatible; free hosts have
+  ephemeral disks, so object storage is REQUIRED in production or published
+  packages vanish on redeploy)
+- otherwise -> local disk under XELIAN_REGISTRY_ROOT (~/.xelian-registry)
+
+Both backends stream downloads in chunks (H-222) — archives are never
+buffered whole on the serving path.
+"""
+
 import hashlib
-import json
-from datetime import datetime, timezone
+import os
 from pathlib import Path
-from typing import Optional
+from typing import Iterator, Optional
 
-from .models import PackageMetadata, VersionRecord
+CHUNK = 1024 * 1024
 
 
-class Storage:
-    """Filesystem-backed storage for Xelian registry packages."""
+class DiskStorage:
+    """Filesystem-backed archive storage for local development."""
 
     def __init__(self, root: Path):
         self.root = root.resolve()
         self.root.mkdir(parents=True, exist_ok=True)
 
-    def _pkg_dir(self, owner: str, name: str) -> Path:
-        # Pure path computation — creating directories here would let
-        # unauthenticated GET routes (list_versions/archive_bytes) materialize
-        # arbitrary attacker-named directory trees on every 404 lookup. Only the
-        # write path (save_*) creates directories, via `_ensure_version_dir`.
-        return self.root / "packages" / owner / name
-
     def _version_dir(self, owner: str, name: str, version: str) -> Path:
-        return self._pkg_dir(owner, name) / version
+        return self.root / "packages" / owner / name / version
 
-    def _ensure_version_dir(self, owner: str, name: str, version: str) -> Path:
-        d = self._version_dir(owner, name, version)
-        d.mkdir(parents=True, exist_ok=True)
-        return d
-
-    def version_exists(self, owner: str, name: str, version: str) -> bool:
-        return self._version_dir(owner, name, version).is_dir()
-
-    def reserve_version(self, owner: str, name: str, version: str) -> bool:
-        """Atomically claim a version directory. Returns False if it already
-        exists — the mkdir is the arbiter, so exactly one of any number of
-        concurrent publishes for the same version can win (§19.2)."""
-        d = self._version_dir(owner, name, version)
-        d.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            d.mkdir()
-        except FileExistsError:
-            return False
-        return True
-
-    def save_archive(self, owner: str, name: str, version: str, archive_bytes: bytes) -> str:
-        checksum = hashlib.sha256(archive_bytes).hexdigest()
-        vdir = self._ensure_version_dir(owner, name, version)
-        (vdir / "archive.xelian").write_bytes(archive_bytes)
-        return checksum
-
-    def save_lockfile(self, owner: str, name: str, version: str, lock_bytes: bytes):
-        vdir = self._ensure_version_dir(owner, name, version)
-        (vdir / "xelian.lock").write_bytes(lock_bytes)
-
-    def save_metadata(self, owner: str, name: str, version: str, meta: PackageMetadata):
-        vdir = self._ensure_version_dir(owner, name, version)
-        (vdir / "metadata.json").write_text(meta.model_dump_json(indent=2))
-
-    def save_readme(self, owner: str, name: str, version: str, readme: str):
-        vdir = self._ensure_version_dir(owner, name, version)
-        (vdir / "README.md").write_text(readme)
-
-    def list_versions(self, owner: str, name: str) -> list[VersionRecord]:
-        pkg_dir = self._pkg_dir(owner, name)
-        if not pkg_dir.is_dir():
-            return []
-        versions = []
-        try:
-            entries = sorted(pkg_dir.iterdir())
-        except OSError:
-            return []
-        for entry in entries:
-            if not entry.is_dir():
-                continue
-            meta_file = entry / "metadata.json"
-            lock_file = entry / "xelian.lock"
-            archive_file = entry / "archive.xelian"
-            if not (meta_file.is_file() and lock_file.is_file() and archive_file.is_file()):
-                continue
-            try:
-                meta_dict = json.loads(meta_file.read_text())
-            except (json.JSONDecodeError, OSError):
-                continue
-            try:
-                published = datetime.fromisoformat(meta_dict.get("published_at", ""))
-            except (ValueError, TypeError):
-                published = datetime.now(timezone.utc)
-            versions.append(VersionRecord(
-                version=meta_dict.get("version", entry.name),
-                checksum=meta_dict.get("checksum", ""),
-                published_at=published,
-                yanked=meta_dict.get("yanked", False),
-            ))
-        return versions
-
-    def list_package_names(self) -> list[tuple[str, str]]:
-        """All (owner, name) pairs present in storage, sorted."""
-        packages_dir = self.root / "packages"
-        if not packages_dir.is_dir():
-            return []
-        pairs = []
-        try:
-            for owner_dir in sorted(packages_dir.iterdir()):
-                if not owner_dir.is_dir():
-                    continue
-                for name_dir in sorted(owner_dir.iterdir()):
-                    if name_dir.is_dir():
-                        pairs.append((owner_dir.name, name_dir.name))
-        except OSError:
-            return []
-        return pairs
-
-    def load_metadata(self, owner: str, name: str, version: str) -> Optional[PackageMetadata]:
+    def save(
+        self, owner: str, name: str, version: str, archive: bytes, lockfile: bytes
+    ) -> str:
         vdir = self._version_dir(owner, name, version)
-        meta_file = vdir / "metadata.json"
-        if not meta_file.is_file():
+        vdir.mkdir(parents=True, exist_ok=True)
+        (vdir / "archive.xelian").write_bytes(archive)
+        (vdir / "xelian.lock").write_bytes(lockfile)
+        return hashlib.sha256(archive).hexdigest()
+
+    def exists(self, owner: str, name: str, version: str) -> bool:
+        return (self._version_dir(owner, name, version) / "archive.xelian").is_file()
+
+    def stream(
+        self, owner: str, name: str, version: str
+    ) -> Optional[tuple[Iterator[bytes], int]]:
+        path = self._version_dir(owner, name, version) / "archive.xelian"
+        if not path.is_file():
             return None
-        data = json.loads(meta_file.read_text())
-        return PackageMetadata(**data)
+        size = path.stat().st_size
 
-    def load_readme(self, owner: str, name: str, version: str) -> Optional[str]:
-        readme_file = self._version_dir(owner, name, version) / "README.md"
-        if readme_file.is_file():
-            return readme_file.read_text()
-        return None
+        def chunks() -> Iterator[bytes]:
+            with open(path, "rb") as f:
+                while block := f.read(CHUNK):
+                    yield block
 
-    def archive_path(self, owner: str, name: str, version: str) -> Optional[Path]:
-        p = self._version_dir(owner, name, version) / "archive.xelian"
-        return p if p.is_file() else None
+        return chunks(), size
 
-    def archive_bytes(self, owner: str, name: str, version: str) -> Optional[bytes]:
-        ap = self.archive_path(owner, name, version)
-        return ap.read_bytes() if ap else None
 
-    def set_yanked(self, owner: str, name: str, version: str, yanked: bool) -> bool:
-        vdir = self._version_dir(owner, name, version)
-        meta_file = vdir / "metadata.json"
-        if not meta_file.is_file():
-            return False
-        data = json.loads(meta_file.read_text())
-        data["yanked"] = yanked
-        data["published_at"] = data.get(
-            "published_at", datetime.now(timezone.utc).isoformat()
+class R2Storage:
+    """Cloudflare R2 (S3-compatible) archive storage for production."""
+
+    def __init__(self, bucket: str, endpoint: str, access_key: str, secret_key: str):
+        import boto3
+        from botocore.config import Config
+
+        self.bucket = bucket
+        self.client = boto3.client(
+            "s3",
+            endpoint_url=endpoint,
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            config=Config(connect_timeout=10, read_timeout=60, retries={"max_attempts": 3}),
         )
-        meta_file.write_text(json.dumps(data, indent=2))
-        return True
+
+    def _key(self, owner: str, name: str, version: str, filename: str) -> str:
+        return f"packages/{owner}/{name}/{version}/{filename}"
+
+    def save(
+        self, owner: str, name: str, version: str, archive: bytes, lockfile: bytes
+    ) -> str:
+        self.client.put_object(
+            Bucket=self.bucket,
+            Key=self._key(owner, name, version, "archive.xelian"),
+            Body=archive,
+        )
+        self.client.put_object(
+            Bucket=self.bucket,
+            Key=self._key(owner, name, version, "xelian.lock"),
+            Body=lockfile,
+        )
+        return hashlib.sha256(archive).hexdigest()
+
+    def exists(self, owner: str, name: str, version: str) -> bool:
+        try:
+            self.client.head_object(
+                Bucket=self.bucket,
+                Key=self._key(owner, name, version, "archive.xelian"),
+            )
+            return True
+        except self.client.exceptions.ClientError:
+            return False
+
+    def stream(
+        self, owner: str, name: str, version: str
+    ) -> Optional[tuple[Iterator[bytes], int]]:
+        try:
+            obj = self.client.get_object(
+                Bucket=self.bucket,
+                Key=self._key(owner, name, version, "archive.xelian"),
+            )
+        except self.client.exceptions.ClientError:
+            return None
+        size = obj["ContentLength"]
+        body = obj["Body"]
+
+        def chunks() -> Iterator[bytes]:
+            while block := body.read(CHUNK):
+                yield block
+
+        return chunks(), size
+
+
+def from_env():
+    bucket = os.environ.get("XELIAN_R2_BUCKET")
+    endpoint = os.environ.get("XELIAN_R2_ENDPOINT")
+    access_key = os.environ.get("XELIAN_R2_ACCESS_KEY_ID")
+    secret_key = os.environ.get("XELIAN_R2_SECRET_ACCESS_KEY")
+    if bucket and endpoint and access_key and secret_key:
+        return R2Storage(bucket, endpoint, access_key, secret_key)
+    root = Path(
+        os.environ.get("XELIAN_REGISTRY_ROOT", Path.home() / ".xelian-registry")
+    )
+    return DiskStorage(root)

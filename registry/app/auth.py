@@ -1,24 +1,37 @@
+"""Accounts and tokens (H-221), persisted in Postgres.
+
+- Passwords: salted scrypt hashes (stdlib KDF of the same strength class as
+  bcrypt/argon2 interactive parameters; parameters are encoded per-hash so
+  they can be raised without invalidating accounts).
+- Tokens: stored as SHA-256 digests with expiry and revocation — they
+  survive restarts/redeploys and a leaked table leaks no usable bearer token.
+- There are no server credentials and no default account: identities come
+  from signup only. (An explicit XELIAN_REGISTRY_USERNAME/PASSWORD pair is
+  honored as a bootstrap account for tests/ops, but only when BOTH are set.)
+
+SPEC.md §14.4: registry-mutating operations require authentication.
+"""
+
 import hashlib
 import hmac
-import json
 import os
 import re
 import secrets
 import time
-from pathlib import Path
 from typing import Optional
+
+from sqlalchemy import select
+
+from . import db
 
 TOKEN_EXPIRY_SECONDS = 86400 * 30  # 30 days
 
-# Username doubles as the publish namespace (§14.4) and as a storage path
-# segment, so it must satisfy the §19.3 safe-segment charset. Length is
-# additionally bounded to keep namespaces readable.
+# Username doubles as the publish namespace (§14.4) and as a §19.3-safe path
+# segment.
 _SAFE_USERNAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{1,38}$")
 
 MIN_PASSWORD_LENGTH = 8
 
-# scrypt parameters (N, r, p) — interactive-login strength; encoded into each
-# hash so they can be raised later without invalidating existing accounts.
 _SCRYPT_N = 2**14
 _SCRYPT_R = 8
 _SCRYPT_P = 1
@@ -61,102 +74,92 @@ def valid_username(username: str) -> bool:
     return bool(_SAFE_USERNAME.match(username))
 
 
-class AuthStore:
-    """Disk-backed accounts and tokens for the Xelian registry.
+def _digest(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
-    - Passwords are stored as salted scrypt hashes (stdlib — no extra deps).
-    - Tokens are stored as SHA-256 digests, so a leaked store never leaks a
-      usable bearer token, and they survive registry restarts.
-    - Optional bootstrap account via XELIAN_REGISTRY_USERNAME/PASSWORD, honored
-      only when BOTH are explicitly set (there is no default admin/admin).
 
-    SPEC.md §14.4: registry-mutating operations require authentication.
-    """
+def user_exists(username: str) -> bool:
+    with db.session() as s:
+        return (
+            s.scalar(select(db.User).where(db.User.username == username))
+            is not None
+        )
 
-    def __init__(self, root: Path):
-        self.root = Path(root)
 
-    @property
-    def _users_file(self) -> Path:
-        return self.root / "users.json"
+def create_user(username: str, password: str) -> bool:
+    """Create an account. Returns False if the username is taken."""
+    from sqlalchemy.exc import IntegrityError
 
-    @property
-    def _tokens_file(self) -> Path:
-        return self.root / "tokens.json"
-
-    def _load(self, path: Path) -> dict:
+    with db.session() as s:
+        user = db.User(username=username, password_hash=hash_password(password))
+        s.add(user)
         try:
-            return json.loads(path.read_text())
-        except (OSError, json.JSONDecodeError):
-            return {}
-
-    def _save(self, path: Path, data: dict) -> None:
-        self.root.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(data, indent=2))
-        tmp.replace(path)
-
-    # --- accounts ---
-
-    def user_exists(self, username: str) -> bool:
-        return username in self._load(self._users_file)
-
-    def create_user(self, username: str, password: str) -> bool:
-        """Create an account. Returns False if the username is taken."""
-        users = self._load(self._users_file)
-        if username in users:
+            s.commit()
+        except IntegrityError:
             return False
-        users[username] = {
-            "password_hash": hash_password(password),
-            "created_at": time.time(),
-        }
-        self._save(self._users_file, users)
+    return True
+
+
+def authenticate(username: str, password: str) -> bool:
+    env_user = os.environ.get("XELIAN_REGISTRY_USERNAME")
+    env_pass = os.environ.get("XELIAN_REGISTRY_PASSWORD")
+    if env_user and env_pass:
+        if hmac.compare_digest(username, env_user) and hmac.compare_digest(
+            password, env_pass
+        ):
+            return True
+    with db.session() as s:
+        user = s.scalar(select(db.User).where(db.User.username == username))
+    if user is None:
+        # Burn equivalent work so response timing does not reveal whether the
+        # username exists.
+        verify_password(hash_password("timing-equalizer"), password)
+        return False
+    return verify_password(user.password_hash, password)
+
+
+def create_token(username: str) -> str:
+    token = secrets.token_hex(32)
+    with db.session() as s:
+        s.add(
+            db.Token(
+                token_digest=_digest(token),
+                username=username,
+                expires_at=time.time() + TOKEN_EXPIRY_SECONDS,
+            )
+        )
+        s.commit()
+    return token
+
+
+def verify_token(token: str) -> Optional[str]:
+    if token.startswith("Bearer "):
+        token = token[7:]
+    if not token:
+        return None
+    with db.session() as s:
+        row = s.scalar(
+            select(db.Token).where(db.Token.token_digest == _digest(token))
+        )
+        if row is None or row.revoked:
+            return None
+        if row.expires_at < time.time():
+            s.delete(row)
+            s.commit()
+            return None
+        return row.username
+
+
+def revoke_token(token: str) -> bool:
+    """Revoke a bearer token (H-221). Returns True if it existed."""
+    if token.startswith("Bearer "):
+        token = token[7:]
+    with db.session() as s:
+        row = s.scalar(
+            select(db.Token).where(db.Token.token_digest == _digest(token))
+        )
+        if row is None:
+            return False
+        row.revoked = True
+        s.commit()
         return True
-
-    def authenticate(self, username: str, password: str) -> bool:
-        env_user = os.environ.get("XELIAN_REGISTRY_USERNAME")
-        env_pass = os.environ.get("XELIAN_REGISTRY_PASSWORD")
-        if env_user and env_pass:
-            if hmac.compare_digest(username, env_user) and hmac.compare_digest(
-                password, env_pass
-            ):
-                return True
-        record = self._load(self._users_file).get(username)
-        if record is None:
-            # Burn the same work as a real check so response timing does not
-            # reveal whether the username exists.
-            verify_password(hash_password("timing-equalizer"), password)
-            return False
-        return verify_password(record.get("password_hash", ""), password)
-
-    # --- tokens ---
-
-    def create_token(self, username: str) -> str:
-        token = secrets.token_hex(32)
-        digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
-        tokens = self._load(self._tokens_file)
-        now = time.time()
-        # Lazy purge of expired tokens keeps the file bounded.
-        tokens = {k: v for k, v in tokens.items() if v.get("expires_at", 0) > now}
-        tokens[digest] = {
-            "username": username,
-            "expires_at": now + TOKEN_EXPIRY_SECONDS,
-        }
-        self._save(self._tokens_file, tokens)
-        return token
-
-    def verify_token(self, token: str) -> Optional[str]:
-        if token.startswith("Bearer "):
-            token = token[7:]
-        if not token:
-            return None
-        digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
-        tokens = self._load(self._tokens_file)
-        data = tokens.get(digest)
-        if data is None:
-            return None
-        if data.get("expires_at", 0) < time.time():
-            tokens.pop(digest, None)
-            self._save(self._tokens_file, tokens)
-            return None
-        return data["username"]

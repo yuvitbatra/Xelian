@@ -1,0 +1,25 @@
+# Render blueprint for the Xelian registry (H-225, free tier).
+# Set the secret env vars in the Render dashboard after the first deploy:
+#   DATABASE_URL                  from Neon (free tier)
+#   XELIAN_R2_*                   from Cloudflare R2 (archives MUST live in R2 —
+#                                 Render free-tier disks are ephemeral)
+# Keep-warm: point a free UptimeRobot monitor at /health every 5 minutes.
+services:
+  - type: web
+    name: xelian-registry
+    runtime: docker
+    plan: free
+    rootDir: registry
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: XELIAN_R2_BUCKET
+        sync: false
+      - key: XELIAN_R2_ENDPOINT
+        sync: false
+      - key: XELIAN_R2_ACCESS_KEY_ID
+        sync: false
+      - key: XELIAN_R2_SECRET_ACCESS_KEY
+        sync: false

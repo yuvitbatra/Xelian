@@ -129,6 +129,11 @@ def live_env():
 
     env = os.environ.copy()
     env["XELIAN_REGISTRY_ROOT"] = str(tmp / "registry-root")
+    # Postgres required (no SQLite fallback); default to the dev container.
+    env.setdefault(
+        "DATABASE_URL",
+        "postgresql+psycopg://postgres:postgres@localhost:5433/xelian",
+    )
     registry = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "app.main:app", "--port", str(port)],
         cwd=ROOT / "registry",
@@ -144,16 +149,17 @@ def live_env():
         os.environ["XELIAN_REGISTRY_URL"] = registry_url
         (tmp / "home").mkdir()
 
+        owner = f"sdktest-{int(time.time())}"
         req = urllib.request.Request(
             f"{registry_url}/auth/signup",
-            data=json.dumps({"username": "sdktest", "password": "password123"}).encode(),
+            data=json.dumps({"username": owner, "password": "password123"}).encode(),
             headers={"Content-Type": "application/json"},
         )
         with urllib.request.urlopen(req) as resp:
             assert resp.status == 201
 
         login = subprocess.run(
-            [str(BINARY), "login", "--username", "sdktest", "--password-stdin"],
+            [str(BINARY), "login", "--username", owner, "--password-stdin"],
             input="password123",
             text=True,
             capture_output=True,
@@ -170,7 +176,7 @@ def live_env():
             )
             assert push.returncode == 0, f"{name}: {push.stderr or push.stdout}"
 
-        yield {"registry_url": registry_url, "tmp": tmp}
+        yield {"registry_url": registry_url, "tmp": tmp, "owner": owner}
     finally:
         registry.terminate()
         registry.wait(timeout=10)
@@ -178,32 +184,32 @@ def live_env():
 
 
 def test_install_prepares_without_launching(live_env):
-    info = xelian.install("sdktest/sdk-echo-agent")
+    info = xelian.install(f"{live_env['owner']}/sdk-echo-agent")
     assert info.package_type == "agent"
     assert (info.package_dir / "xelian.toml").is_file()
     assert (info.env_dir / "bin" / "python").is_file()
 
 
 def test_agent_chat_round_trips(live_env):
-    with xelian.run("sdktest/sdk-echo-agent") as agent:
+    with xelian.run(f"{live_env['owner']}/sdk-echo-agent") as agent:
         assert agent.chat("hello") == "echo: hello"
         assert agent.chat("second message") == "echo: second message"
 
 
 def test_agent_helper_asserts_type(live_env):
     with pytest.raises(xelian.TypeMismatchError) as exc:
-        xelian.agent("sdktest/sdk-calc-mcp")
+        xelian.agent(f"{live_env['owner']}/sdk-calc-mcp")
     assert "expected 'agent'" in str(exc.value)
 
 
 def test_mcp_helper_asserts_type(live_env):
     with pytest.raises(xelian.TypeMismatchError) as exc:
-        xelian.mcp("sdktest/sdk-echo-agent")
+        xelian.mcp(f"{live_env['owner']}/sdk-echo-agent")
     assert "expected 'mcp'" in str(exc.value)
 
 
 def test_mcp_expose_transport_is_usable(live_env):
-    with xelian.mcp("sdktest/sdk-calc-mcp") as server:
+    with xelian.mcp(f"{live_env['owner']}/sdk-calc-mcp") as server:
         transport = server.expose()
         assert transport["transport"] == "stdio"
         # Drive a real MCP initialize over the exposed pipes.
@@ -222,7 +228,7 @@ def test_mcp_expose_transport_is_usable(live_env):
 
 def test_unknown_package_error_is_clear(live_env):
     with pytest.raises(xelian.InstallError) as exc:
-        xelian.install("sdktest/does-not-exist")
+        xelian.install(f"{live_env['owner']}/does-not-exist")
     assert "does-not-exist" in str(exc.value)
 
 
