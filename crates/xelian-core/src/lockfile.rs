@@ -482,8 +482,8 @@ mod tests {
         use flate2::read::GzDecoder;
         use std::io::Read;
 
-        let golden_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../tests/golden");
+        let golden_dir =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../tests/golden");
         let archive_bytes = fs::read(golden_dir.join("fixture.xelian")).unwrap();
         let expected = fs::read_to_string(golden_dir.join("expected-checksum.txt"))
             .unwrap()

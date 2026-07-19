@@ -13,6 +13,11 @@ xelian-core = { workspace = true }
 clap = { workspace = true }
 anyhow = { workspace = true }
 rpassword = { workspace = true }
+tiny_http = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+ureq = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

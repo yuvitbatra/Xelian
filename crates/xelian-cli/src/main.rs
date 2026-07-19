@@ -1,5 +1,7 @@
 use clap::{Parser, Subcommand};
 
+mod gateway;
+
 /// Xelian: a local-first registry and runtime for AI agents and MCP servers.
 #[derive(Parser, Debug)]
 #[command(name = "xelian", version = env!("CARGO_PKG_VERSION"), about, long_about = None)]
@@ -83,6 +85,18 @@ enum Command {
     /// Remove the stored registry credential.
     Logout,
 
+    /// One local MCP endpoint for all your MCP servers.
+    ///
+    /// Instead of wiring N servers into every IDE/agent config, clients
+    /// connect to a single endpoint (http://127.0.0.1:11432/mcp). The
+    /// gateway spawns each configured package, namespaces tools as
+    /// <package>__<tool>, routes calls, respawns dead backends, and keeps
+    /// unified logs under ~/.xelian/logs/gateway/.
+    Gateway {
+        #[command(subcommand)]
+        action: GatewayAction,
+    },
+
     /// Mark a published version as yanked, or reverse that.
     Yank {
         /// Package to yank (owner/package).
@@ -95,6 +109,35 @@ enum Command {
         /// Reverse a previous yank instead of applying one.
         #[arg(long)]
         undo: bool,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum GatewayAction {
+    /// Add an MCP-server package (owner/name) to the gateway.
+    Add { target: String },
+    /// Remove a package from the gateway.
+    Remove { target: String },
+    /// List configured gateway packages.
+    List,
+    /// Start the gateway (foreground). Clients connect to /mcp.
+    Serve {
+        /// Port to listen on (default 11432, or `port` in ~/.xelian/gateway.toml).
+        #[arg(long)]
+        port: Option<u16>,
+    },
+    /// Show the running gateway's backends: up/down, restarts, logs.
+    Status {
+        /// Port the gateway is listening on.
+        #[arg(long)]
+        port: Option<u16>,
+    },
+    /// Tail backend logs (all backends, or one owner/name).
+    Logs {
+        target: Option<String>,
+        /// Number of lines from the end of each log.
+        #[arg(long, default_value_t = 50)]
+        lines: usize,
     },
 }
 
@@ -824,6 +867,14 @@ fn main() {
             password_stdin,
         } => cmd_login(username.clone(), *password_stdin),
         Command::Logout => cmd_logout(),
+        Command::Gateway { action } => match action {
+            GatewayAction::Add { target } => gateway::cmd_add(target),
+            GatewayAction::Remove { target } => gateway::cmd_remove(target),
+            GatewayAction::List => gateway::cmd_list(),
+            GatewayAction::Serve { port } => gateway::cmd_serve(*port),
+            GatewayAction::Status { port } => gateway::cmd_status(*port),
+            GatewayAction::Logs { target, lines } => gateway::cmd_logs(target.as_deref(), *lines),
+        },
         Command::Yank {
             target,
             version,

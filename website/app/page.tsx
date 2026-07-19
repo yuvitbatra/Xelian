@@ -5,7 +5,7 @@ import { listPackages, type PackageSummary } from "@/lib/api";
 import PackageCard from "@/components/package-card";
 import CopyCommand from "@/components/copy-command";
 
-type Filter = "all" | "agent" | "mcp-server";
+type Filter = "all" | "agent" | "mcp";
 
 export default function Home() {
   const [packages, setPackages] = useState<PackageSummary[] | null>(null);
@@ -64,7 +64,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex rounded-md border border-gray-300 p-0.5">
-              {(["all", "agent", "mcp-server"] as const).map((f) => (
+              {(["all", "agent", "mcp"] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}

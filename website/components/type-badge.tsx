@@ -1,6 +1,6 @@
 const STYLES: Record<string, string> = {
   agent: "bg-blue-50 text-blue-700 border-blue-200",
-  "mcp-server": "bg-teal-50 text-teal-700 border-teal-200",
+  mcp: "bg-teal-50 text-teal-700 border-teal-200",
 };
 
 export default function TypeBadge({ type }: { type: string }) {
