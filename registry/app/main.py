@@ -205,6 +205,25 @@ def _extract_xelian_toml(archive_bytes: bytes) -> tuple[dict, str]:
         raise HTTPException(400, detail=f"malformed xelian.toml: {e}")
 
 
+@app.get("/")
+def root():
+    """The registry is a JSON API — point humans at the website and docs."""
+    return {
+        "name": "Xelian Registry",
+        "version": app.version,
+        "hint": "This is the API the CLI and website talk to. Browse packages on the website (npm run dev in website/), or see interactive API docs at /docs.",
+        "endpoints": {
+            "health": "GET /health",
+            "list_packages": "GET /packages",
+            "package_metadata": "GET /packages/{owner}/{name}",
+            "download": "GET /download/{owner}/{name}/{version}",
+            "signup": "POST /auth/signup",
+            "login": "POST /auth/token",
+            "publish": "POST /packages (auth required)",
+        },
+    }
+
+
 @app.get("/health")
 def health():
     return {"ok": True}
