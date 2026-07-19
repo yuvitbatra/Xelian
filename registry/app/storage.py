@@ -32,6 +32,18 @@ class Storage:
     def version_exists(self, owner: str, name: str, version: str) -> bool:
         return self._version_dir(owner, name, version).is_dir()
 
+    def reserve_version(self, owner: str, name: str, version: str) -> bool:
+        """Atomically claim a version directory. Returns False if it already
+        exists — the mkdir is the arbiter, so exactly one of any number of
+        concurrent publishes for the same version can win (§19.2)."""
+        d = self._version_dir(owner, name, version)
+        d.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            d.mkdir()
+        except FileExistsError:
+            return False
+        return True
+
     def save_archive(self, owner: str, name: str, version: str, archive_bytes: bytes) -> str:
         checksum = hashlib.sha256(archive_bytes).hexdigest()
         vdir = self._ensure_version_dir(owner, name, version)

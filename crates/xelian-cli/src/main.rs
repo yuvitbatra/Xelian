@@ -69,7 +69,16 @@ enum Command {
     },
 
     /// Authenticate the CLI against the registry.
-    Login,
+    Login {
+        /// Username (skips the interactive username prompt).
+        #[arg(long)]
+        username: Option<String>,
+
+        /// Read the password from stdin instead of prompting — for CI and
+        /// scripts, e.g. `echo "$PASS" | xelian login --username u --password-stdin`.
+        #[arg(long, requires = "username")]
+        password_stdin: bool,
+    },
 
     /// Remove the stored registry credential.
     Logout,
@@ -678,23 +687,38 @@ fn cmd_rm(target: Option<&str>, remove_env: bool, all: bool) -> anyhow::Result<(
     Ok(())
 }
 
-fn cmd_login() -> anyhow::Result<()> {
+fn cmd_login(username_arg: Option<String>, password_stdin: bool) -> anyhow::Result<()> {
     use anyhow::Context;
 
     let home = xelian_core::cache::XelianHome::resolve()?;
 
     let registry_url = xelian_core::auth::resolve_registry_url(&home);
 
-    eprint!("Registry username: ");
-    std::io::Write::flush(&mut std::io::stderr()).ok();
-    let mut username = String::new();
-    std::io::stdin()
-        .read_line(&mut username)
-        .context("failed to read username")?;
-    let username = username.trim().to_string();
+    let username = match username_arg {
+        Some(u) => u,
+        None => {
+            eprint!("Registry username: ");
+            std::io::Write::flush(&mut std::io::stderr()).ok();
+            let mut username = String::new();
+            std::io::stdin()
+                .read_line(&mut username)
+                .context("failed to read username")?;
+            username.trim().to_string()
+        }
+    };
 
-    let password =
-        rpassword::prompt_password("Registry password: ").context("failed to read password")?;
+    let password = if password_stdin {
+        let mut password = String::new();
+        std::io::Read::read_to_string(&mut std::io::stdin(), &mut password)
+            .context("failed to read password from stdin")?;
+        let password = password.trim_end_matches(['\r', '\n']).to_string();
+        if password.is_empty() {
+            anyhow::bail!("--password-stdin was given but stdin carried no password");
+        }
+        password
+    } else {
+        rpassword::prompt_password("Registry password: ").context("failed to read password")?
+    };
 
     let client = xelian_core::registry_client::RegistryClient::new(&registry_url);
 
@@ -795,7 +819,10 @@ fn main() {
         Command::Add { url } => cmd_add(url),
         Command::List => cmd_list(),
         Command::Rm { target, env, all } => cmd_rm(target.as_deref(), *env, *all),
-        Command::Login => cmd_login(),
+        Command::Login {
+            username,
+            password_stdin,
+        } => cmd_login(username.clone(), *password_stdin),
         Command::Logout => cmd_logout(),
         Command::Yank {
             target,

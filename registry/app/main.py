@@ -74,6 +74,91 @@ def _validate_segment(value: str, field: str) -> str:
     return value
 
 
+# --- Upload / decompression limits (H-214) ---
+# Caps are env-tunable so deployments can raise them without a code change.
+MAX_ARCHIVE_BYTES = int(os.environ.get("XELIAN_MAX_ARCHIVE_MB", "100")) * 1024 * 1024
+MAX_LOCKFILE_BYTES = 1 * 1024 * 1024
+MAX_UNCOMPRESSED_BYTES = int(os.environ.get("XELIAN_MAX_UNCOMPRESSED_MB", "500")) * 1024 * 1024
+MAX_ARCHIVE_ENTRIES = 10_000
+
+
+async def _read_capped(upload: UploadFile, cap: int, field: str) -> bytes:
+    """Read an upload, rejecting it with 413 as soon as it exceeds `cap`.
+
+    Chunked so an oversized body is rejected without buffering it whole.
+    """
+    chunks = []
+    total = 0
+    while True:
+        chunk = await upload.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > cap:
+            raise HTTPException(413, detail=f"{field} exceeds the {cap} byte limit")
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _safe_entry_name(name: str) -> bool:
+    """True if a tar entry name stays inside the extraction root (§19.3)."""
+    if name.startswith(("/", "\\")):
+        return False
+    trimmed = name.replace("\\", "/").rstrip("/")
+    if not trimmed:
+        return False
+    return all(p not in ("", ".", "..") for p in trimmed.split("/"))
+
+
+def _iter_archive_files(archive_bytes: bytes):
+    """Yield (name, bytes) for file entries, enforcing bomb/traversal guards.
+
+    Raises HTTPException 400 for malformed archives, traversal entry names,
+    and 413 when decompressed size or entry count exceeds the caps — the
+    registry must never crash or write outside its root on hostile input.
+    """
+    total = 0
+    count = 0
+    try:
+        with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode="r:gz") as tf:
+            for member in tf:
+                count += 1
+                if count > MAX_ARCHIVE_ENTRIES:
+                    raise HTTPException(
+                        413,
+                        detail=f"archive has more than {MAX_ARCHIVE_ENTRIES} entries",
+                    )
+                if not _safe_entry_name(member.name):
+                    raise HTTPException(
+                        400,
+                        detail=f"archive entry has unsafe path: {member.name!r}",
+                    )
+                if not member.isfile():
+                    continue
+                total += member.size
+                if total > MAX_UNCOMPRESSED_BYTES:
+                    raise HTTPException(
+                        413,
+                        detail="archive decompresses beyond the size limit",
+                    )
+                fobj = tf.extractfile(member)
+                data = fobj.read(MAX_UNCOMPRESSED_BYTES - total + member.size + 1) if fobj else b""
+                # A lying tar header (declared size < real size) cannot smuggle
+                # extra bytes: extractfile respects the header, and total is
+                # re-checked against what was actually read.
+                total = total - member.size + len(data)
+                if total > MAX_UNCOMPRESSED_BYTES:
+                    raise HTTPException(
+                        413,
+                        detail="archive decompresses beyond the size limit",
+                    )
+                yield member.name, data
+    except HTTPException:
+        raise
+    except (tarfile.TarError, EOFError, OSError, ValueError) as e:
+        raise HTTPException(400, detail=f"malformed archive: {e}")
+
+
 def compute_package_checksum(archive_bytes: bytes) -> str:
     """Recompute `package-checksum` per SPEC §7.3 for interoperability with the
     CLI's `compute_package_checksum` (crates/xelian-core/src/lockfile.rs).
@@ -85,12 +170,11 @@ def compute_package_checksum(archive_bytes: bytes) -> str:
     archive bytes, so it must match the CLI byte-for-byte or every real
     `xelian push` is rejected as a checksum mismatch.
     """
-    entries: list[tuple[str, bytes]] = []
-    with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode="r:gz") as tf:
-        for member in tf:
-            if not member.isfile() or member.name == "xelian.lock":
-                continue
-            entries.append((member.name, tf.extractfile(member).read()))
+    entries: list[tuple[str, bytes]] = [
+        (name, data)
+        for name, data in _iter_archive_files(archive_bytes)
+        if name != "xelian.lock"
+    ]
     entries.sort(key=lambda e: e[0].encode("utf-8"))
     concat = bytearray()
     for path, contents in entries:
@@ -106,17 +190,19 @@ def _extract_xelian_toml(archive_bytes: bytes) -> tuple[dict, str]:
     """Parse xelian.toml and README.md from .xelian archive bytes."""
     readme = ""
     manifest_bytes = None
-    with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode="r:gz") as tf:
-        for member in tf:
-            if member.name == "xelian.toml" and member.isfile():
-                manifest_bytes = tf.extractfile(member).read()
-            elif member.name == "README.md" and member.isfile():
-                readme = tf.extractfile(member).read().decode("utf-8")
+    for name, data in _iter_archive_files(archive_bytes):
+        if name == "xelian.toml":
+            manifest_bytes = data
+        elif name == "README.md":
+            readme = data.decode("utf-8", errors="replace")
     if manifest_bytes is None:
         raise HTTPException(400, detail="archive missing xelian.toml")
     import tomllib
 
-    return tomllib.loads(manifest_bytes.decode("utf-8")), readme
+    try:
+        return tomllib.loads(manifest_bytes.decode("utf-8")), readme
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError) as e:
+        raise HTTPException(400, detail=f"malformed xelian.toml: {e}")
 
 
 @app.get("/health")
@@ -195,13 +281,16 @@ async def publish(
     _validate_segment(owner, "owner")
     _validate_segment(name, "name")
 
-    archive_bytes = await archive.read()
-    lock_bytes = await lockfile.read()
+    archive_bytes = await _read_capped(archive, MAX_ARCHIVE_BYTES, "archive")
+    lock_bytes = await _read_capped(lockfile, MAX_LOCKFILE_BYTES, "lockfile")
 
     # --- checksum verification (§14.5, §7.3) ---
     import tomllib
 
-    lock_data = tomllib.loads(lock_bytes.decode("utf-8"))
+    try:
+        lock_data = tomllib.loads(lock_bytes.decode("utf-8"))
+    except (tomllib.TOMLDecodeError, UnicodeDecodeError) as e:
+        raise HTTPException(400, detail=f"malformed xelian.lock: {e}")
     declared_checksum = lock_data.get("package-checksum")
     if not declared_checksum:
         raise HTTPException(400, detail="xelian.lock missing package-checksum")
@@ -222,8 +311,9 @@ async def publish(
         raise HTTPException(400, detail="xelian.toml missing version")
     _validate_segment(version, "version")
 
-    # --- immutability check (§19.2) ---
-    if storage.version_exists(owner, name, version):
+    # --- immutability check (§19.2): the atomic mkdir is the arbiter, so
+    # concurrent duplicate publishes yield exactly one 201 (H-214) ---
+    if not storage.reserve_version(owner, name, version):
         raise HTTPException(
             409,
             detail=f"version {version} of {owner}/{name} already published",

@@ -472,4 +472,37 @@ mod tests {
             "error should name the missing file, got: {msg}"
         );
     }
+
+    /// H-212 — cross-implementation golden fixture: this exact archive and
+    /// expected digest are also asserted by the registry's Python tests
+    /// (registry/tests/test_golden.py). Any drift in either implementation
+    /// fails one side's CI. Regenerate with scripts/make_golden_fixture.py.
+    #[test]
+    fn golden_fixture_checksum_matches_python_implementation() {
+        use flate2::read::GzDecoder;
+        use std::io::Read;
+
+        let golden_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/golden");
+        let archive_bytes = fs::read(golden_dir.join("fixture.xelian")).unwrap();
+        let expected = fs::read_to_string(golden_dir.join("expected-checksum.txt"))
+            .unwrap()
+            .trim()
+            .to_string();
+
+        let mut tar = tar::Archive::new(GzDecoder::new(&archive_bytes[..]));
+        let mut files: Vec<(String, Vec<u8>)> = Vec::new();
+        for entry in tar.entries().unwrap() {
+            let mut entry = entry.unwrap();
+            let path = entry.path().unwrap().to_string_lossy().to_string();
+            let mut contents = Vec::new();
+            entry.read_to_end(&mut contents).unwrap();
+            files.push((path, contents));
+        }
+        // The fixture deliberately contains a `xelian.lock` (excluded from the
+        // digest) and a `Zed.txt` (pins byte-order sorting: 'Z' < 'a').
+        assert!(files.iter().any(|(p, _)| p == "xelian.lock"));
+
+        assert_eq!(compute_package_checksum_from_bytes(&files), expected);
+    }
 }
