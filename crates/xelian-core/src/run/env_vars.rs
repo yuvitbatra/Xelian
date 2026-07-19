@@ -63,7 +63,9 @@ mod tests {
         }
     }
 
-    fn mock_env<'a>(pairs: &'a [(&'a str, &'a str)]) -> impl Fn(&str) -> Result<String, std::env::VarError> + 'a {
+    fn mock_env<'a>(
+        pairs: &'a [(&'a str, &'a str)],
+    ) -> impl Fn(&str) -> Result<String, std::env::VarError> + 'a {
         move |name| {
             for (k, v) in pairs {
                 if *k == name {
@@ -121,10 +123,7 @@ mod tests {
         env.insert("DEFAULTED".to_string(), env_var(false, Some("dval")));
         env.insert("OPTIONAL".to_string(), env_var(false, None));
 
-        let pairs = resolve_env_vars_with(
-            &env,
-            mock_env(&[("REQUIRED_ONE", "val1")]),
-        ).unwrap();
+        let pairs = resolve_env_vars_with(&env, mock_env(&[("REQUIRED_ONE", "val1")])).unwrap();
         let mut pairs_sorted = pairs.clone();
         pairs_sorted.sort_by(|a, b| a.0.cmp(&b.0));
         assert_eq!(

@@ -147,12 +147,26 @@ fn built_archive_contains_required_files_and_excludes_gitignored_and_git_metadat
 
     let entries = list_archive_entries(&archive_path);
 
-    for expected in ["xelian.toml", "xelian.lock", "README.md", "LICENSE", "src/main.py"] {
-        assert!(entries.contains(&expected.to_string()), "missing {expected} in {entries:?}");
+    for expected in [
+        "xelian.toml",
+        "xelian.lock",
+        "README.md",
+        "LICENSE",
+        "src/main.py",
+    ] {
+        assert!(
+            entries.contains(&expected.to_string()),
+            "missing {expected} in {entries:?}"
+        );
     }
-    assert!(!entries.contains(&"secret.txt".to_string()), "got: {entries:?}");
     assert!(
-        !entries.iter().any(|e| e == ".git" || e.starts_with(".git/")),
+        !entries.contains(&"secret.txt".to_string()),
+        "got: {entries:?}"
+    );
+    assert!(
+        !entries
+            .iter()
+            .any(|e| e == ".git" || e.starts_with(".git/")),
         "got: {entries:?}"
     );
 }

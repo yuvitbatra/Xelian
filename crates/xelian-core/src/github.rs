@@ -60,7 +60,11 @@ pub enum GithubError {
     /// contain a well-formed 40-lowercase-hex-char commit SHA on its first
     /// line.
     #[error("`git ls-remote` for {owner}/{repo} returned an unexpected HEAD line: {line:?}")]
-    UnexpectedHeadFormat { owner: String, repo: String, line: String },
+    UnexpectedHeadFormat {
+        owner: String,
+        repo: String,
+        line: String,
+    },
 
     /// Downloading the repository tarball via `curl` failed. `source` is
     /// boxed for the same reason as [`GithubError::ResolveHead`].
@@ -90,7 +94,9 @@ pub enum GithubError {
     /// Detected a `Cargo.toml` at the repository root: Rust has no runtime
     /// manager in V1 (§22), so import must fail with a clear message rather
     /// than attempting to proceed (§12.2 step 2).
-    #[error("unsupported language ({language}): no runtime manager exists for this language in V1")]
+    #[error(
+        "unsupported language ({language}): no runtime manager exists for this language in V1"
+    )]
     UnsupportedLanguage { language: String },
 
     /// None of the known language marker files were found at the repository
@@ -154,15 +160,19 @@ pub fn parse_github_url(url: &str) -> Result<RepoRef, GithubError> {
         });
     }
 
-    let rest = url.strip_prefix("https://").ok_or_else(|| GithubError::InvalidUrl {
-        url: url.to_string(),
-        reason: "must start with https://".to_string(),
-    })?;
+    let rest = url
+        .strip_prefix("https://")
+        .ok_or_else(|| GithubError::InvalidUrl {
+            url: url.to_string(),
+            reason: "must start with https://".to_string(),
+        })?;
 
-    let rest = rest.strip_prefix("github.com/").ok_or_else(|| GithubError::InvalidUrl {
-        url: url.to_string(),
-        reason: "host must be github.com".to_string(),
-    })?;
+    let rest = rest
+        .strip_prefix("github.com/")
+        .ok_or_else(|| GithubError::InvalidUrl {
+            url: url.to_string(),
+            reason: "host must be github.com".to_string(),
+        })?;
 
     let rest = rest.strip_suffix('/').unwrap_or(rest);
     let rest = rest.strip_suffix(".git").unwrap_or(rest);
@@ -203,7 +213,8 @@ pub fn parse_github_url(url: &str) -> Result<RepoRef, GithubError> {
 fn is_safe_repo_component(s: &str) -> bool {
     !s.is_empty()
         && !s.starts_with('.')
-        && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.' || c == '-')
+        && s.chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.' || c == '-')
 }
 
 /// Whether `name` is a well-formed `<binary> --version`-style availability
@@ -226,7 +237,9 @@ fn ensure_binary_available(name: &str) -> Result<(), GithubError> {
 /// Whether `s` is exactly 40 lowercase hexadecimal characters (a full Git
 /// commit SHA-1).
 fn is_valid_commit_sha(s: &str) -> bool {
-    s.len() == 40 && s.chars().all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c))
+    s.len() == 40
+        && s.chars()
+            .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c))
 }
 
 /// Resolve a repository's default branch (`HEAD`) to a commit SHA (SPEC.md
@@ -287,7 +300,9 @@ fn strip_top_level_component(path: &str) -> Option<String> {
 /// symlink extracted into a shared cache directory is a traversal hazard.
 /// Pax header entries and other non regular/directory/symlink entry types
 /// tar crates may surface are silently ignored.
-fn read_github_tarball_entries(tarball_path: &Path) -> Result<Vec<(String, Vec<u8>, u32)>, GithubError> {
+fn read_github_tarball_entries(
+    tarball_path: &Path,
+) -> Result<Vec<(String, Vec<u8>, u32)>, GithubError> {
     let map_io = |source: io::Error| GithubError::Io {
         path: tarball_path.to_path_buf(),
         source,
@@ -346,10 +361,19 @@ fn read_github_tarball_entries(tarball_path: &Path) -> Result<Vec<(String, Vec<u
 /// cached (§9.11), and imports are addressed by commit SHA specifically so
 /// this is safe. The `bool` in the return value is `true` for that cache-hit
 /// case and `false` for a fresh download.
-pub fn fetch_repo(repo: &RepoRef, sha: &str, home: &XelianHome) -> Result<(PathBuf, bool), GithubError> {
+pub fn fetch_repo(
+    repo: &RepoRef,
+    sha: &str,
+    home: &XelianHome,
+) -> Result<(PathBuf, bool), GithubError> {
     let dest = home.github_package_dir(&repo.owner, &repo.repo, sha);
     if dir_is_nonempty(&dest) {
-        eprintln!("(cached) {}/{} @ {sha} — {}", repo.owner, repo.repo, dest.display());
+        eprintln!(
+            "(cached) {}/{} @ {sha} — {}",
+            repo.owner,
+            repo.repo,
+            dest.display()
+        );
         return Ok((dest, true));
     }
 
@@ -360,7 +384,9 @@ pub fn fetch_repo(repo: &RepoRef, sha: &str, home: &XelianHome) -> Result<(PathB
         source: e,
     })?;
 
-    let tarball_path = home.tmp().join(format!("{}-{}-{}.tar.gz", repo.owner, repo.repo, sha));
+    let tarball_path = home
+        .tmp()
+        .join(format!("{}-{}-{}.tar.gz", repo.owner, repo.repo, sha));
     let url = format!(
         "https://codeload.github.com/{}/{}/tar.gz/{}",
         repo.owner, repo.repo, sha
@@ -398,7 +424,10 @@ enum DetectionOutcome {
 }
 
 const LANGUAGE_MARKERS: &[(&str, DetectionOutcome)] = &[
-    ("pyproject.toml", DetectionOutcome::Language(Language::Python)),
+    (
+        "pyproject.toml",
+        DetectionOutcome::Language(Language::Python),
+    ),
     ("package.json", DetectionOutcome::Language(Language::Node)),
     ("Cargo.toml", DetectionOutcome::UnsupportedLanguage("rust")),
 ];
@@ -411,7 +440,9 @@ pub fn detect_language(checkout: &Path) -> Result<Language, GithubError> {
             return match outcome {
                 DetectionOutcome::Language(lang) => Ok(*lang),
                 DetectionOutcome::UnsupportedLanguage(name) => {
-                    Err(GithubError::UnsupportedLanguage { language: (*name).to_string() })
+                    Err(GithubError::UnsupportedLanguage {
+                        language: (*name).to_string(),
+                    })
                 }
             };
         }
@@ -486,14 +517,19 @@ fn read_package_json(checkout: &Path) -> Option<PackageJson> {
 /// `package.json` if present and syntactically supported by
 /// [`NodeRuntimeManager`]'s constraint parser, else the placeholder `">=18"`.
 fn infer_node_runtime(checkout: &Path) -> String {
-    let Some(constraint) = read_package_json(checkout).and_then(|p| p.engines).and_then(|e| e.node)
+    let Some(constraint) = read_package_json(checkout)
+        .and_then(|p| p.engines)
+        .and_then(|e| e.node)
     else {
         return ">=18".to_string();
     };
     if constraint.trim().is_empty() {
         return ">=18".to_string();
     }
-    if NodeRuntimeManager.validate_constraint_syntax(&constraint).is_ok() {
+    if NodeRuntimeManager
+        .validate_constraint_syntax(&constraint)
+        .is_ok()
+    {
         constraint
     } else {
         ">=18".to_string()
@@ -582,8 +618,11 @@ fn render_manifest_toml(
 ) -> String {
     use std::fmt::Write as _;
 
-    let (description, runtime, entrypoint) =
-        (toml_escape(description), toml_escape(runtime), toml_escape(entrypoint));
+    let (description, runtime, entrypoint) = (
+        toml_escape(description),
+        toml_escape(runtime),
+        toml_escape(entrypoint),
+    );
 
     let mut s = String::new();
     let _ = writeln!(s, "spec-version = 1");
@@ -870,7 +909,11 @@ mod tests {
     #[test]
     fn python_wins_when_both_pyproject_and_package_json_present() {
         let dir = tempdir().unwrap();
-        fs::write(dir.path().join("pyproject.toml"), "[project]\nname = \"x\"\n").unwrap();
+        fs::write(
+            dir.path().join("pyproject.toml"),
+            "[project]\nname = \"x\"\n",
+        )
+        .unwrap();
         fs::write(dir.path().join("package.json"), "{}").unwrap();
 
         assert_eq!(detect_language(dir.path()).unwrap(), Language::Python);
@@ -977,7 +1020,11 @@ mod tests {
     #[test]
     fn missing_entrypoint_gets_placeholder_not_error() {
         let dir = tempdir().unwrap();
-        fs::write(dir.path().join("pyproject.toml"), "[project]\nname = \"widget\"\n").unwrap();
+        fs::write(
+            dir.path().join("pyproject.toml"),
+            "[project]\nname = \"widget\"\n",
+        )
+        .unwrap();
 
         let repo = sample_repo();
         let sha = "d".repeat(40);
@@ -1009,17 +1056,25 @@ mod tests {
     #[test]
     fn existing_xelian_toml_is_preserved_verbatim() {
         let dir = tempdir().unwrap();
-        fs::write(dir.path().join("pyproject.toml"), "[project]\nname = \"widget\"\n").unwrap();
+        fs::write(
+            dir.path().join("pyproject.toml"),
+            "[project]\nname = \"widget\"\n",
+        )
+        .unwrap();
         let original = "spec-version = 1\nname = \"already-a-package\"\n# a repo that is already a xelian package\n";
         fs::write(dir.path().join("xelian.toml"), original).unwrap();
 
         let repo = sample_repo();
         let sha = "f".repeat(40);
-        let toml_str = infer_manifest(dir.path(), &repo, &sha).expect("should return existing content");
+        let toml_str =
+            infer_manifest(dir.path(), &repo, &sha).expect("should return existing content");
 
         assert_eq!(toml_str, original);
         let on_disk = fs::read_to_string(dir.path().join("xelian.toml")).unwrap();
-        assert_eq!(on_disk, original, "existing xelian.toml must not be overwritten");
+        assert_eq!(
+            on_disk, original,
+            "existing xelian.toml must not be overwritten"
+        );
     }
 
     // ---- Name derivation ----
@@ -1103,7 +1158,10 @@ mod tests {
         );
 
         let err = read_github_tarball_entries(&tarball_path).unwrap_err();
-        assert!(matches!(err, GithubError::UnsafeTarEntry { .. }), "got: {err:?}");
+        assert!(
+            matches!(err, GithubError::UnsafeTarEntry { .. }),
+            "got: {err:?}"
+        );
     }
 
     // ---- build_import: lock + archive (§12.2 steps 4-5) ----
@@ -1113,7 +1171,11 @@ mod tests {
         let dir = tempdir().unwrap();
         fs::create_dir_all(dir.path().join("src")).unwrap();
         fs::write(dir.path().join("src/main.py"), "print('hi')\n").unwrap();
-        fs::write(dir.path().join("pyproject.toml"), "[project]\nname = \"widget\"\n").unwrap();
+        fs::write(
+            dir.path().join("pyproject.toml"),
+            "[project]\nname = \"widget\"\n",
+        )
+        .unwrap();
 
         let repo = sample_repo();
         let sha = "1".repeat(40);
@@ -1128,7 +1190,9 @@ mod tests {
 
         let manifest_str = fs::read_to_string(dir.path().join("xelian.toml")).unwrap();
         let manifest = Manifest::from_toml_str(&manifest_str).unwrap();
-        let archive_path = dir.path().join(format!("{}-{}.xelian", manifest.name, manifest.version));
+        let archive_path = dir
+            .path()
+            .join(format!("{}-{}.xelian", manifest.name, manifest.version));
         assert!(archive_path.is_file());
 
         let f = fs::File::open(&archive_path).unwrap();
@@ -1147,7 +1211,11 @@ mod tests {
     #[test]
     fn build_import_errors_clearly_when_gitignore_excludes_xelian_toml() {
         let dir = tempdir().unwrap();
-        fs::write(dir.path().join("pyproject.toml"), "[project]\nname = \"widget\"\n").unwrap();
+        fs::write(
+            dir.path().join("pyproject.toml"),
+            "[project]\nname = \"widget\"\n",
+        )
+        .unwrap();
 
         let repo = sample_repo();
         let sha = "2".repeat(40);
@@ -1161,7 +1229,10 @@ mod tests {
             matches!(err, GithubError::ManifestExcludedByGitignore),
             "got: {err:?}"
         );
-        assert!(!dir.path().join("xelian.lock").is_file(), "must not build a broken archive");
+        assert!(
+            !dir.path().join("xelian.lock").is_file(),
+            "must not build a broken archive"
+        );
     }
 
     // ---- pure helpers ----
@@ -1169,9 +1240,17 @@ mod tests {
     #[test]
     fn commit_sha_validation() {
         assert!(is_valid_commit_sha(&"a".repeat(40)));
-        assert!(is_valid_commit_sha("0123456789abcdef0123456789abcdef01234567"));
-        assert!(!is_valid_commit_sha(&"A".repeat(40)), "must reject uppercase");
-        assert!(!is_valid_commit_sha(&"a".repeat(39)), "must reject short shas");
+        assert!(is_valid_commit_sha(
+            "0123456789abcdef0123456789abcdef01234567"
+        ));
+        assert!(
+            !is_valid_commit_sha(&"A".repeat(40)),
+            "must reject uppercase"
+        );
+        assert!(
+            !is_valid_commit_sha(&"a".repeat(39)),
+            "must reject short shas"
+        );
         assert!(!is_valid_commit_sha(&"g".repeat(40)), "must reject non-hex");
     }
 }

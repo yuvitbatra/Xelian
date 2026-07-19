@@ -71,9 +71,7 @@ pub fn launch(
             let port = resolve_port(requested)?;
             cmd.env("PORT", port.to_string());
             if requested != 0 && port != requested {
-                eprintln!(
-                    "MCP server: assigned PORT={port} (requested port {requested} is busy)"
-                );
+                eprintln!("MCP server: assigned PORT={port} (requested port {requested} is busy)");
             } else {
                 eprintln!("MCP server: assigned PORT={port}");
             }

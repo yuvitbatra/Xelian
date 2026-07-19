@@ -34,7 +34,10 @@ fn version_flag_prints_binary_version() {
     assert!(stdout.contains(env!("CARGO_PKG_VERSION")));
 
     // Long form should behave the same way.
-    let output_long = xelian().arg("--version").output().expect("run xelian --version");
+    let output_long = xelian()
+        .arg("--version")
+        .output()
+        .expect("run xelian --version");
     assert!(output_long.status.success());
     let stdout_long = String::from_utf8_lossy(&output_long.stdout);
     assert!(stdout_long.contains(env!("CARGO_PKG_VERSION")));
@@ -91,7 +94,11 @@ fn rm_all_conflicts_with_target() {
         .output()
         .expect("run xelian rm owner/package --all");
     assert!(!output.status.success());
-    assert_eq!(output.status.code(), Some(2), "clap usage errors exit with code 2");
+    assert_eq!(
+        output.status.code(),
+        Some(2),
+        "clap usage errors exit with code 2"
+    );
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("cannot be used with"), "stderr:\n{stderr}");
 }
@@ -129,7 +136,11 @@ fn yank_without_version_fails_with_clap_usage_error() {
         .output()
         .expect("run xelian yank owner/package");
     assert!(!output.status.success());
-    assert_eq!(output.status.code(), Some(2), "clap usage errors exit with code 2");
+    assert_eq!(
+        output.status.code(),
+        Some(2),
+        "clap usage errors exit with code 2"
+    );
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("--version"), "stderr:\n{stderr}");
 }
@@ -143,7 +154,10 @@ fn logout_succeeds_even_without_credentials() {
         .env("HOME", dir.path())
         .output()
         .expect("run xelian logout");
-    assert!(output.status.success(), "logout without credentials should succeed");
+    assert!(
+        output.status.success(),
+        "logout without credentials should succeed"
+    );
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("Logged out"), "stdout:\n{stdout}");
 }

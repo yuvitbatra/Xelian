@@ -16,17 +16,13 @@ pub enum ManifestError {
 /// actionable on its own.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum ValidationError {
-    #[error(
-        "unsupported spec-version {found}: this xelian binary supports {supported:?}"
-    )]
+    #[error("unsupported spec-version {found}: this xelian binary supports {supported:?}")]
     UnsupportedSpecVersion { found: u64, supported: Vec<u64> },
 
     #[error("invalid version {version:?}: must be valid SemVer 2.0.0 ({reason})")]
     InvalidSemVer { version: String, reason: String },
 
-    #[error(
-        "invalid permission {value:?}: must be one of {allowed:?}"
-    )]
+    #[error("invalid permission {value:?}: must be one of {allowed:?}")]
     InvalidPermission {
         value: String,
         allowed: &'static [&'static str],
@@ -57,7 +53,10 @@ pub enum ValidationError {
 /// A non-fatal validation warning (SPEC.md §17): unrecognized feature tags.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationWarning {
-    UnrecognizedFeature { value: String, allowed: &'static [&'static str] },
+    UnrecognizedFeature {
+        value: String,
+        allowed: &'static [&'static str],
+    },
 }
 
 impl std::fmt::Display for ValidationWarning {

@@ -3,6 +3,7 @@ name = "xelian-registry"
 version = "0.1.0"
 description = "Xelian Registry — store and serve AI agent packages."
 requires-python = ">=3.11"
+license = { text = "MIT" }
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",

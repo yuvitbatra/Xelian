@@ -100,8 +100,9 @@ fn install_ollama(home: &XelianHome) -> Result<std::path::PathBuf, ModelError> {
     let mut curl = Command::new("curl");
     curl.args(["-fsSL", "https://ollama.com/install.sh", "-o"])
         .arg(&install_script);
-    run_command_checked(&mut curl)
-        .map_err(|e| ModelError::InstallFailed(format!("failed to download install script: {e}")))?;
+    run_command_checked(&mut curl).map_err(|e| {
+        ModelError::InstallFailed(format!("failed to download install script: {e}"))
+    })?;
 
     // Run the install script, streaming its progress to the user (stderr;
     // stdout must stay clean for MCP stdio).

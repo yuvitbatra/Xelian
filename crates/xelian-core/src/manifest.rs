@@ -194,12 +194,13 @@ pub fn validate_manifest(m: &Manifest) -> Result<Vec<ValidationWarning>, Validat
 
     // name: charset + length (§19.3)
     let valid_charset = !m.name.is_empty()
-        && m
-            .name
+        && m.name
             .chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-');
     if !valid_charset {
-        return Err(ValidationError::InvalidNameCharset { name: m.name.clone() });
+        return Err(ValidationError::InvalidNameCharset {
+            name: m.name.clone(),
+        });
     }
     if m.name.len() < 3 || m.name.len() > 64 {
         return Err(ValidationError::InvalidNameLength {
@@ -348,13 +349,19 @@ lockfile = "uv.lock"
 
     #[test]
     fn valid_permission_passes() {
-        let ok = valid_toml().replace("permissions = [\"network\"]", "permissions = [\"filesystem\", \"network\"]");
+        let ok = valid_toml().replace(
+            "permissions = [\"network\"]",
+            "permissions = [\"filesystem\", \"network\"]",
+        );
         assert!(parse_and_validate(&ok).is_ok());
     }
 
     #[test]
     fn invalid_permission_is_rejected() {
-        let bad = valid_toml().replace("permissions = [\"network\"]", "permissions = [\"telepathy\"]");
+        let bad = valid_toml().replace(
+            "permissions = [\"network\"]",
+            "permissions = [\"telepathy\"]",
+        );
         let err = parse_and_validate(&bad).unwrap_err();
         assert!(err.contains("telepathy"), "got: {err}");
     }
@@ -365,19 +372,13 @@ lockfile = "uv.lock"
         // end — appending after [dependencies] would land inside that table
         // (the same textual-nesting quirk as the golden §6.4 example) and
         // never reach `Manifest::os` at all.
-        let ok = valid_toml().replace(
-            "[author]",
-            "os = [\"linux\", \"macos\"]\n\n[author]",
-        );
+        let ok = valid_toml().replace("[author]", "os = [\"linux\", \"macos\"]\n\n[author]");
         assert!(parse_and_validate(&ok).is_ok());
     }
 
     #[test]
     fn unrecognized_os_is_rejected() {
-        let bad = valid_toml().replace(
-            "[author]",
-            "os = [\"amigaos\"]\n\n[author]",
-        );
+        let bad = valid_toml().replace("[author]", "os = [\"amigaos\"]\n\n[author]");
         let err = parse_and_validate(&bad).unwrap_err();
         assert!(err.contains("amigaos"), "got: {err}");
     }
@@ -390,8 +391,10 @@ lockfile = "uv.lock"
 
     #[test]
     fn unrecognized_feature_produces_warning_not_error() {
-        let with_bad_feature =
-            valid_toml().replace("features = [\"tools\"]", "features = [\"tools\", \"telekinesis\"]");
+        let with_bad_feature = valid_toml().replace(
+            "features = [\"tools\"]",
+            "features = [\"tools\", \"telekinesis\"]",
+        );
         let warnings = parse_and_validate(&with_bad_feature).expect("must not be a hard error");
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].to_string().contains("telekinesis"));
@@ -509,9 +512,15 @@ max_tokens = 4096
             manifest.environment.get("SERPAPI_KEY").map(|v| v.required),
             Some(true)
         );
-        assert_eq!(manifest.commands.get("test").map(String::as_str), Some("pytest"));
         assert_eq!(
-            manifest.config.get("max_tokens").and_then(|v| v.as_integer()),
+            manifest.commands.get("test").map(String::as_str),
+            Some("pytest")
+        );
+        assert_eq!(
+            manifest
+                .config
+                .get("max_tokens")
+                .and_then(|v| v.as_integer()),
             Some(4096)
         );
     }

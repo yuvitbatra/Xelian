@@ -48,7 +48,11 @@ manifest = "pyproject.toml"
     write_file(dir, "README.md", "# test\n");
     write_file(dir, "LICENSE", "MIT License\n");
     write_file(dir, "src/main.py", "print('hi')\n");
-    write_file(dir, "pyproject.toml", "[project]\nname = \"x\"\nversion = \"0.1.0\"\n");
+    write_file(
+        dir,
+        "pyproject.toml",
+        "[project]\nname = \"x\"\nversion = \"0.1.0\"\n",
+    );
 }
 
 /// Spawn `xelian run <archive>` with `HOME` pointed at `home_dir` on the
@@ -85,13 +89,18 @@ fn run_local_archive_extracts_and_prepares_the_package() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("my-agent"), "stderr:\n{stderr}");
     assert!(stderr.contains("1.0.0"), "stderr:\n{stderr}");
-    assert!(stdout.contains("hi"), "the agent entrypoint should have run and printed 'hi':\n{stdout}");
+    assert!(
+        stdout.contains("hi"),
+        "the agent entrypoint should have run and printed 'hi':\n{stdout}"
+    );
     assert!(
         !stdout.contains("prepared"),
         "xelian diagnostics must not pollute stdout:\n{stdout}"
     );
 
-    let extracted = home_dir.path().join(".xelian/packages/local/my-agent/1.0.0");
+    let extracted = home_dir
+        .path()
+        .join(".xelian/packages/local/my-agent/1.0.0");
     assert!(extracted.join("xelian.toml").is_file());
     assert!(extracted.join("src/main.py").is_file());
     assert!(extracted.join("README.md").is_file());
@@ -132,8 +141,13 @@ fn corrupted_checksum_aborts_before_extraction() {
         "stderr should mention the checksum mismatch:\n{stderr}"
     );
 
-    let extracted = home_dir.path().join(".xelian/packages/local/bad-agent/1.0.0");
-    assert!(!extracted.exists(), "nothing should be extracted on checksum mismatch");
+    let extracted = home_dir
+        .path()
+        .join(".xelian/packages/local/bad-agent/1.0.0");
+    assert!(
+        !extracted.exists(),
+        "nothing should be extracted on checksum mismatch"
+    );
 }
 
 #[test]
@@ -153,7 +167,10 @@ fn second_identical_run_reuses_the_cache() {
         String::from_utf8_lossy(&first.stderr)
     );
     let first_stderr = String::from_utf8_lossy(&first.stderr);
-    assert!(!first_stderr.contains("cached"), "first run must not be a cache hit:\n{first_stderr}");
+    assert!(
+        !first_stderr.contains("cached"),
+        "first run must not be a cache hit:\n{first_stderr}"
+    );
 
     let second = run_xelian_with_home(&outcome.archive_path, home_dir.path());
     assert!(
@@ -167,7 +184,9 @@ fn second_identical_run_reuses_the_cache() {
         "second run should report cache reuse:\n{second_stderr}"
     );
 
-    let extracted = home_dir.path().join(".xelian/packages/local/cache-agent/1.0.0");
+    let extracted = home_dir
+        .path()
+        .join(".xelian/packages/local/cache-agent/1.0.0");
     assert!(extracted.join("xelian.toml").is_file());
 }
 

@@ -254,7 +254,10 @@ mod tests {
 
         let err = extract_entries(&entries, &dest, &staging_root).unwrap_err();
         assert!(matches!(err, ExtractError::UnsafePath { .. }));
-        assert!(!dest.exists(), "destination must not be created on rejection");
+        assert!(
+            !dest.exists(),
+            "destination must not be created on rejection"
+        );
         // Nothing should have escaped above the tempdir either.
         assert!(!tmp.path().join("escape.txt").exists());
     }
@@ -276,7 +279,12 @@ mod tests {
     fn extract_entries_happy_path_writes_files_and_renames_into_dest() {
         let tmp = tempdir().unwrap();
         let staging_root = tmp.path().join("tmp");
-        let dest = tmp.path().join("packages").join("local").join("pkg").join("1.0.0");
+        let dest = tmp
+            .path()
+            .join("packages")
+            .join("local")
+            .join("pkg")
+            .join("1.0.0");
 
         let entries = vec![
             ("xelian.toml".to_string(), b"name = \"pkg\"".to_vec(), 0o644),
@@ -285,18 +293,27 @@ mod tests {
 
         let concurrent_win =
             extract_entries(&entries, &dest, &staging_root).expect("should succeed");
-        assert!(!concurrent_win, "uncontested extraction is not a concurrent-win");
+        assert!(
+            !concurrent_win,
+            "uncontested extraction is not a concurrent-win"
+        );
 
         assert!(dest.join("xelian.toml").is_file());
         assert!(dest.join("src/main.py").is_file());
-        assert_eq!(fs::read(dest.join("xelian.toml")).unwrap(), b"name = \"pkg\"");
+        assert_eq!(
+            fs::read(dest.join("xelian.toml")).unwrap(),
+            b"name = \"pkg\""
+        );
 
         // The staging directory itself should be gone (renamed away), not
         // left behind as extra clutter under tmp/.
         let leftover: Vec<_> = fs::read_dir(&staging_root)
             .map(|rd| rd.filter_map(|e| e.ok()).collect())
             .unwrap_or_default();
-        assert!(leftover.is_empty(), "staging dir should be empty after rename, got: {leftover:?}");
+        assert!(
+            leftover.is_empty(),
+            "staging dir should be empty after rename, got: {leftover:?}"
+        );
     }
 
     #[cfg(unix)]
@@ -309,18 +326,32 @@ mod tests {
         let dest = tmp.path().join("dest");
 
         let entries = vec![
-            ("run.sh".to_string(), b"#!/bin/sh\necho hi\n".to_vec(), 0o755),
+            (
+                "run.sh".to_string(),
+                b"#!/bin/sh\necho hi\n".to_vec(),
+                0o755,
+            ),
             ("README.md".to_string(), b"# hi\n".to_vec(), 0o644),
         ];
 
         extract_entries(&entries, &dest, &staging_root).expect("should succeed");
 
-        let script_mode = fs::metadata(dest.join("run.sh")).unwrap().permissions().mode();
-        assert_ne!(script_mode & 0o111, 0, "execute bit should be set, got mode {script_mode:o}");
+        let script_mode = fs::metadata(dest.join("run.sh"))
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_ne!(
+            script_mode & 0o111,
+            0,
+            "execute bit should be set, got mode {script_mode:o}"
+        );
 
         // A non-executable entry must not be granted the bit just because
         // some other entry in the same archive had it.
-        let readme_mode = fs::metadata(dest.join("README.md")).unwrap().permissions().mode();
+        let readme_mode = fs::metadata(dest.join("README.md"))
+            .unwrap()
+            .permissions()
+            .mode();
         assert_eq!(
             readme_mode & 0o111,
             0,
@@ -337,13 +368,20 @@ mod tests {
         // Simulate another process having already won the race: `dest`
         // exists and is non-empty by the time our `rename` runs.
         fs::create_dir_all(&dest).unwrap();
-        fs::write(dest.join("winner.txt"), b"already extracted by someone else").unwrap();
+        fs::write(
+            dest.join("winner.txt"),
+            b"already extracted by someone else",
+        )
+        .unwrap();
 
         let entries = vec![("xelian.toml".to_string(), b"name = \"pkg\"".to_vec(), 0o644)];
 
         let concurrent_win = extract_entries(&entries, &dest, &staging_root)
             .expect("a rename race onto a non-empty dest must not be a hard error");
-        assert!(concurrent_win, "should be reported as a concurrent-win cache hit");
+        assert!(
+            concurrent_win,
+            "should be reported as a concurrent-win cache hit"
+        );
 
         // The winner's content must be left completely untouched.
         assert!(dest.join("winner.txt").is_file());
@@ -353,6 +391,9 @@ mod tests {
         let leftover: Vec<_> = fs::read_dir(&staging_root)
             .map(|rd| rd.filter_map(|e| e.ok()).collect())
             .unwrap_or_default();
-        assert!(leftover.is_empty(), "staging dir should be cleaned up, got: {leftover:?}");
+        assert!(
+            leftover.is_empty(),
+            "staging dir should be cleaned up, got: {leftover:?}"
+        );
     }
 }

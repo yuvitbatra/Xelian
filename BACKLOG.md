@@ -411,12 +411,20 @@
 
 ## Phase 19 — Website (read-only)
 
-- [ ] **H-190 — Next.js app + registry API client**
+> Done 2026-07-19, extended by owner decision to include accounts and
+> publishing through the same public API (§14.9 respected — the site has no
+> privileged path; it calls the exact endpoints the CLI uses). Registry
+> gained `POST /auth/signup` (scrypt-hashed passwords, disk-persisted hashed
+> tokens, no more admin/admin default) and public `GET /packages` for the
+> browse surface. Verified end-to-end with a headless browser: CLI push →
+> site shows package; UI signup/login → website publish → 409 on duplicate.
+
+- [x] **H-190 — Next.js app + registry API client**
   - Difficulty: M · Duration: 5h · Deps: H-132, H-133
   - Acceptance: site reads the registry API read-only (§14.9); no write path
     beyond the public API (§14.9).
 
-- [ ] **H-191 — Browse/search + package page**
+- [x] **H-191 — Browse/search + package page**
   - Difficulty: L · Duration: 6h · Deps: H-190
   - Acceptance: lists/searches published packages; a package page renders README
     and metadata (§14.2), including declared permissions (§16.3) and features
@@ -439,7 +447,26 @@
 
 ## Phase 20 — Rename & repo foundation
 
-- [ ] **H-200 — Project rename decision + asset grab**
+> Code-side complete 2026-07-19. Decision of record: the project is renamed
+> **Xelian** (resolves the CNCF Harbor collision; see
+> docs/superpowers/specs/2026-07-19-xelian-rename-website-design.md). Binary
+> `xelian`, crates `xelian-cli`/`xelian-core`, `xelian.toml`/`xelian.lock`,
+> `.xelian` archives, `~/.xelian`, `XELIAN_*` env vars, SDK package `xelian`.
+>
+> **Remaining owner-only actions (cannot be done from this machine):**
+> - [ ] Claim GitHub org/repo `xelian`, PyPI `xelian`, crates.io `xelian`,
+>       Homebrew formula name; confirm availability first.
+> - [ ] Claim the domain (GitHub Student Pack Namecheap `.me`, fallback
+>       `is-a.dev`/`eu.org`) BEFORE the first release (H-225 compiles the
+>       registry URL into every binary).
+> - [ ] Record the ≤30s install→run→chat GIF (asciinema + agg; placeholder
+>       marked in README.md) .
+> - [ ] Enable GitHub Discussions; set repo description + topics
+>       (mcp, ai-agents, registry, ollama, rust); add CI badges once
+>       Phase 21 workflows exist.
+
+- [x] **H-200 — Project rename decision + asset grab** *(code/docs done;
+  name/domain claiming = owner actions above)*
   - Difficulty: S · Duration: 3h · Deps: none — **gates every public artifact;
     do first**
   - Acceptance: name collision with CNCF Harbor (goharbor.io — a famous
@@ -456,7 +483,8 @@
     installs (a domain you own can redirect forever; a host subdomain you
     don't control cannot).
 
-- [ ] **H-201 — Great README**
+- [x] **H-201 — Great README** *(GIF recording + CI badges pending on owner
+  actions / Phase 21)*
   - Difficulty: M · Duration: 5h · Deps: H-200
   - Acceptance: README has (top to bottom): one-line pitch, a ≤30s terminal
     GIF/asciinema of install→run→chat, a 3-command quickstart that works on a
@@ -464,7 +492,8 @@
     package-format overview linking SPEC.md, CI/release badges. A stranger can
     go from zero to a running agent using only the README.
 
-- [ ] **H-202 — Repo hygiene for open source**
+- [x] **H-202 — Repo hygiene for open source** *(Discussions/topics are
+  GitHub-side owner actions above)*
   - Difficulty: S · Duration: 3h · Deps: H-200
   - Acceptance: LICENSE (MIT or Apache-2.0) at root and in both Python
     packages; CONTRIBUTING.md (build/test instructions); SECURITY.md (report

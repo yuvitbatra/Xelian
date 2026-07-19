@@ -33,26 +33,41 @@ fn init_creates_both_files_and_exits_zero() {
 fn init_twice_without_force_fails_and_leaves_files_untouched() {
     let tmp = tempfile::tempdir().expect("create tempdir");
 
-    let first = xelian_in(tmp.path()).arg("init").output().expect("first init");
+    let first = xelian_in(tmp.path())
+        .arg("init")
+        .output()
+        .expect("first init");
     assert!(first.status.success());
 
     let manifest_path = tmp.path().join("xelian.toml");
     let before = std::fs::read_to_string(&manifest_path).unwrap();
 
-    let second = xelian_in(tmp.path()).arg("init").output().expect("second init");
-    assert!(!second.status.success(), "second init should fail without --force");
+    let second = xelian_in(tmp.path())
+        .arg("init")
+        .output()
+        .expect("second init");
+    assert!(
+        !second.status.success(),
+        "second init should fail without --force"
+    );
     let stderr = String::from_utf8_lossy(&second.stderr);
     assert!(stderr.contains("--force"), "stderr:\n{stderr}");
 
     let after = std::fs::read_to_string(&manifest_path).unwrap();
-    assert_eq!(before, after, "xelian.toml must be untouched on failed re-init");
+    assert_eq!(
+        before, after,
+        "xelian.toml must be untouched on failed re-init"
+    );
 }
 
 #[test]
 fn init_force_overwrites_existing_files() {
     let tmp = tempfile::tempdir().expect("create tempdir");
 
-    let first = xelian_in(tmp.path()).arg("init").output().expect("first init");
+    let first = xelian_in(tmp.path())
+        .arg("init")
+        .output()
+        .expect("first init");
     assert!(first.status.success());
 
     // Corrupt both generated files to prove --force actually rewrites them.

@@ -1,11 +1,11 @@
 //! Language runtime managers and dependency installation (SPEC.md §10).
 
+use crate::cache::XelianHome;
+use crate::manifest::{Language, Manifest};
+use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use thiserror::Error;
-use sha2::{Digest, Sha256};
-use crate::cache::XelianHome;
-use crate::manifest::{Language, Manifest};
 
 /// Errors that can occur during language runtime provisioning and dependency installation.
 #[derive(Debug, Error)]
@@ -190,7 +190,10 @@ impl PythonRuntimeManager {
 
     /// Download and run the Astral `uv` installer.
     fn install_uv(&self, home: &XelianHome) -> Result<PathBuf, RuntimeError> {
-        eprintln!("uv not found. Installing uv automatically under {}...", home.runtimes().join("bin").display());
+        eprintln!(
+            "uv not found. Installing uv automatically under {}...",
+            home.runtimes().join("bin").display()
+        );
 
         std::fs::create_dir_all(home.runtimes().join("bin"))?;
         std::fs::create_dir_all(home.tmp())?;
@@ -217,11 +220,15 @@ impl PythonRuntimeManager {
         // Verify it exists now
         let local_uv = home.runtimes().join("bin").join("uv");
         if !local_uv.is_file() {
-            return Err(RuntimeError::Process("uv install completed but binary not found".to_string()));
+            return Err(RuntimeError::Process(
+                "uv install completed but binary not found".to_string(),
+            ));
         }
 
         if !self.check_uv_executable(&local_uv) {
-            return Err(RuntimeError::Process("Installed uv is not executable or failed to run".to_string()));
+            return Err(RuntimeError::Process(
+                "Installed uv is not executable or failed to run".to_string(),
+            ));
         }
 
         // Clean up installer script
@@ -232,14 +239,21 @@ impl PythonRuntimeManager {
 }
 
 impl RuntimeManager for PythonRuntimeManager {
-    fn ensure_runtime(&self, home: &XelianHome, _constraint: &str) -> Result<PathBuf, RuntimeError> {
+    fn ensure_runtime(
+        &self,
+        home: &XelianHome,
+        _constraint: &str,
+    ) -> Result<PathBuf, RuntimeError> {
         let uv_path = match self.find_uv(home) {
             Some(path) => path,
             None => self.install_uv(home)?,
         };
 
-        let bin_dir = uv_path.parent()
-            .ok_or_else(|| RuntimeError::Process("Invalid uv path: no parent directory".to_string()))?
+        let bin_dir = uv_path
+            .parent()
+            .ok_or_else(|| {
+                RuntimeError::Process("Invalid uv path: no parent directory".to_string())
+            })?
             .to_path_buf();
         Ok(bin_dir)
     }
@@ -278,7 +292,10 @@ impl RuntimeManager for PythonRuntimeManager {
             std::fs::create_dir_all(env_dir)?;
 
             // 1. Create the virtual environment using `uv venv` directly in target location.
-            eprintln!("Creating Python virtual environment in {}...", env_dir.display());
+            eprintln!(
+                "Creating Python virtual environment in {}...",
+                env_dir.display()
+            );
             let mut venv_cmd = Command::new(&uv_path);
             venv_cmd
                 .arg("venv")
@@ -459,7 +476,9 @@ impl NodeRuntimeManager {
         } else if cfg!(target_os = "linux") {
             "linux"
         } else {
-            return Err(RuntimeError::Validation("Unsupported OS for Node.js auto-installation".to_string()));
+            return Err(RuntimeError::Validation(
+                "Unsupported OS for Node.js auto-installation".to_string(),
+            ));
         };
 
         let arch = if cfg!(target_arch = "x86_64") {
@@ -467,7 +486,9 @@ impl NodeRuntimeManager {
         } else if cfg!(target_arch = "aarch64") {
             "arm64"
         } else {
-            return Err(RuntimeError::Validation("Unsupported architecture for Node.js auto-installation".to_string()));
+            return Err(RuntimeError::Validation(
+                "Unsupported architecture for Node.js auto-installation".to_string(),
+            ));
         };
 
         Ok((os, arch))
@@ -479,11 +500,14 @@ impl NodeRuntimeManager {
         cmd.arg("-sSf").arg("https://nodejs.org/dist/index.json");
         let output = cmd.output().map_err(RuntimeError::Io)?;
         if !output.status.success() {
-            return Err(RuntimeError::Network("Failed to fetch Node.js releases index".to_string()));
+            return Err(RuntimeError::Network(
+                "Failed to fetch Node.js releases index".to_string(),
+            ));
         }
         let json_str = String::from_utf8_lossy(&output.stdout);
-        let releases: Vec<NodeRelease> = serde_json::from_str(&json_str)
-            .map_err(|e| RuntimeError::Network(format!("Failed to parse Node.js releases JSON: {}", e)))?;
+        let releases: Vec<NodeRelease> = serde_json::from_str(&json_str).map_err(|e| {
+            RuntimeError::Network(format!("Failed to parse Node.js releases JSON: {}", e))
+        })?;
         Ok(releases)
     }
 
@@ -551,7 +575,7 @@ impl NodeRuntimeManager {
         let tar_file = std::fs::File::open(&tmp_archive)?;
         let tar_decoder = flate2::read::GzDecoder::new(tar_file);
         let mut archive = tar::Archive::new(tar_decoder);
-        
+
         let extract_dest = home.runtimes().join("node");
         archive.unpack(&extract_dest)?;
 
@@ -570,7 +594,9 @@ impl NodeRuntimeManager {
 
         let bin_dir = final_folder.join("bin");
         if !bin_dir.join("node").is_file() {
-            return Err(RuntimeError::Process("Node.js binary not found after extraction".to_string()));
+            return Err(RuntimeError::Process(
+                "Node.js binary not found after extraction".to_string(),
+            ));
         }
 
         Ok(bin_dir)
@@ -580,12 +606,11 @@ impl NodeRuntimeManager {
 impl RuntimeManager for NodeRuntimeManager {
     fn ensure_runtime(&self, home: &XelianHome, constraint: &str) -> Result<PathBuf, RuntimeError> {
         self.validate_constraint_syntax(constraint)?;
-        let req = semver::VersionReq::parse(constraint).map_err(|e| {
-            RuntimeError::InvalidConstraint {
+        let req =
+            semver::VersionReq::parse(constraint).map_err(|e| RuntimeError::InvalidConstraint {
                 constraint: constraint.to_string(),
                 err: e.to_string(),
-            }
-        })?;
+            })?;
 
         // 1. Check system node
         if let Some(bin_dir) = self.find_system_node(&req) {
@@ -617,8 +642,8 @@ impl RuntimeManager for NodeRuntimeManager {
             matched_version = self.match_version(&req, &fallback_list);
         }
 
-        let version = matched_version.ok_or_else(|| {
-            RuntimeError::NoSatisfyingVersion { constraint: constraint.to_string() }
+        let version = matched_version.ok_or_else(|| RuntimeError::NoSatisfyingVersion {
+            constraint: constraint.to_string(),
         })?;
 
         // 5. Check if matching version is already cached
@@ -655,7 +680,9 @@ impl RuntimeManager for NodeRuntimeManager {
 
         // Staging directory to avoid half-complete states
         let rand_val = chrono::Utc::now().timestamp_millis();
-        let stage_dir = home.tmp().join(format!("node-stage-{}-{}", manifest.name, rand_val));
+        let stage_dir = home
+            .tmp()
+            .join(format!("node-stage-{}-{}", manifest.name, rand_val));
         if stage_dir.exists() {
             std::fs::remove_dir_all(&stage_dir)?;
         }
@@ -691,9 +718,8 @@ impl RuntimeManager for NodeRuntimeManager {
             if let Some(old_path) = std::env::var_os("PATH") {
                 let mut new_paths = vec![bin_dir.to_path_buf()];
                 new_paths.extend(std::env::split_paths(&old_path));
-                let new_path_os = std::env::join_paths(new_paths).map_err(|e| {
-                    RuntimeError::Process(format!("Failed to build PATH: {}", e))
-                })?;
+                let new_path_os = std::env::join_paths(new_paths)
+                    .map_err(|e| RuntimeError::Process(format!("Failed to build PATH: {}", e)))?;
                 npm_cmd.env("PATH", new_path_os);
             } else {
                 npm_cmd.env("PATH", bin_dir);
@@ -758,7 +784,11 @@ mod tests {
     struct MockRustRuntimeManager;
 
     impl RuntimeManager for MockRustRuntimeManager {
-        fn ensure_runtime(&self, _home: &XelianHome, _constraint: &str) -> Result<PathBuf, RuntimeError> {
+        fn ensure_runtime(
+            &self,
+            _home: &XelianHome,
+            _constraint: &str,
+        ) -> Result<PathBuf, RuntimeError> {
             Ok(PathBuf::from("/mock/rust/bin"))
         }
 
@@ -798,7 +828,11 @@ mod tests {
     fn test_node_version_matching() {
         let mgr = NodeRuntimeManager;
         let req = semver::VersionReq::parse(">=18").unwrap();
-        let list = vec!["v16.0.0".to_string(), "v18.5.0".to_string(), "v20.11.1".to_string()];
+        let list = vec![
+            "v16.0.0".to_string(),
+            "v18.5.0".to_string(),
+            "v20.11.1".to_string(),
+        ];
         let matched = mgr.match_version(&req, &list);
         assert_eq!(matched, Some("v20.11.1".to_string()));
 
@@ -839,4 +873,3 @@ mod tests {
         assert!(symlink_metadata.file_type().is_symlink());
     }
 }
-

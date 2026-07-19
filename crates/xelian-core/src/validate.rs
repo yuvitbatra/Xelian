@@ -161,7 +161,8 @@ pub fn validate_and_build(root: &Path, out: Option<&Path>) -> Result<BuildOutcom
     // `lockfile::generate` computes the package-checksum internally (over
     // `files`, which already excludes any `xelian.lock` entry by name) and
     // returns a fully-populated Lockfile.
-    let lock = lockfile::generate(&manifest, root, &files).map_err(ValidateError::LockfileGenerate)?;
+    let lock =
+        lockfile::generate(&manifest, root, &files).map_err(ValidateError::LockfileGenerate)?;
     let lock_toml = lock
         .to_toml_string()
         .map_err(ValidateError::LockfileGenerate)?;
@@ -186,7 +187,9 @@ pub fn validate_and_build(root: &Path, out: Option<&Path>) -> Result<BuildOutcom
     // --- Step 8: build the archive, via a temp file + rename so a failure
     // never leaves a partial archive at the final path. ---
     let archive_name = format!("{}-{}.xelian", manifest.name, manifest.version);
-    let final_path = out.map(PathBuf::from).unwrap_or_else(|| root.join(&archive_name));
+    let final_path = out
+        .map(PathBuf::from)
+        .unwrap_or_else(|| root.join(&archive_name));
     let tmp_path = final_path.with_extension("xelian.tmp");
 
     if let Err(e) = package::build_archive(root, &files, &tmp_path) {
@@ -270,7 +273,10 @@ manifest = "pyproject.toml"
         let lock_str = fs::read_to_string(dir.path().join("xelian.lock")).unwrap();
         let lock = Lockfile::from_toml_str(&lock_str).unwrap();
         assert!(lock.package_checksum.is_some());
-        assert_eq!(lock.package_checksum, Some(outcome.package_checksum.clone()));
+        assert_eq!(
+            lock.package_checksum,
+            Some(outcome.package_checksum.clone())
+        );
     }
 
     #[test]
@@ -387,7 +393,10 @@ manifest = "pyproject.toml"
         assert!(names.contains(&"LICENSE".to_string()));
         assert!(names.contains(&"src/main.py".to_string()));
         assert!(!names.contains(&"secret.txt".to_string()), "got: {names:?}");
-        assert!(!names.iter().any(|n| n.ends_with(".xelian")), "got: {names:?}");
+        assert!(
+            !names.iter().any(|n| n.ends_with(".xelian")),
+            "got: {names:?}"
+        );
     }
 
     #[test]
@@ -409,6 +418,9 @@ manifest = "pyproject.toml"
             .unwrap()
             .map(|e| e.unwrap().path().unwrap().to_string_lossy().into_owned())
             .collect();
-        assert!(!names.iter().any(|n| n.ends_with(".xelian")), "got: {names:?}");
+        assert!(
+            !names.iter().any(|n| n.ends_with(".xelian")),
+            "got: {names:?}"
+        );
     }
 }

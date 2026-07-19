@@ -46,8 +46,7 @@ struct Grants {
 
 impl Grants {
     fn is_decided(&self, permission: &str) -> bool {
-        self.granted.iter().any(|p| p == permission)
-            || self.denied.iter().any(|p| p == permission)
+        self.granted.iter().any(|p| p == permission) || self.denied.iter().any(|p| p == permission)
     }
 }
 

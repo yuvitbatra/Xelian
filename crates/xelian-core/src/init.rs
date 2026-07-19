@@ -126,7 +126,9 @@ pub fn init_package(dir: &Path, force: bool) -> Result<InitOutcome, InitError> {
 
     if !force {
         if manifest_path.exists() {
-            return Err(InitError::AlreadyExists { path: manifest_path });
+            return Err(InitError::AlreadyExists {
+                path: manifest_path,
+            });
         }
         if lockfile_path.exists() {
             return Err(InitError::AlreadyExists {
@@ -148,7 +150,8 @@ pub fn init_package(dir: &Path, force: bool) -> Result<InitOutcome, InitError> {
     // the user's input.
     let manifest = Manifest::from_toml_str(&manifest_toml)
         .map_err(|e| InitError::InvalidSkeleton(e.to_string()))?;
-    manifest::validate_manifest(&manifest).map_err(|e| InitError::InvalidSkeleton(e.to_string()))?;
+    manifest::validate_manifest(&manifest)
+        .map_err(|e| InitError::InvalidSkeleton(e.to_string()))?;
 
     let lock = lockfile::skeleton(&manifest);
     let lock_toml = lock
@@ -201,9 +204,10 @@ mod tests {
         assert!(outcome.lockfile_path.is_file());
 
         let manifest_str = std::fs::read_to_string(&outcome.manifest_path).unwrap();
-        let manifest = Manifest::from_toml_str(&manifest_str).expect("generated manifest must parse");
-        let warnings =
-            manifest::validate_manifest(&manifest).expect("generated manifest must validate with 0 errors");
+        let manifest =
+            Manifest::from_toml_str(&manifest_str).expect("generated manifest must parse");
+        let warnings = manifest::validate_manifest(&manifest)
+            .expect("generated manifest must validate with 0 errors");
         assert!(warnings.is_empty());
         assert_eq!(manifest.name, "weather");
     }
@@ -218,8 +222,10 @@ mod tests {
         assert_eq!(outcome.name, PLACEHOLDER_NAME);
 
         let manifest_str = std::fs::read_to_string(&outcome.manifest_path).unwrap();
-        let manifest = Manifest::from_toml_str(&manifest_str).expect("generated manifest must parse");
-        manifest::validate_manifest(&manifest).expect("generated manifest must validate with 0 errors");
+        let manifest =
+            Manifest::from_toml_str(&manifest_str).expect("generated manifest must parse");
+        manifest::validate_manifest(&manifest)
+            .expect("generated manifest must validate with 0 errors");
         assert_eq!(manifest.name, "my-package");
     }
 
@@ -241,7 +247,10 @@ mod tests {
         assert!(matches!(err, InitError::AlreadyExists { .. }));
 
         let contents = std::fs::read_to_string(&manifest_path).unwrap();
-        assert_eq!(contents, "custom content", "existing xelian.toml must be untouched");
+        assert_eq!(
+            contents, "custom content",
+            "existing xelian.toml must be untouched"
+        );
         assert!(
             !dir.join("xelian.lock").exists(),
             "xelian.lock must not be created when the guard trips"

@@ -193,7 +193,11 @@ impl XelianHome {
     ///
     /// Does not create anything on disk.
     pub fn github_package_dir(&self, owner: &str, repo: &str, sha: &str) -> PathBuf {
-        self.packages().join("github").join(owner).join(repo).join(sha)
+        self.packages()
+            .join("github")
+            .join(owner)
+            .join(repo)
+            .join(sha)
     }
 
     /// The on-disk directory for the isolated environment of a package
@@ -302,10 +306,7 @@ pub fn list_cached_packages(home: &XelianHome) -> io::Result<Vec<CachedPackage>>
             if !name_path.is_dir() {
                 continue;
             }
-            let name = name_entry
-                .file_name()
-                .to_string_lossy()
-                .into_owned();
+            let name = name_entry.file_name().to_string_lossy().into_owned();
             for ver_entry in fs::read_dir(&name_path)? {
                 let ver_entry = ver_entry?;
                 let ver_path = ver_entry.path();
@@ -315,10 +316,7 @@ pub fn list_cached_packages(home: &XelianHome) -> io::Result<Vec<CachedPackage>>
                 if !ver_path.join("xelian.toml").is_file() {
                     continue;
                 }
-                let version = ver_entry
-                    .file_name()
-                    .to_string_lossy()
-                    .into_owned();
+                let version = ver_entry.file_name().to_string_lossy().into_owned();
                 let env_path = home.local_env_dir(&name, &version);
                 packages.push(CachedPackage {
                     source: PackageSource::Local,
@@ -401,7 +399,12 @@ pub fn list_cached_packages(home: &XelianHome) -> io::Result<Vec<CachedPackage>>
                         continue;
                     }
                     let version = ver_entry.file_name().to_string_lossy().into_owned();
-                    let env_path = home.envs().join("registry").join(&owner).join(&name).join(&version);
+                    let env_path = home
+                        .envs()
+                        .join("registry")
+                        .join(&owner)
+                        .join(&name)
+                        .join(&version);
                     let name_clone = name.clone();
                     packages.push(CachedPackage {
                         source: PackageSource::Registry {
@@ -670,7 +673,9 @@ mod tests {
 
         assert_eq!(
             home.github_package_dir("octocat", "hello-world", &sha),
-            Path::new(&format!("/fake/root/packages/github/octocat/hello-world/{sha}"))
+            Path::new(&format!(
+                "/fake/root/packages/github/octocat/hello-world/{sha}"
+            ))
         );
         assert_eq!(
             home.github_env_dir("octocat", "hello-world", &sha),

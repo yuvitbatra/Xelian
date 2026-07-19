@@ -92,7 +92,9 @@ pub fn collect_files(root: &Path) -> Result<Vec<(String, PathBuf)>, PackageError
             continue;
         }
 
-        let rel = path.strip_prefix(root).expect("walk entry must be under root");
+        let rel = path
+            .strip_prefix(root)
+            .expect("walk entry must be under root");
         let archive_path = to_archive_path(rel);
 
         // Always exclude .git/ metadata, regardless of .gitignore contents.
@@ -154,7 +156,11 @@ pub fn build_archive(
         header.set_mtime(0);
         header.set_uid(0);
         header.set_gid(0);
-        header.set_mode(if is_executable(&metadata) { 0o755 } else { 0o644 });
+        header.set_mode(if is_executable(&metadata) {
+            0o755
+        } else {
+            0o644
+        });
         let _ = header.set_username("");
         let _ = header.set_groupname("");
         header.set_cksum();
@@ -211,7 +217,10 @@ mod tests {
 
         assert!(!paths.contains(&"secret.txt".to_string()), "got: {paths:?}");
         assert!(paths.contains(&"keep.txt".to_string()));
-        assert!(paths.contains(&".gitignore".to_string()), ".gitignore itself must be included");
+        assert!(
+            paths.contains(&".gitignore".to_string()),
+            ".gitignore itself must be included"
+        );
     }
 
     #[test]
@@ -230,9 +239,18 @@ mod tests {
         let files = collect_files(dir.path()).unwrap();
         let paths = archive_paths(&files);
 
-        assert!(paths.contains(&"sub/keep.txt".to_string()), "got: {paths:?}");
-        assert!(!paths.contains(&"sub/drop.txt".to_string()), "got: {paths:?}");
-        assert!(!paths.contains(&"sub/noisy.log".to_string()), "got: {paths:?}");
+        assert!(
+            paths.contains(&"sub/keep.txt".to_string()),
+            "got: {paths:?}"
+        );
+        assert!(
+            !paths.contains(&"sub/drop.txt".to_string()),
+            "got: {paths:?}"
+        );
+        assert!(
+            !paths.contains(&"sub/noisy.log".to_string()),
+            "got: {paths:?}"
+        );
         assert!(paths.contains(&"sub/.gitignore".to_string()));
     }
 
@@ -246,7 +264,10 @@ mod tests {
         let files = collect_files(dir.path()).unwrap();
         let paths = archive_paths(&files);
 
-        assert!(paths.iter().all(|p| !p.starts_with(".git/")), "got: {paths:?}");
+        assert!(
+            paths.iter().all(|p| !p.starts_with(".git/")),
+            "got: {paths:?}"
+        );
         assert!(paths.contains(&"README.md".to_string()));
     }
 
@@ -259,7 +280,10 @@ mod tests {
         let files = collect_files(dir.path()).unwrap();
         let paths = archive_paths(&files);
 
-        assert!(!paths.iter().any(|p| p.ends_with(".xelian")), "got: {paths:?}");
+        assert!(
+            !paths.iter().any(|p| p.ends_with(".xelian")),
+            "got: {paths:?}"
+        );
     }
 
     #[test]
@@ -295,7 +319,10 @@ mod tests {
 
         let bytes1 = fs::read(&out1).unwrap();
         let bytes2 = fs::read(&out2).unwrap();
-        assert_eq!(bytes1, bytes2, "archives built from identical inputs must be byte-identical");
+        assert_eq!(
+            bytes1, bytes2,
+            "archives built from identical inputs must be byte-identical"
+        );
     }
 
     #[test]
@@ -319,6 +346,9 @@ mod tests {
             .collect();
         names.sort();
 
-        assert_eq!(names, vec!["README.md".to_string(), "src/main.py".to_string()]);
+        assert_eq!(
+            names,
+            vec!["README.md".to_string(), "src/main.py".to_string()]
+        );
     }
 }

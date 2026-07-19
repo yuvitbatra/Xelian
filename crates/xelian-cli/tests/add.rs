@@ -49,9 +49,13 @@ fn rejects_a_non_github_url_before_any_network_activity() {
 #[test]
 fn rejects_a_non_github_host() {
     let home_dir = tempfile::tempdir().expect("home dir");
-    let output = run_xelian_add_with_home("https://gitlab.com/octocat/hello-world", home_dir.path());
+    let output =
+        run_xelian_add_with_home("https://gitlab.com/octocat/hello-world", home_dir.path());
 
-    assert!(!output.status.success(), "a non-github.com host must be rejected");
+    assert!(
+        !output.status.success(),
+        "a non-github.com host must be rejected"
+    );
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
         stderr.contains("github.com"),
@@ -69,7 +73,10 @@ fn rejects_extra_path_segments_in_the_url() {
         home_dir.path(),
     );
 
-    assert!(!output.status.success(), "extra path segments must be rejected");
+    assert!(
+        !output.status.success(),
+        "extra path segments must be rejected"
+    );
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
         stderr.contains("invalid GitHub repository URL"),
@@ -91,12 +98,18 @@ fn imports_and_runs_a_real_public_repository() {
     // to fail with a clear error — this still exercises resolve → download →
     // detect end-to-end without depending on the repo happening to be a
     // packageable agent.
-    let output = run_xelian_add_with_home("https://github.com/octocat/Hello-World", home_dir.path());
+    let output =
+        run_xelian_add_with_home("https://github.com/octocat/Hello-World", home_dir.path());
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("Resolving"), "stderr:\n{stderr}");
     assert!(stderr.contains("Resolved to commit"), "stderr:\n{stderr}");
 
-    let cache_root = home_dir.path().join(".xelian/packages/github/octocat/Hello-World");
-    assert!(cache_root.is_dir(), "the repo should have been downloaded and cached");
+    let cache_root = home_dir
+        .path()
+        .join(".xelian/packages/github/octocat/Hello-World");
+    assert!(
+        cache_root.is_dir(),
+        "the repo should have been downloaded and cached"
+    );
 }

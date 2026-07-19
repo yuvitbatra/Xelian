@@ -193,19 +193,25 @@ impl RegistryClient {
         let lockfile_bytes = std::fs::read(lockfile_path)?;
 
         // Build multipart form body manually.
-        let boundary = format!("xelian-upload-{}", std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0));
+        let boundary = format!(
+            "xelian-upload-{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        );
         let mut body = Vec::new();
 
         // Text fields.
-        let text_fields = vec![
-            ("owner", owner),
-            ("name", name),
-        ];
+        let text_fields = vec![("owner", owner), ("name", name)];
         for (field_name, field_value) in &text_fields {
-            write_field(&mut body, &boundary, field_name, None, field_value.as_bytes());
+            write_field(
+                &mut body,
+                &boundary,
+                field_name,
+                None,
+                field_value.as_bytes(),
+            );
         }
 
         // Archive file.
@@ -353,9 +359,7 @@ manifest = "pyproject.toml"
                 header.set_uid(0);
                 header.set_gid(0);
                 header.set_cksum();
-                tar_builder
-                    .append_data(&mut header, path, content)
-                    .unwrap();
+                tar_builder.append_data(&mut header, path, content).unwrap();
             };
 
             add_file("xelian.toml", manifest_toml.as_bytes());
@@ -399,13 +403,7 @@ package-checksum = "{checksum}"
         let boundary = "test-boundary-123";
         let mut body = Vec::new();
 
-        write_field(
-            &mut body,
-            boundary,
-            "owner",
-            None,
-            b"testuser",
-        );
+        write_field(&mut body, boundary, "owner", None, b"testuser");
         write_field(
             &mut body,
             boundary,
@@ -418,9 +416,8 @@ package-checksum = "{checksum}"
         let as_str = String::from_utf8(body).unwrap();
         assert!(as_str.contains("--test-boundary-123"));
         assert!(as_str.contains("Content-Disposition: form-data; name=\"owner\""));
-        assert!(as_str.contains(
-            "Content-Disposition: form-data; name=\"archive\"; filename=\"pkg.xelian\""
-        ));
+        assert!(as_str
+            .contains("Content-Disposition: form-data; name=\"archive\"; filename=\"pkg.xelian\""));
         assert!(as_str.contains("Content-Type: application/octet-stream"));
         assert!(as_str.contains("fake-archive-bytes"));
         assert!(as_str.contains("--test-boundary-123--"));

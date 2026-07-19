@@ -149,10 +149,7 @@ fn cmd_push() -> anyhow::Result<()> {
 
     println!(
         "Publishing {}/{} v{} to {} ...",
-        owner,
-        manifest.name,
-        manifest.version,
-        registry_url,
+        owner, manifest.name, manifest.version, registry_url,
     );
 
     let lock_path = cwd.join("xelian.lock");
@@ -201,8 +198,7 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
     home.ensure_layout()?;
 
     // --- H-160: Target-form discrimination (SPEC.md §9.2) ---
-    let run_target = xelian_core::run::parse_run_target(target)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let run_target = xelian_core::run::parse_run_target(target).map_err(|e| anyhow::anyhow!(e))?;
 
     match run_target {
         xelian_core::run::RunTarget::LocalArchive(path) => {
@@ -232,8 +228,12 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
 
             // --- Prepare environment (runtime + deps) ---
             let prepared_env = xelian_core::run::prepare_environment(
-                &prepared.package_dir, &manifest, &home, env_dir,
-            ).map_err(|e| anyhow::anyhow!(e))?;
+                &prepared.package_dir,
+                &manifest,
+                &home,
+                env_dir,
+            )
+            .map_err(|e| anyhow::anyhow!(e))?;
 
             let env_dir = &prepared_env.env_dir;
             let bin_dir = &prepared_env.bin_dir;
@@ -272,20 +272,28 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
             eprintln!("resolving {owner}/{name} from registry at {registry_url} ...");
 
             let client = xelian_core::registry_client::RegistryClient::new(&registry_url);
-            let info = client.fetch_metadata(&owner, &name)
+            let info = client
+                .fetch_metadata(&owner, &name)
                 .map_err(|e| anyhow::anyhow!("failed to resolve {owner}/{name}: {e}"))?;
 
-            let version = info.latest_version
-                .ok_or_else(|| anyhow::anyhow!(
+            let version = info.latest_version.ok_or_else(|| {
+                anyhow::anyhow!(
                     "no resolvable (non-yanked, non-pre-release) version of {owner}/{name}"
-                ))?;
+                )
+            })?;
 
             eprintln!("resolved {owner}/{name} v{version}");
 
             // --- Check cache before downloading (§9.3) ---
             let pkg_dir = home.registry_package_dir(&owner, &name, &version);
             let from_cache = if pkg_dir.join("xelian.toml").is_file() {
-                eprintln!("{}/{} v{} already cached at {}", owner, name, version, pkg_dir.display());
+                eprintln!(
+                    "{}/{} v{} already cached at {}",
+                    owner,
+                    name,
+                    version,
+                    pkg_dir.display()
+                );
                 Some(pkg_dir)
             } else {
                 None
@@ -297,12 +305,18 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                 for warning in &warnings {
                     eprintln!("warning: {warning}");
                 }
-                eprintln!("prepared {}/{} v{} at {} (cached)", owner, name, version, cached_dir.display());
+                eprintln!(
+                    "prepared {}/{} v{} at {} (cached)",
+                    owner,
+                    name,
+                    version,
+                    cached_dir.display()
+                );
 
                 let env_dir = home.registry_env_dir(&owner, &name, &version);
-                let prepared_env = xelian_core::run::prepare_environment(
-                    &cached_dir, &manifest, &home, env_dir,
-                ).map_err(|e| anyhow::anyhow!(e))?;
+                let prepared_env =
+                    xelian_core::run::prepare_environment(&cached_dir, &manifest, &home, env_dir)
+                        .map_err(|e| anyhow::anyhow!(e))?;
 
                 let env_dir = &prepared_env.env_dir;
                 let bin_dir = &prepared_env.bin_dir;
@@ -336,8 +350,12 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                 )
             } else {
                 eprintln!("downloading {}/{} v{} ...", owner, name, version);
-                let archive_bytes = client.download_archive(&owner, &name, &version)
-                    .map_err(|e| anyhow::anyhow!("failed to download {owner}/{name} v{version}: {e}"))?;
+                let archive_bytes =
+                    client
+                        .download_archive(&owner, &name, &version)
+                        .map_err(|e| {
+                            anyhow::anyhow!("failed to download {owner}/{name} v{version}: {e}")
+                        })?;
 
                 let tmp_dir = home.tmp();
                 std::fs::create_dir_all(&tmp_dir)?;
@@ -346,9 +364,9 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                 f.write_all(&archive_bytes)?;
                 f.flush()?;
 
-                let prepared = xelian_core::run::run_registry_archive(
-                    &archive_path, &owner, &name, &home,
-                ).map_err(|e| anyhow::anyhow!(e))?;
+                let prepared =
+                    xelian_core::run::run_registry_archive(&archive_path, &owner, &name, &home)
+                        .map_err(|e| anyhow::anyhow!(e))?;
 
                 let _ = std::fs::remove_file(&archive_path);
 
@@ -357,7 +375,9 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                 }
                 eprintln!(
                     "prepared {}/{} v{} at {}{}",
-                    owner, name, prepared.version,
+                    owner,
+                    name,
+                    prepared.version,
                     prepared.package_dir.display(),
                     if prepared.from_cache { " (cached)" } else { "" },
                 );
@@ -370,8 +390,12 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
 
                 let env_dir = home.registry_env_dir(&owner, &name, &prepared.version);
                 let prepared_env = xelian_core::run::prepare_environment(
-                    &prepared.package_dir, &manifest, &home, env_dir,
-                ).map_err(|e| anyhow::anyhow!(e))?;
+                    &prepared.package_dir,
+                    &manifest,
+                    &home,
+                    env_dir,
+                )
+                .map_err(|e| anyhow::anyhow!(e))?;
 
                 let env_dir = &prepared_env.env_dir;
                 let bin_dir = &prepared_env.bin_dir;
@@ -408,8 +432,8 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
 
         xelian_core::run::RunTarget::GitHubUrl(url) => {
             eprintln!("importing {url} ...");
-            let outcome = xelian_core::github::import_github(&url, &home)
-                .map_err(|e| anyhow::anyhow!(e))?;
+            let outcome =
+                xelian_core::github::import_github(&url, &home).map_err(|e| anyhow::anyhow!(e))?;
 
             let (manifest, warnings) = xelian_core::run::validate_extracted(&outcome.package_dir)
                 .map_err(|e| anyhow::anyhow!(e))?;
@@ -429,10 +453,15 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                 cached_suffix
             );
 
-            let env_dir = home.github_env_dir(&outcome.repo.owner, &outcome.repo.repo, &outcome.sha);
+            let env_dir =
+                home.github_env_dir(&outcome.repo.owner, &outcome.repo.repo, &outcome.sha);
             let prepared_env = xelian_core::run::prepare_environment(
-                &outcome.package_dir, &manifest, &home, env_dir,
-            ).map_err(|e| anyhow::anyhow!(e))?;
+                &outcome.package_dir,
+                &manifest,
+                &home,
+                env_dir,
+            )
+            .map_err(|e| anyhow::anyhow!(e))?;
 
             let env_dir = &prepared_env.env_dir;
             let bin_dir = &prepared_env.bin_dir;
@@ -451,7 +480,8 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                 return Ok(());
             }
 
-            let grants_path = home.github_grants_path(&outcome.repo.owner, &outcome.repo.repo, &outcome.sha);
+            let grants_path =
+                home.github_grants_path(&outcome.repo.owner, &outcome.repo.repo, &outcome.sha);
 
             prepare_env_and_launch_inner(
                 &manifest,
@@ -549,8 +579,8 @@ fn cmd_add(url: &str) -> anyhow::Result<()> {
 
     let outcome = xelian_core::github::import_github(url, &home).map_err(|e| anyhow::anyhow!(e))?;
 
-    let (manifest, warnings) =
-        xelian_core::run::validate_extracted(&outcome.package_dir).map_err(|e| anyhow::anyhow!(e))?;
+    let (manifest, warnings) = xelian_core::run::validate_extracted(&outcome.package_dir)
+        .map_err(|e| anyhow::anyhow!(e))?;
 
     // All of Xelian's own status output goes to stderr: for MCP packages the
     // child inherits Xelian's stdout as the JSON-RPC stdio transport
@@ -571,14 +601,15 @@ fn cmd_add(url: &str) -> anyhow::Result<()> {
     );
 
     let env_dir = home.github_env_dir(&outcome.repo.owner, &outcome.repo.repo, &outcome.sha);
-    let prepared_env = xelian_core::run::prepare_environment(
-        &outcome.package_dir, &manifest, &home, env_dir,
-    ).map_err(|e| anyhow::anyhow!(e))?;
+    let prepared_env =
+        xelian_core::run::prepare_environment(&outcome.package_dir, &manifest, &home, env_dir)
+            .map_err(|e| anyhow::anyhow!(e))?;
 
     let env_dir = &prepared_env.env_dir;
     let bin_dir = &prepared_env.bin_dir;
 
-    let grants_path = home.github_grants_path(&outcome.repo.owner, &outcome.repo.repo, &outcome.sha);
+    let grants_path =
+        home.github_grants_path(&outcome.repo.owner, &outcome.repo.repo, &outcome.sha);
 
     prepare_env_and_launch_inner(
         &manifest,
@@ -620,16 +651,14 @@ fn cmd_rm(target: Option<&str>, remove_env: bool, all: bool) -> anyhow::Result<(
     if all {
         xelian_core::cache::remove_all(&home)
             .map_err(|e| anyhow::anyhow!("failed to clear cache: {e}"))?;
-        println!(
-            "Cleared packages/, envs/, runtimes/, models/ (credentials.toml left intact)."
-        );
+        println!("Cleared packages/, envs/, runtimes/, models/ (credentials.toml left intact).");
         return Ok(());
     }
 
     let target = target.unwrap(); // guaranteed by clap's required_unless_present
-    // `owner/name` addresses registry/github packages; a bare `name` addresses
-    // a local package (built/run from a local `.xelian` path), which has no
-    // owner namespace and is stored under `packages/local/<name>/`.
+                                  // `owner/name` addresses registry/github packages; a bare `name` addresses
+                                  // a local package (built/run from a local `.xelian` path), which has no
+                                  // owner namespace and is stored under `packages/local/<name>/`.
     let outcome = match target.split_once('/') {
         Some((owner, name)) => xelian_core::cache::remove_packages(&home, owner, name, remove_env),
         None => xelian_core::cache::remove_local_packages(&home, target, remove_env),
@@ -664,8 +693,8 @@ fn cmd_login() -> anyhow::Result<()> {
         .context("failed to read username")?;
     let username = username.trim().to_string();
 
-    let password = rpassword::prompt_password("Registry password: ")
-        .context("failed to read password")?;
+    let password =
+        rpassword::prompt_password("Registry password: ").context("failed to read password")?;
 
     let client = xelian_core::registry_client::RegistryClient::new(&registry_url);
 
@@ -706,11 +735,9 @@ fn cmd_logout() -> anyhow::Result<()> {
 
 fn cmd_yank(target: &str, version: &str, undo: bool) -> anyhow::Result<()> {
     let target = target.trim();
-    let (owner, name) = target
-        .split_once('/')
-        .ok_or_else(|| anyhow::anyhow!(
-            "yank target must be in owner/name format, got {target:?}"
-        ))?;
+    let (owner, name) = target.split_once('/').ok_or_else(|| {
+        anyhow::anyhow!("yank target must be in owner/name format, got {target:?}")
+    })?;
 
     let home = xelian_core::cache::XelianHome::resolve()?;
     let registry_url = xelian_core::auth::resolve_registry_url(&home);
@@ -733,10 +760,16 @@ fn cmd_yank(target: &str, version: &str, undo: bool) -> anyhow::Result<()> {
                 RegistryError::Auth(msg) => {
                     anyhow::anyhow!("authentication failed: {msg}")
                 }
-                RegistryError::Api { status: 403, message } => {
+                RegistryError::Api {
+                    status: 403,
+                    message,
+                } => {
                     anyhow::anyhow!("{message}")
                 }
-                RegistryError::Api { status: 404, message } => {
+                RegistryError::Api {
+                    status: 404,
+                    message,
+                } => {
                     anyhow::anyhow!("{message}")
                 }
                 _ => anyhow::anyhow!("failed to {action} {target} v{version}: {e}"),
@@ -754,7 +787,11 @@ fn main() {
     let result = match &cli.command {
         Command::Init { force } => cmd_init(*force),
         Command::Push => cmd_push(),
-        Command::Run { target, install_only, prepare } => cmd_run(target, *install_only, *prepare),
+        Command::Run {
+            target,
+            install_only,
+            prepare,
+        } => cmd_run(target, *install_only, *prepare),
         Command::Add { url } => cmd_add(url),
         Command::List => cmd_list(),
         Command::Rm { target, env, all } => cmd_rm(target.as_deref(), *env, *all),

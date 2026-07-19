@@ -149,7 +149,10 @@ pub enum RunError {
         "this package only supports {declared:?}, but the current operating system is \
          {current:?}; cannot run here"
     )]
-    UnsupportedOs { current: String, declared: Vec<String> },
+    UnsupportedOs {
+        current: String,
+        declared: Vec<String>,
+    },
 
     /// Safe-extraction failure (SPEC.md §9.5): an unsafe path in the
     /// archive, or an I/O failure while staging/renaming.
@@ -170,7 +173,10 @@ pub enum RunError {
         dest = dest.display(),
         packages_root = packages_root.display()
     )]
-    UnsafeDestination { dest: PathBuf, packages_root: PathBuf },
+    UnsafeDestination {
+        dest: PathBuf,
+        packages_root: PathBuf,
+    },
 
     /// Failed to provision language runtime (Phase 6)
     #[error("failed to provision language runtime: {0}")]
@@ -182,8 +188,10 @@ pub enum RunError {
 
     /// The run target could not be parsed as a valid registry reference,
     /// local archive, or GitHub URL (SPEC.md §9.2).
-    #[error("unrecognized run target {target:?}: expected a registry reference (owner/name), \
-             a GitHub URL, or a local .xelian path")]
+    #[error(
+        "unrecognized run target {target:?}: expected a registry reference (owner/name), \
+             a GitHub URL, or a local .xelian path"
+    )]
     InvalidTarget { target: String },
 }
 
@@ -223,7 +231,9 @@ pub fn run_local_archive(archive: &Path, home: &XelianHome) -> Result<Prepared, 
     let (_, lock_bytes, _) = entries
         .iter()
         .find(|(p, _, _)| p == "xelian.lock")
-        .ok_or_else(|| RunError::MissingLockfile { path: archive.to_path_buf() })?;
+        .ok_or_else(|| RunError::MissingLockfile {
+            path: archive.to_path_buf(),
+        })?;
     let lock_str = String::from_utf8_lossy(lock_bytes).into_owned();
     let lock = Lockfile::from_toml_str(&lock_str).map_err(RunError::LockfileParse)?;
 
@@ -235,8 +245,10 @@ pub fn run_local_archive(archive: &Path, home: &XelianHome) -> Result<Prepared, 
     // (it hashes path+contents only, per the checksum convention), so build
     // its expected (path, contents) shape here rather than changing that
     // shared cross-module convention.
-    let checksum_entries: Vec<(String, Vec<u8>)> =
-        entries.iter().map(|(p, c, _)| (p.clone(), c.clone())).collect();
+    let checksum_entries: Vec<(String, Vec<u8>)> = entries
+        .iter()
+        .map(|(p, c, _)| (p.clone(), c.clone()))
+        .collect();
     let actual_checksum = compute_package_checksum_from_bytes(&checksum_entries);
     if actual_checksum != expected_checksum {
         return Err(RunError::ChecksumMismatch {
@@ -249,7 +261,9 @@ pub fn run_local_archive(archive: &Path, home: &XelianHome) -> Result<Prepared, 
     let (_, manifest_bytes, _) = entries
         .iter()
         .find(|(p, _, _)| p == "xelian.toml")
-        .ok_or_else(|| RunError::MissingManifest { path: archive.to_path_buf() })?;
+        .ok_or_else(|| RunError::MissingManifest {
+            path: archive.to_path_buf(),
+        })?;
     let manifest_str = String::from_utf8_lossy(manifest_bytes).into_owned();
     let manifest_for_addressing = Manifest::from_toml_str(&manifest_str)?;
 
@@ -266,14 +280,20 @@ pub fn run_local_archive(archive: &Path, home: &XelianHome) -> Result<Prepared, 
     manifest::validate_manifest(&manifest_for_addressing)?;
 
     // --- H-051: safe extraction, or skip if already cached (§9.5). ---
-    let dest = home.local_package_dir(&manifest_for_addressing.name, &manifest_for_addressing.version);
+    let dest = home.local_package_dir(
+        &manifest_for_addressing.name,
+        &manifest_for_addressing.version,
+    );
 
     // Belt-and-braces: even with `name`/`version` validated above, assert
     // the computed destination is still confined to `packages/` before
     // touching the filesystem at all. Never panics — a clear error instead.
     let packages_root = home.packages();
     if !dest.starts_with(&packages_root) {
-        return Err(RunError::UnsafeDestination { dest, packages_root });
+        return Err(RunError::UnsafeDestination {
+            dest,
+            packages_root,
+        });
     }
 
     let mut from_cache = dir_is_nonempty(&dest).map_err(|e| RunError::Io {
@@ -327,8 +347,10 @@ pub fn run_registry_archive(
         .package_checksum
         .clone()
         .ok_or(RunError::MissingPackageChecksum)?;
-    let checksum_entries: Vec<(String, Vec<u8>)> =
-        entries.iter().map(|(p, c, _)| (p.clone(), c.clone())).collect();
+    let checksum_entries: Vec<(String, Vec<u8>)> = entries
+        .iter()
+        .map(|(p, c, _)| (p.clone(), c.clone()))
+        .collect();
     let actual_checksum = compute_package_checksum_from_bytes(&checksum_entries);
     if actual_checksum != expected_checksum {
         return Err(RunError::ChecksumMismatch {
@@ -362,11 +384,10 @@ pub fn run_registry_archive(
         });
     }
 
-    let mut from_cache =
-        dir_is_nonempty(&dest).map_err(|e| RunError::Io {
-            path: dest.clone(),
-            source: e,
-        })?;
+    let mut from_cache = dir_is_nonempty(&dest).map_err(|e| RunError::Io {
+        path: dest.clone(),
+        source: e,
+    })?;
 
     if !from_cache {
         from_cache = extract::extract_entries(&entries, &dest, &home.tmp())?;
@@ -392,7 +413,9 @@ pub fn run_registry_archive(
 /// and `xelian add` (SPEC.md §12.2 step 7) calls it directly on a freshly
 /// imported package directory, since a GitHub import has no `.xelian`
 /// archive to check a package-checksum against in the first place.
-pub fn validate_extracted(package_dir: &Path) -> Result<(Manifest, Vec<ValidationWarning>), RunError> {
+pub fn validate_extracted(
+    package_dir: &Path,
+) -> Result<(Manifest, Vec<ValidationWarning>), RunError> {
     let manifest_path = package_dir.join("xelian.toml");
     let manifest_str = fs::read_to_string(&manifest_path).map_err(|e| RunError::Io {
         path: manifest_path.clone(),
@@ -553,10 +576,7 @@ mod tests {
         let file_path = dir.path().join("my-archive");
         fs::write(&file_path, b"not a real archive").unwrap();
         let result = parse_run_target(file_path.to_str().unwrap()).unwrap();
-        assert_eq!(
-            result,
-            RunTarget::LocalArchive(file_path)
-        );
+        assert_eq!(result, RunTarget::LocalArchive(file_path));
     }
 
     #[test]
@@ -585,8 +605,7 @@ mod tests {
 
     #[test]
     fn parse_github_url_https() {
-        let result =
-            parse_run_target("https://github.com/octocat/hello-world").unwrap();
+        let result = parse_run_target("https://github.com/octocat/hello-world").unwrap();
         assert_eq!(
             result,
             RunTarget::GitHubUrl("https://github.com/octocat/hello-world".to_string())
@@ -595,8 +614,7 @@ mod tests {
 
     #[test]
     fn parse_github_url_http() {
-        let result =
-            parse_run_target("http://github.com/octocat/repo").unwrap();
+        let result = parse_run_target("http://github.com/octocat/repo").unwrap();
         assert_eq!(
             result,
             RunTarget::GitHubUrl("http://github.com/octocat/repo".to_string())
@@ -605,13 +623,10 @@ mod tests {
 
     #[test]
     fn parse_github_url_with_path_suffix() {
-        let result =
-            parse_run_target("https://github.com/octocat/hello-world/tree/main").unwrap();
+        let result = parse_run_target("https://github.com/octocat/hello-world/tree/main").unwrap();
         assert_eq!(
             result,
-            RunTarget::GitHubUrl(
-                "https://github.com/octocat/hello-world/tree/main".to_string()
-            )
+            RunTarget::GitHubUrl("https://github.com/octocat/hello-world/tree/main".to_string())
         );
     }
 
@@ -658,7 +673,11 @@ mod tests {
         let os_line = if os.is_empty() {
             String::new()
         } else {
-            let list = os.iter().map(|o| format!("\"{o}\"")).collect::<Vec<_>>().join(", ");
+            let list = os
+                .iter()
+                .map(|o| format!("\"{o}\""))
+                .collect::<Vec<_>>()
+                .join(", ");
             format!("os = [{list}]\n")
         };
         format!(
@@ -711,7 +730,10 @@ manifest = "pyproject.toml"
         ];
         let checksum = compute_package_checksum_from_bytes(&files);
         let lock = lockfile_with_checksum(version, Some(checksum));
-        files.push(("xelian.lock".to_string(), lock.to_toml_string().unwrap().into_bytes()));
+        files.push((
+            "xelian.lock".to_string(),
+            lock.to_toml_string().unwrap().into_bytes(),
+        ));
         files
     }
 
@@ -792,10 +814,16 @@ manifest = "pyproject.toml"
         home.ensure_layout().unwrap();
 
         let err = run_local_archive(&archive_path, &home).unwrap_err();
-        assert!(matches!(err, RunError::ChecksumMismatch { .. }), "got: {err:?}");
+        assert!(
+            matches!(err, RunError::ChecksumMismatch { .. }),
+            "got: {err:?}"
+        );
 
         let dest = home.local_package_dir("bad-agent", "1.0.0");
-        assert!(!dest.exists(), "destination must not be created on checksum mismatch");
+        assert!(
+            !dest.exists(),
+            "destination must not be created on checksum mismatch"
+        );
     }
 
     #[test]
@@ -810,7 +838,10 @@ manifest = "pyproject.toml"
         home.ensure_layout().unwrap();
 
         let err = run_local_archive(&archive_path, &home).unwrap_err();
-        assert!(matches!(err, RunError::MissingLockfile { .. }), "got: {err:?}");
+        assert!(
+            matches!(err, RunError::MissingLockfile { .. }),
+            "got: {err:?}"
+        );
     }
 
     #[test]
@@ -830,7 +861,10 @@ manifest = "pyproject.toml"
         home.ensure_layout().unwrap();
 
         let err = run_local_archive(&archive_path, &home).unwrap_err();
-        assert!(matches!(err, RunError::MissingPackageChecksum), "got: {err:?}");
+        assert!(
+            matches!(err, RunError::MissingPackageChecksum),
+            "got: {err:?}"
+        );
     }
 
     #[test]
@@ -962,13 +996,19 @@ manifest = "pyproject.toml"
         // this archive would never produce.
         let dest = home.local_package_dir("cached-agent", "1.0.0");
         fs::create_dir_all(&dest).unwrap();
-        fs::write(dest.join("xelian.toml"), minimal_manifest_toml("cached-agent", "1.0.0", &[]))
-            .unwrap();
+        fs::write(
+            dest.join("xelian.toml"),
+            minimal_manifest_toml("cached-agent", "1.0.0", &[]),
+        )
+        .unwrap();
         fs::write(dest.join("sentinel.txt"), b"already here").unwrap();
 
         let prepared = run_local_archive(&archive_path, &home).expect("should succeed");
         assert!(prepared.from_cache);
-        assert!(dest.join("sentinel.txt").is_file(), "cached destination must be left untouched");
+        assert!(
+            dest.join("sentinel.txt").is_file(),
+            "cached destination must be left untouched"
+        );
         assert!(
             !dest.join("README.md").exists(),
             "a skipped extraction must not add the archive's other files"
@@ -979,9 +1019,15 @@ manifest = "pyproject.toml"
 
     #[test]
     fn os_allowed_pure_function_behavior() {
-        assert!(os_allowed(&[], "macos"), "no os declared means unrestricted");
+        assert!(
+            os_allowed(&[], "macos"),
+            "no os declared means unrestricted"
+        );
         assert!(os_allowed(&["macos".to_string()], "macos"));
-        assert!(os_allowed(&["linux".to_string(), "macos".to_string()], "macos"));
+        assert!(os_allowed(
+            &["linux".to_string(), "macos".to_string()],
+            "macos"
+        ));
         assert!(!os_allowed(&["linux".to_string()], "macos"));
         assert!(!os_allowed(&["windows".to_string()], "linux"));
     }
@@ -1001,7 +1047,10 @@ manifest = "pyproject.toml"
 
         let err = run_local_archive(&archive_path, &home).unwrap_err();
         match err {
-            RunError::UnsupportedOs { current: c, declared } => {
+            RunError::UnsupportedOs {
+                current: c,
+                declared,
+            } => {
                 assert_eq!(c, current);
                 assert_eq!(declared, vec![other.to_string()]);
             }
@@ -1060,7 +1109,10 @@ manifest = "pyproject.toml"
         .unwrap();
 
         let err = validate_extracted(dir.path()).unwrap_err();
-        assert!(matches!(err, RunError::ManifestValidation(_)), "got: {err:?}");
+        assert!(
+            matches!(err, RunError::ManifestValidation(_)),
+            "got: {err:?}"
+        );
     }
 
     #[test]
@@ -1083,7 +1135,10 @@ manifest = "pyproject.toml"
         .unwrap();
 
         let err = validate_extracted(dir.path()).unwrap_err();
-        assert!(matches!(err, RunError::UnsupportedOs { .. }), "got: {err:?}");
+        assert!(
+            matches!(err, RunError::UnsupportedOs { .. }),
+            "got: {err:?}"
+        );
     }
 
     // ---- executable mode bits survive extraction (wave4-review.md) ----
@@ -1129,7 +1184,10 @@ manifest = "pyproject.toml"
         let prepared = run_local_archive(&archive_path, &home).expect("should succeed");
 
         let extracted_script = prepared.package_dir.join("run.sh");
-        let script_mode = fs::metadata(&extracted_script).unwrap().permissions().mode();
+        let script_mode = fs::metadata(&extracted_script)
+            .unwrap()
+            .permissions()
+            .mode();
         assert_ne!(
             script_mode & 0o111,
             0,
@@ -1138,7 +1196,10 @@ manifest = "pyproject.toml"
 
         // A non-executable file in the same package must not gain the bit.
         let extracted_readme = prepared.package_dir.join("src/main.py");
-        let py_mode = fs::metadata(&extracted_readme).unwrap().permissions().mode();
+        let py_mode = fs::metadata(&extracted_readme)
+            .unwrap()
+            .permissions()
+            .mode();
         assert_eq!(
             py_mode & 0o111,
             0,

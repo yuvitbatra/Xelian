@@ -29,9 +29,7 @@ pub enum LockfileError {
 
     /// The manifest declares a native lockfile (`dependencies.lockfile`) but
     /// it does not exist on disk under the package root.
-    #[error(
-        "manifest declares native lockfile {declared:?} but it was not found at {resolved}"
-    )]
+    #[error("manifest declares native lockfile {declared:?} but it was not found at {resolved}")]
     NativeLockfileMissing { declared: String, resolved: String },
 
     /// I/O failure while hashing a file (e.g. the native lockfile, or one of
@@ -156,8 +154,10 @@ pub fn generate(
 /// `<path>\0<sha256:hex>\n` for each remaining file (hashing its on-disk
 /// contents), SHA-256 the concatenation, and render `sha256:<hex>`.
 pub fn compute_package_checksum(files: &[(String, PathBuf)]) -> io::Result<String> {
-    let mut entries: Vec<&(String, PathBuf)> =
-        files.iter().filter(|(path, _)| path != "xelian.lock").collect();
+    let mut entries: Vec<&(String, PathBuf)> = files
+        .iter()
+        .filter(|(path, _)| path != "xelian.lock")
+        .collect();
     entries.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
 
     let mut concatenated = String::new();
@@ -176,8 +176,10 @@ pub fn compute_package_checksum(files: &[(String, PathBuf)]) -> io::Result<Strin
 /// contents rather than on-disk paths (used by the `xelian run` pipeline
 /// while streaming tar entries).
 pub fn compute_package_checksum_from_bytes(files: &[(String, Vec<u8>)]) -> String {
-    let mut entries: Vec<&(String, Vec<u8>)> =
-        files.iter().filter(|(path, _)| path != "xelian.lock").collect();
+    let mut entries: Vec<&(String, Vec<u8>)> = files
+        .iter()
+        .filter(|(path, _)| path != "xelian.lock")
+        .collect();
     entries.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
 
     let mut concatenated = String::new();
@@ -376,7 +378,11 @@ mod tests {
         let dir = tempdir().unwrap();
         let a = write_file(dir.path(), "src/main.py", b"print('hi')");
         let b = write_file(dir.path(), "xelian.toml", b"name = \"x\"");
-        let lock = write_file(dir.path(), "xelian.lock", b"package-checksum = \"whatever\"");
+        let lock = write_file(
+            dir.path(),
+            "xelian.lock",
+            b"package-checksum = \"whatever\"",
+        );
 
         let path_files = vec![
             ("src/main.py".to_string(), a),
@@ -409,7 +415,10 @@ mod tests {
         let manifest = sample_manifest(Some("uv.lock"));
         let files = vec![
             ("src/main.py".to_string(), main_py),
-            ("pyproject.toml".to_string(), dir.path().join("pyproject.toml")),
+            (
+                "pyproject.toml".to_string(),
+                dir.path().join("pyproject.toml"),
+            ),
             ("uv.lock".to_string(), native_lock.clone()),
         ];
 
@@ -458,6 +467,9 @@ mod tests {
 
         let err = generate(&manifest, dir.path(), &files).unwrap_err();
         let msg = err.to_string();
-        assert!(msg.contains("uv.lock"), "error should name the missing file, got: {msg}");
+        assert!(
+            msg.contains("uv.lock"),
+            "error should name the missing file, got: {msg}"
+        );
     }
 }
