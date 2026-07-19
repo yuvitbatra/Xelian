@@ -1,0 +1,19 @@
+spec-version = 1
+name = "hashkit"
+version = "0.1.0"
+description = "Hash and encode text: 'sha256 hello', 'md5 x', 'b64 secret', 'unb64 c2VjcmV0'"
+package-type = "agent"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = []
+features = []
+tags = ["utility", "crypto"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

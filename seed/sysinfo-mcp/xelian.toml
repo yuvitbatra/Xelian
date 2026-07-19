@@ -1,0 +1,19 @@
+spec-version = 1
+name = "sysinfo-mcp"
+version = "0.1.0"
+description = "MCP server for system info: OS, CPU, Python, and disk usage"
+package-type = "mcp"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = []
+features = ["tools"]
+tags = ["mcp", "system"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

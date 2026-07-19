@@ -1,0 +1,19 @@
+spec-version = 1
+name = "password-gen"
+version = "0.1.0"
+description = "Generate strong passwords and passphrases: '16', 'passphrase 4', 'pin 6'"
+package-type = "agent"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = []
+features = []
+tags = ["utility", "security"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

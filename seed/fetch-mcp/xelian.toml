@@ -1,0 +1,19 @@
+spec-version = 1
+name = "fetch-mcp"
+version = "0.1.0"
+description = "MCP server for HTTP: fetch a URL and return status, headers, and body text"
+package-type = "mcp"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = ["network"]
+features = ["tools"]
+tags = ["mcp", "http", "web"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

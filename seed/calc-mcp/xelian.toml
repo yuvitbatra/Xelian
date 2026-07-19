@@ -1,0 +1,19 @@
+spec-version = 1
+name = "calc-mcp"
+version = "0.1.0"
+description = "MCP server for math: safe expression evaluation and list statistics"
+package-type = "mcp"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = []
+features = ["tools"]
+tags = ["mcp", "math"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

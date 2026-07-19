@@ -1,0 +1,19 @@
+spec-version = 1
+name = "files-mcp"
+version = "0.1.0"
+description = "MCP server for read-only file access: list directories, read files, stat paths"
+package-type = "mcp"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = ["filesystem"]
+features = ["tools"]
+tags = ["mcp", "filesystem"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

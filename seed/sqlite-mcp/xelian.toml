@@ -1,0 +1,19 @@
+spec-version = 1
+name = "sqlite-mcp"
+version = "0.1.0"
+description = "MCP server for SQLite: run read-only SQL against any local database file"
+package-type = "mcp"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = ["filesystem"]
+features = ["tools"]
+tags = ["mcp", "sqlite", "database"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

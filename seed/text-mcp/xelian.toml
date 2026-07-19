@@ -1,0 +1,19 @@
+spec-version = 1
+name = "text-mcp"
+version = "0.1.0"
+description = "MCP server for text: regex search/replace and unified diffs"
+package-type = "mcp"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = []
+features = ["tools"]
+tags = ["mcp", "text", "developer"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

@@ -1,0 +1,19 @@
+spec-version = 1
+name = "calc"
+version = "0.1.0"
+description = "A calculator with functions: '2*(3+4)**2', 'sqrt(2)*pi', 'log2(4096)'"
+package-type = "agent"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = []
+features = []
+tags = ["utility", "math"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

@@ -1,0 +1,19 @@
+spec-version = 1
+name = "git-mcp"
+version = "0.1.0"
+description = "MCP server for git: status, log, and diff of any local repository"
+package-type = "mcp"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = ["filesystem"]
+features = ["tools"]
+tags = ["mcp", "git", "developer"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

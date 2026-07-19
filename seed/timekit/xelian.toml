@@ -1,0 +1,19 @@
+spec-version = 1
+name = "timekit"
+version = "0.1.0"
+description = "Time conversions: 'now', '1700000000', '2026-07-19T10:00:00Z', 'now local'"
+package-type = "agent"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = []
+features = []
+tags = ["utility", "time"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

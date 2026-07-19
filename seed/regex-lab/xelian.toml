@@ -1,0 +1,19 @@
+spec-version = 1
+name = "regex-lab"
+version = "0.1.0"
+description = "Test regexes interactively: '<pattern> ::: <text>' prints all matches"
+package-type = "agent"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = []
+features = []
+tags = ["utility", "regex", "developer"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

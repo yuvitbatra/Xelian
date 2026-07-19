@@ -1,0 +1,19 @@
+spec-version = 1
+name = "text-stats"
+version = "0.1.0"
+description = "Paste a line of text, get characters, words, unique words, and reading time"
+package-type = "agent"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = []
+features = []
+tags = ["utility", "text"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"

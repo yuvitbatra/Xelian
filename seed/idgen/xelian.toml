@@ -1,0 +1,19 @@
+spec-version = 1
+name = "idgen"
+version = "0.1.0"
+description = "Generate identifiers: 'uuid', 'uuid 3', 'hex 32', 'slug'"
+package-type = "agent"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = []
+features = []
+tags = ["utility"]
+
+[author]
+name = "Xelian"
+email = "yuvitbatra@gmail.com"
+
+[dependencies]
+manifest = "pyproject.toml"
