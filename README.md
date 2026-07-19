@@ -54,6 +54,28 @@ Already have an agent on GitHub? Import and run it directly:
 xelian add https://github.com/user/repo
 ```
 
+## One endpoint for all your MCP servers
+
+Wiring ten MCP servers into an IDE means ten config entries that all break
+differently. The Xelian gateway gives your IDE or agent framework exactly one
+connection:
+
+```bash
+xelian gateway add alice/github-mcp
+xelian gateway add bob/postgres-mcp
+xelian gateway serve          # single MCP endpoint: http://127.0.0.1:11432/mcp
+```
+
+Point Cursor, Claude Code, CrewAI, or LangChain at that one URL. The gateway
+namespaces tools as `<package>__<tool>`, routes each call to the right
+server, restarts servers that crash, and gives you one place to look instead
+of five terminal tabs:
+
+```bash
+xelian gateway status         # every backend: up/down, restarts, log path
+xelian gateway logs           # unified stderr logs from all backends
+```
+
 ## Python SDK
 
 ```python

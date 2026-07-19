@@ -505,13 +505,23 @@
 
 ## Phase 21 — CI & insane testing
 
-- [ ] **H-210 — Core CI workflow**
+> Done 2026-07-19 except H-213 (blocked on the H-230 install script, Phase
+> 23). `.github/workflows/ci.yml` runs: Rust fmt/clippy(-D warnings)/tests on
+> macOS + Linux, registry pytest (47 tests incl. abuse/fuzz, load, golden
+> interop), SDK compile/import check, website build, and an E2E job
+> (`scripts/e2e.sh`, verified green locally) driving the real binary against
+> the real registry through the full loop, plus SDK integration tests
+> against the real binary. Also added `xelian login --username
+> --password-stdin` (pulled forward from H-222) because the E2E loop
+> requires non-interactive login.
+
+- [x] **H-210 — Core CI workflow**
   - Difficulty: M · Duration: 4h · Deps: none
   - Acceptance: on every PR + main push: `cargo fmt --check`, `cargo clippy`
     (deny warnings), `cargo test --workspace` on macOS + Linux runners,
     registry `pytest`, SDK syntax/import check. Red CI blocks merge.
 
-- [ ] **H-211 — E2E CI job: real push→run loop**
+- [x] **H-211 — E2E CI job: real push→run loop**
   - Difficulty: M · Duration: 5h · Deps: H-210
   - Acceptance: CI boots the actual FastAPI registry, then drives the real
     binary through: login (non-interactive) → push → duplicate-push (expect
@@ -520,21 +530,22 @@
     checksum-dialect bug that shipped with 100% green unit tests — the two
     sides must be tested against each other, never only against themselves.
 
-- [ ] **H-212 — Cross-implementation checksum interop test**
+- [x] **H-212 — Cross-implementation checksum interop test**
   - Difficulty: S · Duration: 2h · Deps: H-210
   - Acceptance: a shared golden fixture (archive + expected §7.3 checksum) is
     asserted identical by BOTH the Rust `compute_package_checksum` tests and
     the registry's Python `compute_package_checksum` tests; any drift in
     either implementation fails CI.
 
-- [ ] **H-213 — Clean-machine quickstart test**
+- [ ] **H-213 — Clean-machine quickstart test** *(blocked on H-230 — the
+  public install script does not exist yet)*
   - Difficulty: M · Duration: 4h · Deps: H-230
   - Acceptance: a CI job runs the public install script inside a bare Docker
     image (no Rust, no repo checkout), then `xelian run <seed-package>` against
     a live registry and asserts a response — proving the README quickstart
     verbatim. Runs nightly + before every release.
 
-- [ ] **H-214 — Abuse & fuzz suite (registry + archive handling)**
+- [x] **H-214 — Abuse & fuzz suite (registry + archive handling)**
   - Difficulty: M · Duration: 6h · Deps: H-210
   - Acceptance: tests cover tar decompression bombs, oversized uploads
     (rejected at the declared cap), malformed/truncated archives, malformed
@@ -542,14 +553,14 @@
     entry name, and concurrent duplicate publishes (exactly one 201). Registry
     never crashes, never writes outside its storage root.
 
-- [ ] **H-215 — SDK integration tests**
+- [x] **H-215 — SDK integration tests**
   - Difficulty: S · Duration: 3h · Deps: H-210
   - Acceptance: pytest suite runs `xelian.install/run/agent/mcp` against the
     real built binary and a local registry: agent `.chat()` round-trips, mcp
     `.expose()` returns usable transport info, type mismatch raises,
     missing-binary and not-logged-in errors are clear. Wired into CI.
 
-- [ ] **H-216 — Registry load sanity test**
+- [x] **H-216 — Registry load sanity test**
   - Difficulty: S · Duration: 3h · Deps: H-211
   - Acceptance: a scripted burst (e.g. 50 concurrent downloads + metadata
     reads of a mid-size package) completes with zero 5xx and bounded memory —
@@ -724,6 +735,26 @@
     dashboard/query tracks the one metric that matters — weekly `xelian run`
     downloads from the registry (stars measure attention; pulls measure
     product).
+
+---
+
+## Added post-plan — MCP Gateway (owner request, 2026-07-19)
+
+- [x] **H-260 — `xelian gateway`: one local MCP endpoint for all MCP servers**
+  - Difficulty: L · Duration: 8h · Deps: H-161
+  - What: instead of wiring N MCP servers into every IDE/agent config, a
+    client connects to a single Streamable-HTTP endpoint
+    (`http://127.0.0.1:11432/mcp`). `xelian gateway add owner/name` configures
+    backends (`~/.xelian/gateway.toml`); `serve` runs each through the
+    standard prepare pipeline, spawns them as stdio children, namespaces
+    tools as `<package>__<tool>`, routes `tools/call`, and **respawns dead
+    backends on the next call**. `status` shows up/down + restart counts +
+    log paths (`GET /status`); `logs` tails unified backend stderr from
+    `~/.xelian/logs/gateway/`.
+  - Scope guard: tools-only MVP (initialize/ping/tools/list/tools/call);
+    resources/prompts/SSE deferred until a real client needs them.
+  - Verified: live curl MCP session against a pushed package, kill →
+    auto-respawn (restarts counter), alias-collision + bad-name errors.
 
 ---
 

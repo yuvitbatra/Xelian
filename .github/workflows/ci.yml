@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: Rust (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --check
+      - name: Clippy (deny warnings)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Tests
+        run: cargo test --workspace
+
+  registry:
+    name: Registry tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Tests (incl. abuse/fuzz, load, golden interop)
+        working-directory: registry
+        run: |
+          uv sync
+          uv run pytest tests -q
+
+  sdk-check:
+    name: SDK syntax/import check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile + import
+        run: |
+          python -m compileall -q sdk/xelian
+          cd sdk && python -c "import xelian; import xelian.handles; import xelian._cli"
+
+  website:
+    name: Website build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: Build
+        working-directory: website
+        run: |
+          npm ci
+          npm run build
+
+  e2e:
+    name: E2E push->run loop + SDK integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: astral-sh/setup-uv@v5
+      - name: Build binary
+        run: cargo build --workspace
+      - name: Registry deps
+        working-directory: registry
+        run: uv sync
+      - name: E2E loop (signup -> login -> push -> 409 -> run -> yank -> unyank -> rm)
+        run: PYTHON="$PWD/registry/.venv/bin/python" scripts/e2e.sh
+      - name: SDK integration tests (against the real binary + registry)
+        working-directory: sdk
+        run: ../registry/.venv/bin/python -m pytest tests -q
