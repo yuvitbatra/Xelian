@@ -10,12 +10,13 @@ from pydantic import BaseModel
 from fastapi.responses import Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .auth import auth_store
+from .auth import AuthStore, MIN_PASSWORD_LENGTH, valid_username
 from .models import (
     AuthorInfo,
     LoginResponse,
     PackageInfo,
     PackageMetadata,
+    PackageSummary,
     PublishResponse,
     VersionRecord,
 )
@@ -26,6 +27,17 @@ app = FastAPI(title="Xelian Registry", version="0.1.0")
 
 import os
 
+# The website is a browser client of this same public API (§14.9). Bearer
+# tokens (no cookies) make a permissive CORS policy safe here.
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 STORAGE_ROOT = Path(
     os.environ.get(
         "XELIAN_REGISTRY_ROOT",
@@ -33,6 +45,7 @@ STORAGE_ROOT = Path(
     )
 )
 storage = Storage(STORAGE_ROOT)
+auth_store = AuthStore(STORAGE_ROOT / "auth")
 
 security = HTTPBearer(auto_error=False)
 
@@ -121,6 +134,33 @@ def login(body: dict):
     password = body.get("password", "")
     if not auth_store.authenticate(username, password):
         raise HTTPException(401, detail="Invalid credentials")
+    token = auth_store.create_token(username)
+    return LoginResponse(token=token, username=username)
+
+
+@app.post("/auth/signup", response_model=LoginResponse, status_code=201)
+def signup(body: dict):
+    """Create an account; the username becomes the publish namespace (§14.4).
+
+    Returns a fresh token so signup doubles as the first login.
+    """
+    username = body.get("username", "")
+    password = body.get("password", "")
+    if not valid_username(username):
+        raise HTTPException(
+            400,
+            detail=(
+                "invalid username: 2-39 chars, letters/digits/._- only, "
+                "must start with a letter or digit"
+            ),
+        )
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(
+            400,
+            detail=f"password must be at least {MIN_PASSWORD_LENGTH} characters",
+        )
+    if not auth_store.create_user(username, password):
+        raise HTTPException(409, detail=f"username '{username}' is taken")
     token = auth_store.create_token(username)
     return LoginResponse(token=token, username=username)
 
@@ -228,6 +268,39 @@ async def publish(
     storage.save_readme(owner, name, version, readme)
 
     return PublishResponse(ok=True, name=name, version=version)
+
+
+@app.get("/packages", response_model=list[PackageSummary])
+def list_packages():
+    """Public read-only listing of every package's latest resolvable version.
+
+    Serves the website's browse/search surface (§14.9); resolution follows
+    §14.3 (highest non-yanked, non-pre-release SemVer). Packages with no
+    resolvable version are omitted.
+    """
+    summaries = []
+    for owner, name in storage.list_package_names():
+        versions = storage.list_versions(owner, name)
+        latest = resolve_latest(versions)
+        if latest is None:
+            continue
+        meta = storage.load_metadata(owner, name, latest.version)
+        if meta is None:
+            continue
+        summaries.append(
+            PackageSummary(
+                owner=owner,
+                name=name,
+                latest_version=latest.version,
+                description=meta.description,
+                package_type=meta.package_type,
+                language=meta.language,
+                license=meta.license,
+                tags=meta.tags,
+                published_at=meta.published_at,
+            )
+        )
+    return summaries
 
 
 @app.get("/packages/{owner}/{package_name}")

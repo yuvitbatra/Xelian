@@ -83,6 +83,23 @@ class Storage:
             ))
         return versions
 
+    def list_package_names(self) -> list[tuple[str, str]]:
+        """All (owner, name) pairs present in storage, sorted."""
+        packages_dir = self.root / "packages"
+        if not packages_dir.is_dir():
+            return []
+        pairs = []
+        try:
+            for owner_dir in sorted(packages_dir.iterdir()):
+                if not owner_dir.is_dir():
+                    continue
+                for name_dir in sorted(owner_dir.iterdir()):
+                    if name_dir.is_dir():
+                        pairs.append((owner_dir.name, name_dir.name))
+        except OSError:
+            return []
+        return pairs
+
     def load_metadata(self, owner: str, name: str, version: str) -> Optional[PackageMetadata]:
         vdir = self._version_dir(owner, name, version)
         meta_file = vdir / "metadata.json"

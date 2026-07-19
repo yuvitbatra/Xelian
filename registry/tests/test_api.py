@@ -11,6 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import app.main
+from app.auth import AuthStore
 from app.storage import Storage
 
 
@@ -20,6 +21,7 @@ def test_env(monkeypatch):
     tmp = tempfile.mkdtemp()
     new_storage = Storage(Path(tmp))
     monkeypatch.setattr(app.main, "storage", new_storage)
+    monkeypatch.setattr(app.main, "auth_store", AuthStore(Path(tmp) / "auth"))
     monkeypatch.setenv("XELIAN_REGISTRY_USERNAME", "testuser")
     monkeypatch.setenv("XELIAN_REGISTRY_PASSWORD", "testpass")
     yield
@@ -495,3 +497,131 @@ class TestSecurityAndInterop:
     def test_get_package_rejects_traversal_segment(self):
         resp = client.get("/packages/..%2f..%2fetc/passwd")
         assert resp.status_code in (400, 404)
+
+
+class TestSignupAndAccounts:
+    def _signup(self, username="alice", password="password123"):
+        return client.post(
+            "/auth/signup", json={"username": username, "password": password}
+        )
+
+    def test_signup_returns_usable_token(self):
+        resp = self._signup()
+        assert resp.status_code == 201, resp.text
+        data = resp.json()
+        assert data["username"] == "alice"
+        headers = {"Authorization": f"Bearer {data['token']}"}
+
+        archive_bytes = _make_archive("1.0.0")
+        cs = compute_package_checksum(archive_bytes)
+        pub = client.post(
+            "/packages",
+            files={
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("1.0.0", cs), "application/toml"),
+            },
+            data={"owner": "alice", "name": "test-pkg"},
+            headers=headers,
+        )
+        assert pub.status_code == 201, pub.text
+
+    def test_signup_duplicate_username_is_409(self):
+        assert self._signup().status_code == 201
+        assert self._signup().status_code == 409
+
+    def test_signup_invalid_username_is_400(self):
+        for bad in ("..", "a", "a/b", "", "-leading", "x" * 40):
+            resp = self._signup(username=bad)
+            assert resp.status_code == 400, f"{bad!r}: {resp.status_code}"
+
+    def test_signup_short_password_is_400(self):
+        assert self._signup(password="short").status_code == 400
+
+    def test_login_after_signup(self):
+        self._signup()
+        ok = client.post(
+            "/auth/token", json={"username": "alice", "password": "password123"}
+        )
+        assert ok.status_code == 200, ok.text
+        bad = client.post(
+            "/auth/token", json={"username": "alice", "password": "wrong-password"}
+        )
+        assert bad.status_code == 401
+
+    def test_no_default_admin_credentials(self, monkeypatch):
+        monkeypatch.delenv("XELIAN_REGISTRY_USERNAME")
+        monkeypatch.delenv("XELIAN_REGISTRY_PASSWORD")
+        resp = client.post(
+            "/auth/token", json={"username": "admin", "password": "admin"}
+        )
+        assert resp.status_code == 401
+
+    def test_accounts_and_tokens_survive_restart(self):
+        token = self._signup().json()["token"]
+        # Simulate a registry restart: fresh AuthStore over the same directory.
+        app.main.auth_store = AuthStore(app.main.auth_store.root)
+        assert app.main.auth_store.verify_token(token) == "alice"
+        login = client.post(
+            "/auth/token", json={"username": "alice", "password": "password123"}
+        )
+        assert login.status_code == 200
+
+    def test_signup_token_cannot_publish_other_namespace(self):
+        token = self._signup().json()["token"]
+        archive_bytes = _make_archive("1.0.0")
+        cs = compute_package_checksum(archive_bytes)
+        resp = client.post(
+            "/packages",
+            files={
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("1.0.0", cs), "application/toml"),
+            },
+            data={"owner": "someone-else", "name": "test-pkg"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 403
+
+
+class TestListPackages:
+    def _publish(self, version="1.0.0", name="test-pkg"):
+        archive_bytes = _make_archive(version, name=name)
+        cs = compute_package_checksum(archive_bytes)
+        resp = client.post(
+            "/packages",
+            files={
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile(version, cs), "application/toml"),
+            },
+            data={"owner": "testuser", "name": name},
+            headers=_auth_headers(),
+        )
+        assert resp.status_code == 201, resp.text
+
+    def test_list_empty(self):
+        resp = client.get("/packages")
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_list_after_publish(self):
+        self._publish(name="pkg-a")
+        self._publish(name="pkg-b")
+        resp = client.get("/packages")
+        assert resp.status_code == 200
+        rows = {r["name"]: r for r in resp.json()}
+        assert set(rows) == {"pkg-a", "pkg-b"}
+        row = rows["pkg-a"]
+        assert row["owner"] == "testuser"
+        assert row["latest_version"] == "1.0.0"
+        assert row["package_type"] == "agent"
+        assert row["language"] == "python"
+
+    def test_list_omits_fully_yanked_packages(self):
+        self._publish(name="pkg-a")
+        yank = client.patch(
+            "/packages/testuser/pkg-a/1.0.0",
+            json={"yanked": True},
+            headers=_auth_headers(),
+        )
+        assert yank.status_code == 200, yank.text
+        resp = client.get("/packages")
+        assert resp.json() == []

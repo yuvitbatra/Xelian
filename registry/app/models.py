@@ -52,6 +52,20 @@ class LoginResponse(BaseModel):
     username: str
 
 
+class PackageSummary(BaseModel):
+    """One row in the public package listing (website browse/search, §14.9)."""
+
+    owner: str
+    name: str
+    latest_version: str
+    description: str
+    package_type: str
+    language: str
+    license: str
+    tags: Optional[list[str]] = None
+    published_at: str = ""
+
+
 class PackageInfo(BaseModel):
     owner: str
     name: str
