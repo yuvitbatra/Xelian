@@ -1,7 +1,7 @@
 [project]
-name = "harbor-registry"
+name = "xelian-registry"
 version = "0.1.0"
-description = "Harbor Registry — store and serve AI agent packages."
+description = "Xelian Registry — store and serve AI agent packages."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",

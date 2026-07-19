@@ -22,14 +22,14 @@ from .models import (
 from .resolution import resolve_latest
 from .storage import Storage
 
-app = FastAPI(title="Harbor Registry", version="0.1.0")
+app = FastAPI(title="Xelian Registry", version="0.1.0")
 
 import os
 
 STORAGE_ROOT = Path(
     os.environ.get(
-        "HARBOR_REGISTRY_ROOT",
-        Path.home() / ".harbor-registry",
+        "XELIAN_REGISTRY_ROOT",
+        Path.home() / ".xelian-registry",
     )
 )
 storage = Storage(STORAGE_ROOT)
@@ -63,19 +63,19 @@ def _validate_segment(value: str, field: str) -> str:
 
 def compute_package_checksum(archive_bytes: bytes) -> str:
     """Recompute `package-checksum` per SPEC §7.3 for interoperability with the
-    CLI's `compute_package_checksum` (crates/harbor-core/src/lockfile.rs).
+    CLI's `compute_package_checksum` (crates/xelian-core/src/lockfile.rs).
 
     The digest is taken over the archive's file entries — sorted by
-    archive-relative path (byte order), **excluding `harbor.lock` itself** — as
+    archive-relative path (byte order), **excluding `xelian.lock` itself** — as
     the SHA-256 of the concatenation of `<path>\\0sha256:<hex>\\n` for each
     remaining file, rendered `sha256:<hex>`. This is NOT a hash of the raw
     archive bytes, so it must match the CLI byte-for-byte or every real
-    `harbor push` is rejected as a checksum mismatch.
+    `xelian push` is rejected as a checksum mismatch.
     """
     entries: list[tuple[str, bytes]] = []
     with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode="r:gz") as tf:
         for member in tf:
-            if not member.isfile() or member.name == "harbor.lock":
+            if not member.isfile() or member.name == "xelian.lock":
                 continue
             entries.append((member.name, tf.extractfile(member).read()))
     entries.sort(key=lambda e: e[0].encode("utf-8"))
@@ -89,18 +89,18 @@ def compute_package_checksum(archive_bytes: bytes) -> str:
     return "sha256:" + hashlib.sha256(bytes(concat)).hexdigest()
 
 
-def _extract_harbor_toml(archive_bytes: bytes) -> tuple[dict, str]:
-    """Parse harbor.toml and README.md from .harbor archive bytes."""
+def _extract_xelian_toml(archive_bytes: bytes) -> tuple[dict, str]:
+    """Parse xelian.toml and README.md from .xelian archive bytes."""
     readme = ""
     manifest_bytes = None
     with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode="r:gz") as tf:
         for member in tf:
-            if member.name == "harbor.toml" and member.isfile():
+            if member.name == "xelian.toml" and member.isfile():
                 manifest_bytes = tf.extractfile(member).read()
             elif member.name == "README.md" and member.isfile():
                 readme = tf.extractfile(member).read().decode("utf-8")
     if manifest_bytes is None:
-        raise HTTPException(400, detail="archive missing harbor.toml")
+        raise HTTPException(400, detail="archive missing xelian.toml")
     import tomllib
 
     return tomllib.loads(manifest_bytes.decode("utf-8")), readme
@@ -139,7 +139,7 @@ async def publish(
     """Publish a new package version (§14.8).
 
     Validates the uploaded archive's checksum against the accompanying
-    harbor.lock, enforces immutability (§19.2), and stores the package.
+    xelian.lock, enforces immutability (§19.2), and stores the package.
 
     Requires authentication (§14.4). The authenticated user must match
     the package's owner namespace (§14.4).
@@ -164,7 +164,7 @@ async def publish(
     lock_data = tomllib.loads(lock_bytes.decode("utf-8"))
     declared_checksum = lock_data.get("package-checksum")
     if not declared_checksum:
-        raise HTTPException(400, detail="harbor.lock missing package-checksum")
+        raise HTTPException(400, detail="xelian.lock missing package-checksum")
     actual_checksum = compute_package_checksum(archive_bytes)
     if actual_checksum != declared_checksum:
         raise HTTPException(
@@ -176,10 +176,10 @@ async def publish(
         )
 
     # --- extract metadata from archive ---
-    manifest_dict, readme = _extract_harbor_toml(archive_bytes)
+    manifest_dict, readme = _extract_xelian_toml(archive_bytes)
     version = manifest_dict.get("version")
     if not version:
-        raise HTTPException(400, detail="harbor.toml missing version")
+        raise HTTPException(400, detail="xelian.toml missing version")
     _validate_segment(version, "version")
 
     # --- immutability check (§19.2) ---

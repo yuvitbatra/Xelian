@@ -20,8 +20,8 @@ def test_env(monkeypatch):
     tmp = tempfile.mkdtemp()
     new_storage = Storage(Path(tmp))
     monkeypatch.setattr(app.main, "storage", new_storage)
-    monkeypatch.setenv("HARBOR_REGISTRY_USERNAME", "testuser")
-    monkeypatch.setenv("HARBOR_REGISTRY_PASSWORD", "testpass")
+    monkeypatch.setenv("XELIAN_REGISTRY_USERNAME", "testuser")
+    monkeypatch.setenv("XELIAN_REGISTRY_PASSWORD", "testpass")
     yield
     import shutil
 
@@ -42,7 +42,7 @@ def _make_tarinfo(name: str, data: bytes) -> tarfile.TarInfo:
 
 
 def _make_archive(version: str, name: str = "test-pkg") -> bytes:
-    """Build a minimal valid .harbor archive in memory."""
+    """Build a minimal valid .xelian archive in memory."""
     buf = io.BytesIO()
     manifest_toml = (
         f'spec-version = 1\n'
@@ -68,7 +68,7 @@ def _make_archive(version: str, name: str = "test-pkg") -> bytes:
     readme = b"# Test\n"
     lic = b"MIT\n"
     with tarfile.open(fileobj=buf, mode="w:gz") as tf:
-        tf.addfile(_make_tarinfo("harbor.toml", manifest_toml), io.BytesIO(manifest_toml))
+        tf.addfile(_make_tarinfo("xelian.toml", manifest_toml), io.BytesIO(manifest_toml))
         tf.addfile(_make_tarinfo("README.md", readme), io.BytesIO(readme))
         tf.addfile(_make_tarinfo("LICENSE", lic), io.BytesIO(lic))
     buf.seek(0)
@@ -78,7 +78,7 @@ def _make_archive(version: str, name: str = "test-pkg") -> bytes:
 def _make_lockfile(version: str, checksum: str) -> bytes:
     lock = (
         f'spec-version = 1\n'
-        f'harbor-version = "0.1.0"\n'
+        f'xelian-version = "0.1.0"\n'
         f'package-version = "{version}"\n'
         f'generated-at = "2026-07-17T00:00:00Z"\n'
         f'native-manifest = "pyproject.toml"\n'
@@ -134,8 +134,8 @@ class TestAuth:
         resp = client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", archive_bytes, "application/octet-stream"),
-                "lockfile": ("harbor.lock", lock_bytes, "application/toml"),
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", lock_bytes, "application/toml"),
             },
             data={"owner": "testuser", "name": "test-pkg"},
         )
@@ -152,8 +152,8 @@ class TestAuth:
         resp = client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", archive_bytes, "application/octet-stream"),
-                "lockfile": ("harbor.lock", lock_bytes, "application/toml"),
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", lock_bytes, "application/toml"),
             },
             data={"owner": "otheruser", "name": "test-pkg"},
             headers=headers,
@@ -171,8 +171,8 @@ class TestPublish:
         resp = client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", archive_bytes, "application/octet-stream"),
-                "lockfile": ("harbor.lock", lock_bytes, "application/toml"),
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", lock_bytes, "application/toml"),
             },
             data={"owner": "testuser", "name": "test-pkg"},
             headers=headers,
@@ -201,8 +201,8 @@ class TestPublish:
         client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", archive_bytes, "application/octet-stream"),
-                "lockfile": ("harbor.lock", lock_bytes, "application/toml"),
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", lock_bytes, "application/toml"),
             },
             data={"owner": "testuser", "name": "dup-test"},
             headers=headers,
@@ -211,8 +211,8 @@ class TestPublish:
         resp = client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", archive_bytes, "application/octet-stream"),
-                "lockfile": ("harbor.lock", lock_bytes, "application/toml"),
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", lock_bytes, "application/toml"),
             },
             data={"owner": "testuser", "name": "dup-test"},
             headers=headers,
@@ -227,8 +227,8 @@ class TestPublish:
         resp = client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", archive_bytes, "application/octet-stream"),
-                "lockfile": ("harbor.lock", lock_bytes, "application/toml"),
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", lock_bytes, "application/toml"),
             },
             data={"owner": "testuser", "name": "sum-test"},
             headers=headers,
@@ -245,8 +245,8 @@ class TestResolution:
         client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", ab1, "application/octet-stream"),
-                "lockfile": ("harbor.lock", _make_lockfile("1.0.0", cs1), "application/toml"),
+                "archive": ("pkg.xelian", ab1, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("1.0.0", cs1), "application/toml"),
             },
             data={"owner": "testuser", "name": "yank-pkg"},
             headers=headers,
@@ -258,8 +258,8 @@ class TestResolution:
         client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", ab2, "application/octet-stream"),
-                "lockfile": ("harbor.lock", _make_lockfile("2.0.0", cs2), "application/toml"),
+                "archive": ("pkg.xelian", ab2, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("2.0.0", cs2), "application/toml"),
             },
             data={"owner": "testuser", "name": "yank-pkg"},
             headers=headers,
@@ -281,8 +281,8 @@ class TestResolution:
         client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", ab1, "application/octet-stream"),
-                "lockfile": ("harbor.lock", _make_lockfile("1.0.0-alpha", cs1), "application/toml"),
+                "archive": ("pkg.xelian", ab1, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("1.0.0-alpha", cs1), "application/toml"),
             },
             data={"owner": "testuser", "name": "pre-pkg"},
             headers=headers,
@@ -294,8 +294,8 @@ class TestResolution:
         client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", ab2, "application/octet-stream"),
-                "lockfile": ("harbor.lock", _make_lockfile("0.9.0", cs2), "application/toml"),
+                "archive": ("pkg.xelian", ab2, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("0.9.0", cs2), "application/toml"),
             },
             data={"owner": "testuser", "name": "pre-pkg"},
             headers=headers,
@@ -317,8 +317,8 @@ class TestResolution:
         client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", ab, "application/octet-stream"),
-                "lockfile": ("harbor.lock", _make_lockfile("1.0.0", cs), "application/toml"),
+                "archive": ("pkg.xelian", ab, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("1.0.0", cs), "application/toml"),
             },
             data={"owner": "testuser", "name": "all-yanked"},
             headers=headers,
@@ -337,8 +337,8 @@ class TestYank:
         client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", ab1, "application/octet-stream"),
-                "lockfile": ("harbor.lock", _make_lockfile("1.0.0", cs1), "application/toml"),
+                "archive": ("pkg.xelian", ab1, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("1.0.0", cs1), "application/toml"),
             },
             data={"owner": "testuser", "name": "yank-api"},
             headers=headers,
@@ -348,8 +348,8 @@ class TestYank:
         client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", ab2, "application/octet-stream"),
-                "lockfile": ("harbor.lock", _make_lockfile("2.0.0", cs2), "application/toml"),
+                "archive": ("pkg.xelian", ab2, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("2.0.0", cs2), "application/toml"),
             },
             data={"owner": "testuser", "name": "yank-api"},
             headers=headers,
@@ -376,8 +376,8 @@ class TestYank:
         client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", ab, "application/octet-stream"),
-                "lockfile": ("harbor.lock", _make_lockfile("1.0.0", cs), "application/toml"),
+                "archive": ("pkg.xelian", ab, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("1.0.0", cs), "application/toml"),
             },
             data={"owner": "testuser", "name": "unyank-api"},
             headers=headers,
@@ -416,8 +416,8 @@ class TestYank:
         client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", ab, "application/octet-stream"),
-                "lockfile": ("harbor.lock", _make_lockfile("1.0.0", cs), "application/toml"),
+                "archive": ("pkg.xelian", ab, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("1.0.0", cs), "application/toml"),
             },
             data={"owner": "testuser", "name": "no-yank"},
             headers=headers,
@@ -451,7 +451,7 @@ class TestYank:
 class TestSecurityAndInterop:
     def test_checksum_algorithm_matches_spec_not_raw_archive_hash(self):
         # Regression: the registry MUST verify package-checksum per SPEC §7.3
-        # (per-file digest, `sha256:`-prefixed, excluding harbor.lock), NOT a
+        # (per-file digest, `sha256:`-prefixed, excluding xelian.lock), NOT a
         # bare hash of the whole archive. If these two ever coincide the guard
         # below is meaningless; assert they differ so a revert is caught.
         archive_bytes = _make_archive("1.0.0")
@@ -468,8 +468,8 @@ class TestSecurityAndInterop:
         resp = client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", archive_bytes, "application/octet-stream"),
-                "lockfile": ("harbor.lock", bad_lock, "application/toml"),
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", bad_lock, "application/toml"),
             },
             data={"owner": "testuser", "name": "test-pkg"},
             headers=_auth_headers(),
@@ -482,8 +482,8 @@ class TestSecurityAndInterop:
         resp = client.post(
             "/packages",
             files={
-                "archive": ("pkg.harbor", archive_bytes, "application/octet-stream"),
-                "lockfile": ("harbor.lock", _make_lockfile("1.0.0", cs), "application/toml"),
+                "archive": ("pkg.xelian", archive_bytes, "application/octet-stream"),
+                "lockfile": ("xelian.lock", _make_lockfile("1.0.0", cs), "application/toml"),
             },
             data={"owner": "..", "name": "test-pkg"},
             headers=_auth_headers(),

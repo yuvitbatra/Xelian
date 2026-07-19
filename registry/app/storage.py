@@ -8,7 +8,7 @@ from .models import PackageMetadata, VersionRecord
 
 
 class Storage:
-    """Filesystem-backed storage for Harbor registry packages."""
+    """Filesystem-backed storage for Xelian registry packages."""
 
     def __init__(self, root: Path):
         self.root = root.resolve()
@@ -35,12 +35,12 @@ class Storage:
     def save_archive(self, owner: str, name: str, version: str, archive_bytes: bytes) -> str:
         checksum = hashlib.sha256(archive_bytes).hexdigest()
         vdir = self._ensure_version_dir(owner, name, version)
-        (vdir / "archive.harbor").write_bytes(archive_bytes)
+        (vdir / "archive.xelian").write_bytes(archive_bytes)
         return checksum
 
     def save_lockfile(self, owner: str, name: str, version: str, lock_bytes: bytes):
         vdir = self._ensure_version_dir(owner, name, version)
-        (vdir / "harbor.lock").write_bytes(lock_bytes)
+        (vdir / "xelian.lock").write_bytes(lock_bytes)
 
     def save_metadata(self, owner: str, name: str, version: str, meta: PackageMetadata):
         vdir = self._ensure_version_dir(owner, name, version)
@@ -63,8 +63,8 @@ class Storage:
             if not entry.is_dir():
                 continue
             meta_file = entry / "metadata.json"
-            lock_file = entry / "harbor.lock"
-            archive_file = entry / "archive.harbor"
+            lock_file = entry / "xelian.lock"
+            archive_file = entry / "archive.xelian"
             if not (meta_file.is_file() and lock_file.is_file() and archive_file.is_file()):
                 continue
             try:
@@ -98,7 +98,7 @@ class Storage:
         return None
 
     def archive_path(self, owner: str, name: str, version: str) -> Optional[Path]:
-        p = self._version_dir(owner, name, version) / "archive.harbor"
+        p = self._version_dir(owner, name, version) / "archive.xelian"
         return p if p.is_file() else None
 
     def archive_bytes(self, owner: str, name: str, version: str) -> Optional[bytes]:

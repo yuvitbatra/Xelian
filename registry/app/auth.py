@@ -7,7 +7,7 @@ TOKEN_EXPIRY_SECONDS = 86400 * 30  # 30 days
 
 
 class AuthStore:
-    """Simple token-based auth store for the Harbor registry.
+    """Simple token-based auth store for the Xelian registry.
 
     Accounts are configured via environment variables (V1 simplicity).
     Tokens are generated on login and stored in-memory.
@@ -21,8 +21,8 @@ class AuthStore:
         self._tokens: dict[str, dict] = {}
 
     def authenticate(self, username: str, password: str) -> bool:
-        admin_username = os.environ.get("HARBOR_REGISTRY_USERNAME", "admin")
-        admin_password = os.environ.get("HARBOR_REGISTRY_PASSWORD", "admin")
+        admin_username = os.environ.get("XELIAN_REGISTRY_USERNAME", "admin")
+        admin_password = os.environ.get("XELIAN_REGISTRY_PASSWORD", "admin")
         return secrets.compare_digest(username, admin_username) and \
                secrets.compare_digest(password, admin_password)
 

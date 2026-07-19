@@ -1,6 +1,6 @@
-# Harbor Technical Specification
+# Xelian Technical Specification
 
-> Harbor is a local-first registry and runtime for AI agents and MCP servers.
+> Xelian is a local-first registry and runtime for AI agents and MCP servers.
 
 ---
 
@@ -10,14 +10,14 @@
 2. [Conventions and Terminology](#2-conventions-and-terminology)
 3. [Glossary](#3-glossary)
 4. [System Overview](#4-system-overview)
-5. [The Harbor Package Format (`.harbor`)](#5-the-harbor-package-format-harbor)
-6. [The `harbor.toml` Manifest](#6-the-harbortoml-manifest)
-7. [The `harbor.lock` Lockfile](#7-the-harborlock-lockfile)
-8. [Package Validation (`harbor push`)](#8-package-validation-harbor-push)
-9. [Runtime Execution (`harbor run`)](#9-runtime-execution-harbor-run)
+5. [The Xelian Package Format (`.xelian`)](#5-the-xelian-package-format-xelian)
+6. [The `xelian.toml` Manifest](#6-the-xeliantoml-manifest)
+7. [The `xelian.lock` Lockfile](#7-the-xelianlock-lockfile)
+8. [Package Validation (`xelian push`)](#8-package-validation-xelian-push)
+9. [Runtime Execution (`xelian run`)](#9-runtime-execution-xelian-run)
 10. [Language Runtime Management](#10-language-runtime-management)
-11. [Local Cache Layout (`~/.harbor/`)](#11-local-cache-layout-harbor)
-12. [GitHub Import (`harbor add`)](#12-github-import-harbor-add)
+11. [Local Cache Layout (`~/.xelian/`)](#11-local-cache-layout-xelian)
+12. [GitHub Import (`xelian add`)](#12-github-import-xelian-add)
 13. [CLI Command Reference](#13-cli-command-reference)
 14. [Registry](#14-registry)
 15. [Python SDK](#15-python-sdk)
@@ -30,7 +30,7 @@
 22. [Out of Scope for V1](#22-out-of-scope-for-v1)
 23. [Future Work](#23-future-work)
 24. [Appendix A: Rationale](#appendix-a-rationale)
-25. [Appendix B: Full `harbor.toml` Reference Table](#appendix-b-full-harbortoml-reference-table)
+25. [Appendix B: Full `xelian.toml` Reference Table](#appendix-b-full-xeliantoml-reference-table)
 26. [Appendix C: End-to-End Walkthrough](#appendix-c-end-to-end-walkthrough)
 27. [Appendix D: Open TODOs](#appendix-d-open-todos)
 
@@ -40,21 +40,21 @@
 
 ### 1.1 Purpose
 
-Harbor defines a standard package format and local-first runtime for AI agents and
+Xelian defines a standard package format and local-first runtime for AI agents and
 MCP (Model Context Protocol) servers. Its objective is to make running an agent feel
 identical to running a model with Ollama:
 
 ```bash
-harbor run owner/package
+xelian run owner/package
 ```
 
 downloads, verifies, installs, and launches the package with zero additional setup
 from the user. This document specifies:
 
-- the on-disk package format (`.harbor`)
-- the manifest and lockfile schemas (`harbor.toml`, `harbor.lock`)
-- the validation pipeline executed by `harbor push`
-- the resolution, verification, and execution pipeline executed by `harbor run`
+- the on-disk package format (`.xelian`)
+- the manifest and lockfile schemas (`xelian.toml`, `xelian.lock`)
+- the validation pipeline executed by `xelian push`
+- the resolution, verification, and execution pipeline executed by `xelian run`
 - the local cache layout
 - the GitHub import mechanism
 - the CLI command surface
@@ -65,7 +65,7 @@ from the user. This document specifies:
 
 ### 1.2 Non-Goals
 
-Harbor is **not**:
+Xelian is **not**:
 
 - a workflow orchestration engine
 - a container runtime (Docker, OCI) replacement
@@ -85,7 +85,7 @@ requirement appears to conflict with one of these principles, the principle wins
 unless this document explicitly states otherwise.
 
 - **Local-first.** No cloud dependency is required for execution.
-- **Single static binary.** The `harbor` CLI ships as one executable with minimal
+- **Single static binary.** The `xelian` CLI ships as one executable with minimal
   runtime dependencies.
 - **Convention over configuration.** Sensible defaults are preferred over
   configuration files.
@@ -94,26 +94,26 @@ unless this document explicitly states otherwise.
   proves the core idea is preferred.
 - **Language agnostic package format.** One format, many implementation
   languages.
-- **Native package managers remain the source of truth.** Harbor does not
+- **Native package managers remain the source of truth.** Xelian does not
   reinvent `pip`, `uv`, or `npm`.
-- **Harbor abstracts runtime differences**, not application logic.
+- **Xelian abstracts runtime differences**, not application logic.
 - **GitHub is an import source, not the canonical registry.**
 
 ### 1.4 Relationship to Prior Art
 
-Harbor's design is deliberately derivative of well-understood systems, and this
+Xelian's design is deliberately derivative of well-understood systems, and this
 specification borrows their vocabulary where useful:
 
 | Concept | Prior art analog |
 |---|---|
-| `.harbor` package | OCI image / Cargo crate / npm tarball |
-| `harbor.toml` | `Cargo.toml` / `package.json` / `pyproject.toml` |
-| `harbor.lock` | `Cargo.lock` / `package-lock.json` |
-| `harbor run owner/name` | `ollama run llama3` |
-| `harbor push` | `cargo publish` / `npm publish` |
+| `.xelian` package | OCI image / Cargo crate / npm tarball |
+| `xelian.toml` | `Cargo.toml` / `package.json` / `pyproject.toml` |
+| `xelian.lock` | `Cargo.lock` / `package-lock.json` |
+| `xelian run owner/name` | `ollama run llama3` |
+| `xelian push` | `cargo publish` / `npm publish` |
 | Registry | crates.io / npm registry / Docker Hub (distribution only, no compute) |
-| `harbor yank` | `cargo yank` |
-| `harbor login` | `gh auth login` / `docker login` |
+| `xelian yank` | `cargo yank` |
+| `xelian login` | `gh auth login` / `docker login` |
 | Python version constraints | [PEP 440](https://peps.python.org/pep-0440/) |
 | Node version constraints | [SemVer ranges](https://semver.org) |
 | MCP transport | [Model Context Protocol specification](https://modelcontextprotocol.io) |
@@ -146,33 +146,33 @@ surrounding prose explicitly says otherwise.
 
 | Term | Definition |
 |---|---|
-| **Package** | A `.harbor` archive: the canonical, immutable unit of distribution in Harbor. |
+| **Package** | A `.xelian` archive: the canonical, immutable unit of distribution in Xelian. |
 | **Agent** | A `package-type` whose entrypoint, when launched, exposes an interactive conversational REPL. |
 | **MCP server** | A `package-type` whose entrypoint, when launched, exposes a Model Context Protocol server locally. |
-| **Manifest** | `harbor.toml`, the declarative description of a package. |
-| **Lockfile** | `harbor.lock`, Harbor-generated metadata for reproducibility and validation. |
+| **Manifest** | `xelian.toml`, the declarative description of a package. |
+| **Lockfile** | `xelian.lock`, Xelian-generated metadata for reproducibility and validation. |
 | **Registry** | The service that stores and serves published packages. It never executes code. |
-| **Runtime** (language runtime) | An underlying language execution environment (e.g., a specific Python or Node.js version), managed by Harbor via `uv` or `npm`. |
-| **Runtime** (Harbor runtime) | The `harbor run` execution pipeline as a whole. Context disambiguates usage. |
+| **Runtime** (language runtime) | An underlying language execution environment (e.g., a specific Python or Node.js version), managed by Xelian via `uv` or `npm`. |
+| **Runtime** (Xelian runtime) | The `xelian run` execution pipeline as a whole. Context disambiguates usage. |
 | **Environment** | An isolated, cached installation of a package's dependencies for a specific package version. |
-| **Import** | Converting a non-Harbor source (a GitHub repository) into a Harbor package via `harbor add`. |
-| **Publish** | Uploading a validated `.harbor` package to the registry via `harbor push`. |
+| **Import** | Converting a non-Xelian source (a GitHub repository) into a Xelian package via `xelian add`. |
+| **Publish** | Uploading a validated `.xelian` package to the registry via `xelian push`. |
 | **Yank** | Marking a published version as unavailable for new resolution without deleting its archive. See [§14.7](#147-deletion-semantics-yank). |
 | **Owner** | The registry account authorized to publish, yank, and manage a given package namespace. |
-| **Cache** | The `~/.harbor/` directory tree holding downloaded packages, runtimes, environments, and models. |
+| **Cache** | The `~/.xelian/` directory tree holding downloaded packages, runtimes, environments, and models. |
 
 ---
 
 ## 4. System Overview
 
-Harbor consists of four independently deployable components:
+Xelian consists of four independently deployable components:
 
 ```mermaid
 flowchart LR
     subgraph Local Machine
-        CLI["harbor CLI (Rust)"]
+        CLI["xelian CLI (Rust)"]
         SDK["Python SDK"]
-        Cache["~/.harbor/ cache"]
+        Cache["~/.xelian/ cache"]
         Runtime["Language runtimes (uv / npm)"]
         Ollama["Ollama"]
     end
@@ -194,34 +194,34 @@ flowchart LR
 The central invariant of this architecture is: **the runtime never executes
 arbitrary repositories or arbitrary registry content directly.** Every execution
 path — a local folder, a GitHub repository, or a registry download — is first
-converted into a `.harbor` package (in memory or on disk) before `harbor run`
+converted into a `.xelian` package (in memory or on disk) before `xelian run`
 touches it.
 
 ```text
 Local folder            GitHub repository           Registry download
      |                          |                            |
      v                          v                            v
-   harbor init/push      harbor add <url>              harbor run owner/name
+   xelian init/push      xelian add <url>              xelian run owner/name
      |                          |                            |
-     +----------> Harbor package (.harbor) <-----------------+
+     +----------> Xelian package (.xelian) <-----------------+
                           |
                           v
-                    harbor run pipeline
+                    xelian run pipeline
                     (validate, install, launch)
 ```
 
 ---
 
-## 5. The Harbor Package Format (`.harbor`)
+## 5. The Xelian Package Format (`.xelian`)
 
 ### 5.1 File Extension and Container Format
 
-A Harbor package file MUST use the extension `.harbor`. Internally, a `.harbor`
+A Xelian package file MUST use the extension `.xelian`. Internally, a `.xelian`
 file MUST be a `gzip`-compressed `tar` archive (`tar.gz`), so that any standard
 `tar` implementation can inspect a package with:
 
 ```bash
-tar -tzf mypackage.harbor
+tar -tzf mypackage.xelian
 ```
 
 > **Rationale:** Reusing `tar.gz` instead of inventing a new container format
@@ -230,12 +230,12 @@ tar -tzf mypackage.harbor
 
 ### 5.2 Archive Layout
 
-A conforming `.harbor` archive root MUST contain:
+A conforming `.xelian` archive root MUST contain:
 
 ```text
-mypackage.harbor
-├── harbor.toml          # REQUIRED — manifest
-├── harbor.lock          # REQUIRED — lockfile
+mypackage.xelian
+├── xelian.toml          # REQUIRED — manifest
+├── xelian.lock          # REQUIRED — lockfile
 ├── README.md            # REQUIRED
 ├── LICENSE              # REQUIRED
 ├── src/                 # OPTIONAL — package source
@@ -254,51 +254,51 @@ outside these conventional directories.
 
 | File | Requirement |
 |---|---|
-| `harbor.toml` | MUST be present at archive root. See §6. |
-| `harbor.lock` | MUST be present at archive root. See §7. |
+| `xelian.toml` | MUST be present at archive root. See §6. |
+| `xelian.lock` | MUST be present at archive root. See §7. |
 | `README.md` | MUST be present at archive root. Rendered on the registry package page. |
 | `LICENSE` | MUST be present at archive root. Full license text, not just an SPDX identifier. |
 
-`harbor push` MUST fail validation ([§8](#8-package-validation-harbor-push)) if
+`xelian push` MUST fail validation ([§8](#8-package-validation-xelian-push)) if
 any required file is absent.
 
 ### 5.4 Exclusion Rules
 
-Harbor packaging MUST respect `.gitignore` semantics: any file or directory that
+Xelian packaging MUST respect `.gitignore` semantics: any file or directory that
 would be excluded by the project's `.gitignore` (evaluated the same way `git`
-evaluates it) MUST NOT be included in the built `.harbor` archive, even if it
+evaluates it) MUST NOT be included in the built `.xelian` archive, even if it
 exists on disk at packaging time.
 
 > **Rationale:** This prevents accidental leakage of secrets, virtual
 > environments, `node_modules/`, build artifacts, and local caches into a
 > published, immutable package.
 
-In addition, regardless of `.gitignore` contents, Harbor MUST always exclude:
+In addition, regardless of `.gitignore` contents, Xelian MUST always exclude:
 
 - version control metadata (`.git/`)
-- the `harbor.lock`-adjacent build scratch directory Harbor itself uses, if any
+- the `xelian.lock`-adjacent build scratch directory Xelian itself uses, if any
 
-Harbor MUST NOT provide a mechanism to force-include a `.gitignore`-excluded file
+Xelian MUST NOT provide a mechanism to force-include a `.gitignore`-excluded file
 into a package in V1.
 
 If the file or path referenced by `entrypoint` (§6.1) is itself excluded by
-`.gitignore`, `harbor push` MUST fail validation (§8) and packaging MUST stop —
+`.gitignore`, `xelian push` MUST fail validation (§8) and packaging MUST stop —
 this produces a package that could never run, which the validation pipeline
 exists to prevent.
 
 ### 5.5 Package Types
 
-Harbor V1 defines exactly two package types, declared via the manifest's
+Xelian V1 defines exactly two package types, declared via the manifest's
 `package-type` field:
 
-| `package-type` | Runtime behavior on `harbor run` |
+| `package-type` | Runtime behavior on `xelian run` |
 |---|---|
 | `agent` | Entrypoint is launched attached to an interactive terminal REPL. |
 | `mcp` | Entrypoint is launched as a Model Context Protocol server exposed locally. |
 
 Package type MUST NOT affect archive structure, manifest requirements (beyond
 type-conditional fields noted in §6), or the validation pipeline. Package type
-**only** affects step 11 of the `harbor run` pipeline (§9.10, "Launch").
+**only** affects step 11 of the `xelian run` pipeline (§9.10, "Launch").
 
 > **Rationale:** "One format, multiple types" is a foundational invariant
 > (§21). Introducing type-specific archive layouts would fragment the format
@@ -306,28 +306,28 @@ type-conditional fields noted in §6), or the validation pipeline. Package type
 
 ---
 
-## 6. The `harbor.toml` Manifest
+## 6. The `xelian.toml` Manifest
 
-`harbor.toml` is a [TOML](https://toml.io) file describing how Harbor installs,
-validates, and executes a package. It is the Harbor analog of `Cargo.toml` /
+`xelian.toml` is a [TOML](https://toml.io) file describing how Xelian installs,
+validates, and executes a package. It is the Xelian analog of `Cargo.toml` /
 `package.json`.
 
 ### 6.1 Required Fields
 
 | Field | Type | Description |
 |---|---|---|
-| `spec-version` | integer | The Package Format Specification version this manifest conforms to. Currently `1` (this document). Harbor MUST reject manifests declaring a `spec-version` it does not implement. |
+| `spec-version` | integer | The Package Format Specification version this manifest conforms to. Currently `1` (this document). Xelian MUST reject manifests declaring a `spec-version` it does not implement. |
 | `name` | string | Package name. MUST match the naming rules in §19.3. |
 | `version` | string | SemVer 2.0.0 version string. See §19.1. |
 | `description` | string | Single-line human-readable summary. |
 | `package-type` | string enum: `"agent"` \| `"mcp"` | See §5.5. |
-| `language` | string enum: `"python"` \| `"node"` | Determines which runtime manager (§10) Harbor invokes. |
-| `runtime` | string | Version constraint for the language runtime, in the **native ecosystem's own syntax**: [PEP 440](https://peps.python.org/pep-0440/) for `language = "python"` (e.g. `">=3.11,<4"`), a SemVer range for `language = "node"` (e.g. `">=22"`). Harbor MUST NOT invent a Harbor-specific constraint syntax and MUST delegate parsing/matching to the native runtime manager (`uv` or `npm`). |
-| `entrypoint` | string | Path (relative to archive root) or command Harbor invokes to launch the package. |
+| `language` | string enum: `"python"` \| `"node"` | Determines which runtime manager (§10) Xelian invokes. |
+| `runtime` | string | Version constraint for the language runtime, in the **native ecosystem's own syntax**: [PEP 440](https://peps.python.org/pep-0440/) for `language = "python"` (e.g. `">=3.11,<4"`), a SemVer range for `language = "node"` (e.g. `">=22"`). Xelian MUST NOT invent a Xelian-specific constraint syntax and MUST delegate parsing/matching to the native runtime manager (`uv` or `npm`). |
+| `entrypoint` | string | Path (relative to archive root) or command Xelian invokes to launch the package. |
 | `author` | table | Author identity, matched against the registry account on publish. See §6.1.1. |
 | `license` | string | SPDX license identifier (e.g. `MIT`, `Apache-2.0`). |
 | `dependencies` | table | Pointer to the package's native dependency manifest and lockfile. See §6.1.2. MUST NOT re-declare individual dependency versions already present in the native manifest — native managers remain authoritative. |
-| `permissions` | array of strings | Declared permission scopes, drawn from the closed enum in §16.1. Harbor MUST reject a manifest declaring a value outside that enum. |
+| `permissions` | array of strings | Declared permission scopes, drawn from the closed enum in §16.1. Xelian MUST reject a manifest declaring a value outside that enum. |
 | `features` | array of strings | Declared capability tags, drawn from the closed list in §17. |
 
 #### 6.1.1 Author Shape
@@ -359,7 +359,7 @@ lockfile = "package-lock.json"
 
 `manifest` MUST be present and MUST be a path, relative to the archive root, to
 the package's native dependency manifest. `lockfile` SHOULD be present when the
-native ecosystem produces one. Harbor MUST delegate all dependency resolution
+native ecosystem produces one. Xelian MUST delegate all dependency resolution
 and installation to the native package manager operating on these files (§9.8)
 — `dependencies` is a pointer, never a redeclaration.
 
@@ -392,12 +392,12 @@ DEBUG = { default = "false" }
 
 Each key is an environment variable name; its value is a table with:
 
-- `required` (boolean, default `false`) — if `true`, Harbor MUST verify the
+- `required` (boolean, default `false`) — if `true`, Xelian MUST verify the
   variable is present in the process environment immediately before launch
   (§9.10) and MUST abort with a clear error, without launching the entrypoint,
   if it is missing.
 - `default` (string, optional) — if `required` is not `true` and the variable
-  is unset in the process environment, Harbor MUST populate it with this value
+  is unset in the process environment, Xelian MUST populate it with this value
   before launch.
 
 A variable MUST NOT declare both `required = true` and `default` — a required
@@ -412,16 +412,16 @@ lint = "ruff check"
 build = "python build.py"
 ```
 
-Command names are free-form strings. Harbor MUST NOT assign special runtime
-meaning to any name in this table, including `test` — the only Harbor
+Command names are free-form strings. Xelian MUST NOT assign special runtime
+meaning to any name in this table, including `test` — the only Xelian
 behavior tied to `[commands]` is the syntactic presence check in §8.1 step 5.
 Execution of any declared command is left entirely to the package author or
-external tooling; Harbor MUST NOT execute a declared command at any point in
+external tooling; Xelian MUST NOT execute a declared command at any point in
 the validation (§8) or run (§9) pipelines.
 
 ### 6.3 The `[config]` Section
 
-Application-specific configuration that Harbor does not need to understand MUST
+Application-specific configuration that Xelian does not need to understand MUST
 live under a `[config]` table:
 
 ```toml
@@ -430,13 +430,13 @@ max_tokens = 4096
 system_prompt_file = "prompts/system.md"
 ```
 
-Harbor MUST treat the contents of `[config]` as an opaque blob: it MUST NOT
+Xelian MUST treat the contents of `[config]` as an opaque blob: it MUST NOT
 validate, interpret, or act on any key inside `[config]`. The package's own
 runtime code is solely responsible for reading and interpreting `[config]`.
 
 > **Rationale:** This is the manifest's escape hatch. It lets package authors
 > carry arbitrary structured configuration without requiring changes to this
-> specification or to the `harbor` binary.
+> specification or to the `xelian` binary.
 
 ### 6.4 Full Illustrative Example
 
@@ -479,42 +479,42 @@ lint = "ruff check"
 max_tokens = 4096
 ```
 
-See [Appendix B](#appendix-b-full-harbortoml-reference-table) for the complete
+See [Appendix B](#appendix-b-full-xeliantoml-reference-table) for the complete
 field reference table.
 
 ---
 
-## 7. The `harbor.lock` Lockfile
+## 7. The `xelian.lock` Lockfile
 
 ### 7.1 Purpose
 
-`harbor.lock` is generated by Harbor, never hand-authored, and records the
+`xelian.lock` is generated by Xelian, never hand-authored, and records the
 metadata required to reproduce and validate a specific built package. It is the
-Harbor analog of `Cargo.lock`, scoped to Harbor-level metadata only.
+Xelian analog of `Cargo.lock`, scoped to Xelian-level metadata only.
 
-Harbor MUST NOT use `harbor.lock` to replace, shadow, or duplicate a native
+Xelian MUST NOT use `xelian.lock` to replace, shadow, or duplicate a native
 lockfile (`uv.lock`, `package-lock.json`, etc). Native lockfiles remain
-authoritative for dependency resolution; `harbor.lock` records a checksum *of*
+authoritative for dependency resolution; `xelian.lock` records a checksum *of*
 the native lockfile for integrity verification, not its contents.
 
 ### 7.2 Contents and Format
 
-`harbor.lock` MUST contain the following top-level keys:
+`xelian.lock` MUST contain the following top-level keys:
 
 | Key | Description |
 |---|---|
 | `spec-version` | The Package Format Specification version this package conforms to. |
-| `harbor-version` | The version of the `harbor` binary that produced this lockfile. |
-| `package-version` | The package's own SemVer version, copied from `harbor.toml`'s `version` field. |
+| `xelian-version` | The version of the `xelian` binary that produced this lockfile. |
+| `package-version` | The package's own SemVer version, copied from `xelian.toml`'s `version` field. |
 | `generated-at` | ISO 8601 UTC timestamp of lockfile generation. |
 | `native-manifest` | The path (copied from `dependencies.manifest`, §6.1.2) to the native dependency manifest. |
 | `native-lockfile` | The path (copied from `dependencies.lockfile`, §6.1.2), if present. |
 | `native-lock-checksum` | SHA-256 of the native lockfile's contents, if `native-lockfile` is present. |
-| `package-checksum` | SHA-256 of the built `.harbor` archive. See §7.3. |
+| `package-checksum` | SHA-256 of the built `.xelian` archive. See §7.3. |
 
 ```toml
 spec-version = 1
-harbor-version = "0.4.2"
+xelian-version = "0.4.2"
 package-version = "1.2.0"
 generated-at = "2026-07-16T10:00:00Z"
 
@@ -527,67 +527,67 @@ package-checksum = "sha256:9c4b...1e02"
 
 ### 7.3 Generation and Checksum Rules
 
-- `harbor push` MUST generate or regenerate `harbor.lock` as part of the
+- `xelian push` MUST generate or regenerate `xelian.lock` as part of the
   packaging pipeline (§8).
-- Harbor MUST generate a SHA-256 checksum of the package archive
+- Xelian MUST generate a SHA-256 checksum of the package archive
   (`package-checksum`) and, if a native lockfile is declared, a separate
   SHA-256 checksum of that native lockfile's contents (`native-lock-checksum`).
 - `package-checksum` MUST be computed over the final archive contents
-  **excluding `harbor.lock` itself**, to avoid a circular hash dependency.
-  Harbor MUST NOT compute or store a checksum of `harbor.lock` itself.
-- Consumers (i.e., `harbor run`) MUST verify `package-checksum` against the
+  **excluding `xelian.lock` itself**, to avoid a circular hash dependency.
+  Xelian MUST NOT compute or store a checksum of `xelian.lock` itself.
+- Consumers (i.e., `xelian run`) MUST verify `package-checksum` against the
   downloaded archive before extraction (§9.4).
 
 ---
 
-## 8. Package Validation (`harbor push`)
+## 8. Package Validation (`xelian push`)
 
 ### 8.1 Validation Pipeline
 
-`harbor push` MUST perform the following steps, in order, before any network
+`xelian push` MUST perform the following steps, in order, before any network
 upload occurs:
 
-1. Parse and validate `harbor.toml` against the schema in §6 — including
+1. Parse and validate `xelian.toml` against the schema in §6 — including
    rejecting `permissions` values outside the closed enum in §16.1 and, if
    `os` is present, rejecting unrecognized OS identifiers. Missing required
    fields or an unsupported `spec-version` MUST fail validation.
-2. Validate `harbor.lock` if one already exists on disk (i.e., re-validate
+2. Validate `xelian.lock` if one already exists on disk (i.e., re-validate
    before regenerating).
 3. Verify all required files exist (§5.3).
 4. Verify the file or command referenced by `entrypoint` exists at the declared
    path, and is not excluded by `.gitignore` (§5.4).
 5. If `[commands]` (§6.2.2) is present, verify each value is a non-empty
-   string. Harbor MUST NOT verify that a declared command's underlying tool is
+   string. Xelian MUST NOT verify that a declared command's underlying tool is
    installed or resolvable, and MUST NOT execute any declared command.
 6. Compute the SHA-256 package checksum (§7.3).
-7. Generate or update `harbor.lock`.
-8. Build the final `.harbor` archive (`tar.gz`), applying the exclusion rules
+7. Generate or update `xelian.lock`.
+8. Build the final `.xelian` archive (`tar.gz`), applying the exclusion rules
    of §5.4.
 
-If any step fails, packaging MUST stop immediately and `harbor push` MUST exit
+If any step fails, packaging MUST stop immediately and `xelian push` MUST exit
 with a non-zero status without contacting the registry.
 
 ### 8.2 Failure Semantics
 
-Validation failure is **fail-fast**: Harbor MUST NOT attempt to "partially"
+Validation failure is **fail-fast**: Xelian MUST NOT attempt to "partially"
 package or upload a package that fails any step in §8.1. There is no partial or
 draft publish state in V1.
 
 ### 8.3 Checksum Generation
 
-The package checksum MUST be SHA-256, MUST be recorded in `harbor.lock`
+The package checksum MUST be SHA-256, MUST be recorded in `xelian.lock`
 (§7.2), and MUST be independently re-verified by every downloader in the
-`harbor run` pipeline (§9.4). Harbor MUST NOT support alternative or
+`xelian run` pipeline (§9.4). Xelian MUST NOT support alternative or
 configurable checksum algorithms in V1.
 
 ### 8.4 No Arbitrary Code Execution During Validation
 
-Harbor MUST NOT execute any application code belonging to the package being
-validated — including any declared `[commands]` entry — during `harbor push`.
+Xelian MUST NOT execute any application code belonging to the package being
+validated — including any declared `[commands]` entry — during `xelian push`.
 Validation is limited to static checks: file existence, manifest schema
 conformance, and checksum computation.
 
-> **Rationale:** `harbor push` runs on the package author's machine, but a
+> **Rationale:** `xelian push` runs on the package author's machine, but a
 > future hosted validation step (e.g., a registry-side re-validation) cannot
 > safely execute arbitrary uploaded code. Keeping validation purely static from
 > V1 onward avoids building a sandboxing requirement into the critical path,
@@ -600,26 +600,26 @@ conformance, and checksum computation.
 
 ---
 
-## 9. Runtime Execution (`harbor run`)
+## 9. Runtime Execution (`xelian run`)
 
 ### 9.1 Pipeline Overview
 
-`harbor run <target>` MUST execute the following steps in order:
+`xelian run <target>` MUST execute the following steps in order:
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant C as harbor CLI
-    participant Cache as ~/.harbor/
+    participant C as xelian CLI
+    participant Cache as ~/.xelian/
     participant R as Registry
     participant Sys as Language Runtime / Ollama
 
-    U->>C: harbor run owner/package
+    U->>C: xelian run owner/package
     C->>C: 1. Resolve target
     C->>Cache: 2. Check local cache
     alt not cached
         C->>R: 3. Download package
-        R-->>C: .harbor archive
+        R-->>C: .xelian archive
     end
     C->>C: 4. Verify SHA-256
     C->>Cache: 5. Extract package
@@ -646,69 +646,69 @@ sequenceDiagram
 
 ### 9.2 Target Resolution
 
-`harbor run` MUST accept exactly two target forms:
+`xelian run` MUST accept exactly two target forms:
 
 | Form | Example | Resolution |
 |---|---|---|
 | Registry reference | `owner/package` | Resolved against the registry (§14) to the current latest stable, non-yanked, non-pre-release version. |
-| GitHub URL | `https://github.com/owner/repo` | Resolved via the GitHub import pipeline (§12) — the repository is converted into a Harbor package before execution. |
+| GitHub URL | `https://github.com/owner/repo` | Resolved via the GitHub import pipeline (§12) — the repository is converted into a Xelian package before execution. |
 
-Harbor MUST distinguish these forms syntactically (e.g., presence of a URL
+Xelian MUST distinguish these forms syntactically (e.g., presence of a URL
 scheme and `github.com` host) before attempting resolution. Any other input
-form is invalid and Harbor MUST exit with an error rather than guessing.
+form is invalid and Xelian MUST exit with an error rather than guessing.
 
-**V1 does not support version pinning.** `harbor run owner/package` always
+**V1 does not support version pinning.** `xelian run owner/package` always
 resolves to the highest SemVer version that is currently published, not
 yanked, and not a pre-release (§19.1). There is no `owner/package@version`
-syntax in V1; explicit version selection via `harbor run` is deferred to a
+syntax in V1; explicit version selection via `xelian run` is deferred to a
 future release (§23).
 
 ### 9.3 Cache Check and Download
 
-Harbor MUST check `~/.harbor/packages/` (§11) for a cached copy of the
-resolved, exact version before making any network request. If present, Harbor
+Xelian MUST check `~/.xelian/packages/` (§11) for a cached copy of the
+resolved, exact version before making any network request. If present, Xelian
 MUST skip the download step entirely and proceed to §9.4 using the cached
 archive.
 
-If absent, Harbor MUST download the `.harbor` archive from the registry.
+If absent, Xelian MUST download the `.xelian` archive from the registry.
 
 ### 9.4 Checksum Verification
 
-Before extraction, Harbor MUST recompute the SHA-256 of the downloaded (or
+Before extraction, Xelian MUST recompute the SHA-256 of the downloaded (or
 cached) archive and compare it against the `package-checksum` recorded in the
-package's `harbor.lock` (as served by the registry alongside the archive). On
-mismatch, Harbor MUST abort and MUST NOT extract or execute the archive.
+package's `xelian.lock` (as served by the registry alongside the archive). On
+mismatch, Xelian MUST abort and MUST NOT extract or execute the archive.
 
-> **Rationale:** This is Harbor's primary integrity guarantee in V1, in the
+> **Rationale:** This is Xelian's primary integrity guarantee in V1, in the
 > absence of package signing (§20.2, out of scope for V1).
 
 ### 9.5 Extraction
 
-Harbor MUST extract the verified archive into a package-and-version-scoped
-directory under `~/.harbor/packages/` (§11.1). Extraction MUST NOT overwrite an
+Xelian MUST extract the verified archive into a package-and-version-scoped
+directory under `~/.xelian/packages/` (§11.1). Extraction MUST NOT overwrite an
 existing extracted copy of the same package **version** — since packages are
 immutable (§19.2), a matching version already on disk is assumed identical and
 extraction MAY be skipped as an optimization.
 
 ### 9.6 Manifest Validation
 
-Harbor MUST re-parse and re-validate `harbor.toml` from the extracted package
+Xelian MUST re-parse and re-validate `xelian.toml` from the extracted package
 using the same schema rules as §8.1 step 1, and MUST verify the `spec-version`
-is one this `harbor` binary implements. This is a defense-in-depth check: a
+is one this `xelian` binary implements. This is a defense-in-depth check: a
 package that passed validation at publish time is still re-validated at run
-time, since the binary performing `harbor run` may be a different (older or
-newer) version than the one that ran `harbor push`.
+time, since the binary performing `xelian run` may be a different (older or
+newer) version than the one that ran `xelian push`.
 
 #### 9.6.1 OS Compatibility Check
 
 If the manifest declares `os` (§6.2) and the current operating system is not
-in that list, Harbor MUST fail immediately with a clear error identifying the
+in that list, Xelian MUST fail immediately with a clear error identifying the
 unsupported OS and MUST NOT proceed to any further pipeline step (§9.7
 onward) or attempt execution.
 
 ### 9.7 Runtime Existence Check
 
-Based on the manifest's `language` field, Harbor MUST ensure the corresponding
+Based on the manifest's `language` field, Xelian MUST ensure the corresponding
 language runtime manager is available (§10):
 
 - `language = "python"` → ensure `uv` is available; use it to install and
@@ -717,16 +717,16 @@ language runtime manager is available (§10):
 - `language = "node"` → ensure a Node.js runtime satisfying the `runtime`
   field's SemVer range is available, managed via `npm`.
 
-If the runtime manager itself is missing, Harbor MUST install it automatically
+If the runtime manager itself is missing, Xelian MUST install it automatically
 without requiring manual user action (§10).
 
 ### 9.8 Environment Creation and Dependency Installation
 
-Harbor MUST create or reuse exactly one isolated environment per
-`(package name, version)` pair, cached under `~/.harbor/envs/` (§11.1), and
+Xelian MUST create or reuse exactly one isolated environment per
+`(package name, version)` pair, cached under `~/.xelian/envs/` (§11.1), and
 MUST reuse it across every subsequent launch of that same package version
 rather than rebuilding it. The environment cache key MUST be the
-`(name, version)` pair alone — Harbor MUST NOT compute or key environment
+`(name, version)` pair alone — Xelian MUST NOT compute or key environment
 reuse on a hash of resolved dependencies in V1.
 
 > **Rationale:** Since packages are immutable (§19.2), `(name, version)` alone
@@ -734,7 +734,7 @@ reuse on a hash of resolved dependencies in V1.
 > dependencies for that version cannot change after publish. Hashing
 > dependency contents as an additional cache key would be redundant
 > complexity. This is a distinct concern from the `native-lock-checksum` in
-> `harbor.lock` (§7.2), which exists for publish-time integrity, not
+> `xelian.lock` (§7.2), which exists for publish-time integrity, not
 > run-time environment cache invalidation.
 
 Dependency installation MUST be delegated to the native package manager
@@ -745,40 +745,40 @@ lockfile.
 ### 9.9 Model Management
 
 If the manifest declares `primary-model` (§6.2) and the model is not already
-present in `~/.harbor/models/` (§11.1) or in Ollama's own store, Harbor MUST
+present in `~/.xelian/models/` (§11.1) or in Ollama's own store, Xelian MUST
 download it before launch (§18). If the Ollama binary/daemon itself is not
-present on the system, Harbor MUST install it automatically before attempting
+present on the system, Xelian MUST install it automatically before attempting
 any model download — consistent with the "users never manually install
 runtimes" requirement in §10.3.
 
 ### 9.10 Launch
 
-Immediately before launching the entrypoint, Harbor MUST validate any
+Immediately before launching the entrypoint, Xelian MUST validate any
 `required = true` entries in `[environment]` (§6.2.1) are present in the
 process environment, applying declared `default` values where applicable, and
 MUST abort with a clear error — without launching the entrypoint — if a
 required variable is missing.
 
-Harbor MUST then launch the package's `entrypoint` using the environment
+Xelian MUST then launch the package's `entrypoint` using the environment
 created in §9.8. Launch behavior is conditional on `package-type` (§5.5):
 
 #### 9.10.1 `package-type = "agent"`
 
-Harbor MUST attach the entrypoint process's stdin/stdout/stderr to the user's
-terminal, producing an interactive conversational REPL. `harbor run` MUST block
+Xelian MUST attach the entrypoint process's stdin/stdout/stderr to the user's
+terminal, producing an interactive conversational REPL. `xelian run` MUST block
 for the duration of the interactive session.
 
 #### 9.10.2 `package-type = "mcp"`
 
-Harbor MUST launch the entrypoint as a server process and expose it locally.
+Xelian MUST launch the entrypoint as a server process and expose it locally.
 
 **Transport:** the default MCP transport is **stdio**, per the official
 [Model Context Protocol specification](https://modelcontextprotocol.io).
-Harbor MAY support additional transports (HTTP/SSE, WebSocket) in a future
+Xelian MAY support additional transports (HTTP/SSE, WebSocket) in a future
 release (§23); V1 implementations MUST support stdio.
 
-**Port allocation:** if the manifest declares `port` (§6.2), Harbor MUST
-attempt to bind that port first. If the requested port is unavailable, Harbor
+**Port allocation:** if the manifest declares `port` (§6.2), Xelian MUST
+attempt to bind that port first. If the requested port is unavailable, Xelian
 MUST automatically select a free port instead and MUST inform the user which
 port was actually selected. This allows multiple MCP servers to run
 simultaneously without manual port coordination.
@@ -786,8 +786,8 @@ simultaneously without manual port coordination.
 ### 9.11 Cache Persistence
 
 Downloaded and extracted packages, created environments, and downloaded models
-MUST remain cached indefinitely until explicitly removed via `harbor rm`
-(§13.6). `harbor run` MUST NOT perform implicit cache eviction.
+MUST remain cached indefinitely until explicitly removed via `xelian rm`
+(§13.6). `xelian run` MUST NOT perform implicit cache eviction.
 
 ---
 
@@ -796,20 +796,20 @@ MUST remain cached indefinitely until explicitly removed via `harbor rm`
 ### 10.1 Python
 
 Python runtime management MUST be delegated to [`uv`](https://github.com/astral-sh/uv).
-Harbor MUST install `uv` automatically if it is not already present on the
+Xelian MUST install `uv` automatically if it is not already present on the
 user's system, and MUST use it to install and manage the CPython version
 required by a package's `runtime` constraint (§6.1).
 
 ### 10.2 Node.js
 
-Node.js runtime management MUST be delegated to `npm`. Harbor MUST install the
+Node.js runtime management MUST be delegated to `npm`. Xelian MUST install the
 official Node.js runtime automatically if not already present, and MUST
 manage packages for the installed runtime using `npm`.
 
 ### 10.3 User Experience Requirement
 
 Users MUST NOT be required to manually install Python or Node.js to run any
-Harbor package, regardless of the package's implementation language. This is a
+Xelian package, regardless of the package's implementation language. This is a
 hard requirement derived directly from the "batteries included" design
 principle (§1.3) and is load-bearing for the "Ollama feel" success criterion.
 
@@ -823,17 +823,17 @@ support does not require redesigning this section.
 
 ---
 
-## 11. Local Cache Layout (`~/.harbor/`)
+## 11. Local Cache Layout (`~/.xelian/`)
 
 ### 11.1 Directory Structure
 
 ```text
-~/.harbor/
-├── packages/           # Downloaded/extracted .harbor packages: packages/<owner>/<name>/<version>/
+~/.xelian/
+├── packages/           # Downloaded/extracted .xelian packages: packages/<owner>/<name>/<version>/
 ├── runtimes/            # Managed language runtimes (Python via uv, Node via npm)
 ├── envs/                # Isolated per-package-version environments: envs/<owner>/<name>/<version>/
 ├── models/               # Downloaded Ollama models: models/<model-name>/
-├── logs/                  # Harbor CLI operation logs
+├── logs/                  # Xelian CLI operation logs
 ├── tmp/                    # Scratch space for in-progress downloads/extraction
 └── credentials.toml        # Registry authentication token(s) — see §14.4. MUST be created with 0600 permissions.
 ```
@@ -844,52 +844,52 @@ cached artifact can always be located without ambiguity.
 
 ### 11.2 Retention
 
-Nothing under `~/.harbor/` is time-limited or automatically evicted in V1.
-Removal is exclusively user-initiated via `harbor rm` (§13.6).
+Nothing under `~/.xelian/` is time-limited or automatically evicted in V1.
+Removal is exclusively user-initiated via `xelian rm` (§13.6).
 
 ### 11.3 Scope and Credential Isolation
 
-`~/.harbor/` is local cache state, not registry state. Deleting the cache
+`~/.xelian/` is local cache state, not registry state. Deleting the cache
 subdirectories (`packages/`, `envs/`, `runtimes/`, `models/`) MUST have no
 effect on anything published to the registry.
 
 `credentials.toml` MUST NOT live inside `packages/`, `envs/`, `runtimes/`, or
-`models/` — it is a top-level file in `~/.harbor/`, kept separate from the
+`models/` — it is a top-level file in `~/.xelian/`, kept separate from the
 cache subdirectories so that clearing the cache does not silently sign the
-user out. `harbor rm --all` (§13.6) MUST NOT delete `credentials.toml`.
+user out. `xelian rm --all` (§13.6) MUST NOT delete `credentials.toml`.
 
 ---
 
-## 12. GitHub Import (`harbor add`)
+## 12. GitHub Import (`xelian add`)
 
 ### 12.1 Purpose
 
 GitHub repositories are an **import source**, not the canonical registry
-(§1.3, §21). `harbor add <github-url>` converts a repository into a Harbor
+(§1.3, §21). `xelian add <github-url>` converts a repository into a Xelian
 package, caches it, and runs it — without requiring an explicit publish step.
 
 ### 12.2 Workflow
 
 ```mermaid
 flowchart TD
-    A["harbor add https://github.com/owner/repo"] --> B["Resolve default branch to a commit SHA"]
+    A["xelian add https://github.com/owner/repo"] --> B["Resolve default branch to a commit SHA"]
     B --> C[Download repository at that SHA]
     C --> D[Detect project language]
-    D --> E["Infer harbor.toml"]
-    E --> F["Generate harbor.lock"]
-    F --> G["Generate Harbor package (.harbor)"]
-    G --> H["Cache under ~/.harbor/packages/, addressed by commit SHA"]
-    H --> I["Run (same pipeline as harbor run, from step 6 onward)"]
+    D --> E["Infer xelian.toml"]
+    E --> F["Generate xelian.lock"]
+    F --> G["Generate Xelian package (.xelian)"]
+    G --> H["Cache under ~/.xelian/packages/, addressed by commit SHA"]
+    H --> I["Run (same pipeline as xelian run, from step 6 onward)"]
 ```
 
 1. Resolve the repository's default branch to a specific commit SHA, and
-   download the repository at that SHA. Harbor MUST cache and address the
+   download the repository at that SHA. Xelian MUST cache and address the
    resulting package **by commit SHA, not by branch name**, to ensure
    reproducible re-imports.
 2. Detect the project's language, in the following order of precedence:
    1. `pyproject.toml` present → `language = "python"`
    2. `package.json` present → `language = "node"`
-   3. `Cargo.toml` present → an as-yet-unsupported language (Rust). Harbor
+   3. `Cargo.toml` present → an as-yet-unsupported language (Rust). Xelian
       MUST fail with a clear "unsupported language" error rather than
       attempting import, since no `language = "rust"` runtime manager exists
       in V1 (§22).
@@ -897,26 +897,26 @@ flowchart TD
    This detection order is extensible: future languages are added by
    appending additional manifest-file checks, not by redesigning the
    precedence mechanism.
-3. Infer a `harbor.toml` manifest from repository conventions. Harbor MUST
+3. Infer a `xelian.toml` manifest from repository conventions. Xelian MUST
    infer `language`, `runtime`, `entrypoint`, and `dependencies` from the
    detected project structure. Every other required or optional field (§6.1,
    §6.2) that cannot be mechanically derived MUST receive a placeholder value
-   for the user to edit before publishing — `harbor add` MUST NOT fail merely
+   for the user to edit before publishing — `xelian add` MUST NOT fail merely
    because non-inferable fields are placeholders, since imported packages are
-   local-only until an explicit `harbor push` (§12.3), at which point normal
+   local-only until an explicit `xelian push` (§12.3), at which point normal
    validation (§8) applies and MUST reject any field still holding an invalid
    placeholder.
-4. Generate a `harbor.lock` (§7).
-5. Generate the `.harbor` package internally (same archive format as §5).
-6. Cache it under `~/.harbor/packages/` (§11.1), addressed by commit SHA.
-7. Run it through the same execution pipeline as `harbor run` (§9), starting
+4. Generate a `xelian.lock` (§7).
+5. Generate the `.xelian` package internally (same archive format as §5).
+6. Cache it under `~/.xelian/packages/` (§11.1), addressed by commit SHA.
+7. Run it through the same execution pipeline as `xelian run` (§9), starting
    from manifest validation (§9.6) onward.
 
-### 12.3 Relationship to `harbor push`
+### 12.3 Relationship to `xelian push`
 
-`harbor add` MUST NOT publish anything to the registry. The package it
+`xelian add` MUST NOT publish anything to the registry. The package it
 generates is local-only cache state. Publishing an imported package to the
-registry still requires an explicit, separate `harbor push` — imported and
+registry still requires an explicit, separate `xelian push` — imported and
 locally-generated packages are not implicitly promoted to public packages.
 
 > **Rationale:** This preserves "GitHub is an import source, not the canonical
@@ -928,130 +928,130 @@ locally-generated packages are not implicitly promoted to public packages.
 ## 13. CLI Command Reference
 
 The CLI surface below matches the commands enumerated in the design record,
-plus `harbor login`/`harbor logout`/`harbor yank`, added to satisfy the
+plus `xelian login`/`xelian logout`/`xelian yank`, added to satisfy the
 requirement that package owners be able to authenticate, publish, and remove
 their own packages (§14.4–§14.7).
 
-### 13.1 `harbor init`
+### 13.1 `xelian init`
 
-Creates a new package skeleton in the current directory: `harbor.toml` and
-`harbor.lock`.
+Creates a new package skeleton in the current directory: `xelian.toml` and
+`xelian.lock`.
 
 ```bash
-harbor init
+xelian init
 ```
 
-`harbor init` MUST NOT contact the network or the registry.
+`xelian init` MUST NOT contact the network or the registry.
 
-### 13.2 `harbor push`
+### 13.2 `xelian push`
 
 Validates (§8) and publishes the current package to the registry. Requires
 authentication (§14.4).
 
 ```bash
-harbor push
+xelian push
 ```
 
-`harbor push` MUST perform the full validation pipeline (§8.1) before any
+`xelian push` MUST perform the full validation pipeline (§8.1) before any
 network activity, and MUST reject republishing an already-published
 `(name, version)` pair (§19.2).
 
-### 13.3 `harbor run`
+### 13.3 `xelian run`
 
 Downloads (if necessary) and executes a package. See §9.
 
 ```bash
-harbor run owner/package
-harbor run https://github.com/owner/repo
+xelian run owner/package
+xelian run https://github.com/owner/repo
 ```
 
-Version pinning (`owner/package@version`) is not part of V1 syntax — `harbor
+Version pinning (`owner/package@version`) is not part of V1 syntax — `xelian
 run owner/package` always resolves to the latest stable, non-yanked version
 (§9.2). See [Future Work](#23-future-work).
 
-### 13.4 `harbor add`
+### 13.4 `xelian add`
 
-Imports a GitHub repository as a local Harbor package and runs it. See §12.
+Imports a GitHub repository as a local Xelian package and runs it. See §12.
 
 ```bash
-harbor add https://github.com/owner/repo
+xelian add https://github.com/owner/repo
 ```
 
-### 13.5 `harbor list`
+### 13.5 `xelian list`
 
 Lists **locally cached** packages. This is a local cache inspection command,
 not a registry search command — CLI-driven registry search is explicitly out
 of scope for V1 (§22).
 
 ```bash
-harbor list
+xelian list
 ```
 
-### 13.6 `harbor rm`
+### 13.6 `xelian rm`
 
-Removes cached package state from `~/.harbor/` (§11).
+Removes cached package state from `~/.xelian/` (§11).
 
 ```bash
-harbor rm owner/package              # remove the cached package only
-harbor rm owner/package --env        # also remove its cached environment
-harbor rm --all                      # remove everything under packages/, envs/, runtimes/, and models/
+xelian rm owner/package              # remove the cached package only
+xelian rm owner/package --env        # also remove its cached environment
+xelian rm --all                      # remove everything under packages/, envs/, runtimes/, and models/
 ```
 
-`harbor rm owner/package` (without `--env`) removes all locally cached
-versions of that package but leaves its environment(s) under `~/.harbor/envs/`
-intact for faster reinstallation if the package is run again. `harbor rm
+`xelian rm owner/package` (without `--env`) removes all locally cached
+versions of that package but leaves its environment(s) under `~/.xelian/envs/`
+intact for faster reinstallation if the package is run again. `xelian rm
 --all` MUST NOT delete `credentials.toml` (§11.3).
 
-`harbor rm` MUST only affect local cache state (§11) and MUST NOT affect the
+`xelian rm` MUST only affect local cache state (§11) and MUST NOT affect the
 registry's copy of the package.
 
-### 13.7 `harbor login`
+### 13.7 `xelian login`
 
 Authenticates the CLI against the registry via a browser-based OAuth flow
 (similar to `gh auth login` / `docker login`) and stores the resulting
-credential in `~/.harbor/credentials.toml` (§11.1, §14.4).
+credential in `~/.xelian/credentials.toml` (§11.1, §14.4).
 
 ```bash
-harbor login
+xelian login
 ```
 
-### 13.8 `harbor logout`
+### 13.8 `xelian logout`
 
-Removes the stored credential from `~/.harbor/credentials.toml`.
+Removes the stored credential from `~/.xelian/credentials.toml`.
 
 ```bash
-harbor logout
+xelian logout
 ```
 
-### 13.9 `harbor yank`
+### 13.9 `xelian yank`
 
 Marks a published version as yanked (§14.7) or reverses that. Requires
 authentication as the package's owner (§14.4). MUST NOT delete the underlying
 archive.
 
 ```bash
-harbor yank owner/package --version 1.2.0
-harbor yank owner/package --version 1.2.0 --undo
+xelian yank owner/package --version 1.2.0
+xelian yank owner/package --version 1.2.0 --undo
 ```
 
-> **Rationale:** `harbor yank` targets an explicit version via `--version`
+> **Rationale:** `xelian yank` targets an explicit version via `--version`
 > rather than a `owner/package@version` pin, since pin syntax is not part of
 > V1 (§9.2, §13.3). Yanking is inherently version-specific regardless of
-> whether `harbor run` supports pinning.
+> whether `xelian run` supports pinning.
 
 ### 13.10 Command Summary Table
 
 | Command | Network? | Auth required? | Mutates registry? | Mutates local cache? |
 |---|---|---|---|---|
-| `harbor init` | No | No | No | Yes (creates files in CWD, not cache) |
-| `harbor push` | Yes | Yes | Yes (publish) | No |
-| `harbor run` | Maybe (if not cached) | No | No | Yes (cache write) |
-| `harbor add` | Yes | No | No | Yes (cache write) |
-| `harbor list` | No | No | No | No (read-only) |
-| `harbor rm` | No | No | No | Yes (cache delete) |
-| `harbor login` | Yes | No (establishes it) | No | Yes (writes credentials) |
-| `harbor logout` | No | No | No | Yes (deletes credentials) |
-| `harbor yank` | Yes | Yes | Yes (marks version yanked) | No |
+| `xelian init` | No | No | No | Yes (creates files in CWD, not cache) |
+| `xelian push` | Yes | Yes | Yes (publish) | No |
+| `xelian run` | Maybe (if not cached) | No | No | Yes (cache write) |
+| `xelian add` | Yes | No | No | Yes (cache write) |
+| `xelian list` | No | No | No | No (read-only) |
+| `xelian rm` | No | No | No | Yes (cache delete) |
+| `xelian login` | Yes | No (establishes it) | No | Yes (writes credentials) |
+| `xelian logout` | No | No | No | Yes (deletes credentials) |
+| `xelian yank` | Yes | Yes | Yes (marks version yanked) | No |
 
 ---
 
@@ -1081,11 +1081,11 @@ Package (namespace = owner)
   ├── name
   └── Versions[]
         ├── version (SemVer)
-        ├── archive (.harbor, immutable)
+        ├── archive (.xelian, immutable)
         ├── checksum (sha256)
-        ├── harbor.lock (as published)
+        ├── xelian.lock (as published)
         ├── README (rendered from archive contents)
-        ├── metadata (description, tags, permissions, features — read from harbor.toml)
+        ├── metadata (description, tags, permissions, features — read from xelian.toml)
         ├── published_at
         └── yanked: bool
 ```
@@ -1098,13 +1098,13 @@ exists, resolution MUST fail with a clear error rather than silently falling
 back to a yanked or pre-release version.
 
 V1 provides no mechanism to resolve a specific, non-latest version through
-`harbor run` — see §9.2 and [Future Work](#23-future-work).
+`xelian run` — see §9.2 and [Future Work](#23-future-work).
 
 ### 14.4 Authentication and Authorization
 
-Registry-mutating operations — `harbor push` and `harbor yank` — MUST require
+Registry-mutating operations — `xelian push` and `xelian yank` — MUST require
 an authenticated request identifying a registry account. The CLI obtains and
-stores this credential via `harbor login` (§13.7), using a browser-based OAuth
+stores this credential via `xelian login` (§13.7), using a browser-based OAuth
 flow.
 
 Authorization rule: an account MAY publish or yank a package only if the
@@ -1114,11 +1114,11 @@ of scope (§22).
 
 ### 14.5 Publishing (Upload)
 
-Publishing occurs exclusively via `harbor push` (§13.2) after full local
+Publishing occurs exclusively via `xelian push` (§13.2) after full local
 validation (§8). The registry SHOULD additionally verify, on receipt:
 
 - the uploaded archive's SHA-256 matches `package-checksum` in the
-  accompanying `harbor.lock`.
+  accompanying `xelian.lock`.
 - `(name, version)` has not been previously published (§19.2).
 
 The registry MUST NOT execute the uploaded package (§14.1).
@@ -1127,14 +1127,14 @@ The registry MUST NOT execute the uploaded package (§14.1).
 
 **There is no in-place update operation.** Any change to a package — including
 changes limited to `README.md`, `description`, or `tags` — MUST be published
-as a new SemVer version via `harbor push`. The registry MUST NOT expose any
+as a new SemVer version via `xelian push`. The registry MUST NOT expose any
 API or CLI path that mutates the content or metadata of an already-published
 version.
 
 > **Rationale:** A package's displayed README, description, and tags are read
-> directly from the immutable archive's `harbor.toml`/`README.md` (§14.2). If
+> directly from the immutable archive's `xelian.toml`/`README.md` (§14.2). If
 > the registry allowed editing that metadata independently of the archive, the
-> registry's displayed information could drift from what `harbor run` actually
+> registry's displayed information could drift from what `xelian run` actually
 > installs — silently breaking the trust relationship between "what you see on
 > the package page" and "what you get." Requiring a new version for any
 > change, including docs-only fixes, keeps exactly one source of truth per
@@ -1143,25 +1143,25 @@ version.
 ### 14.7 Deletion Semantics: Yank
 
 **Published package versions MUST NOT be hard-deleted via any self-service,
-owner-facing CLI or API path in V1.** Instead, Harbor provides *yanking* as a
+owner-facing CLI or API path in V1.** Instead, Xelian provides *yanking* as a
 V1 feature.
 
 #### 14.7.1 Yank Behavior
 
-`harbor yank owner/package --version <version>` (§13.9), when authorized
+`xelian yank owner/package --version <version>` (§13.9), when authorized
 (§14.4), MUST:
 
 - mark that version as `yanked = true` in the registry's data model (§14.2).
-- remove it from resolution (§14.3) — `harbor run owner/package` MUST skip
+- remove it from resolution (§14.3) — `xelian run owner/package` MUST skip
   yanked versions when selecting the highest version.
 - **NOT** delete the archive, checksum, or metadata.
 - **NOT** affect anyone who already has that version cached locally (§11.2).
 
-`harbor yank owner/package --version <version> --undo` MUST reverse this: set
+`xelian yank owner/package --version <version> --undo` MUST reverse this: set
 `yanked = false`.
 
-Because V1 has no version-pinning mechanism for `harbor run` (§9.2, §23), a
-yanked version cannot be intentionally re-fetched through `harbor run` once it
+Because V1 has no version-pinning mechanism for `xelian run` (§9.2, §23), a
+yanked version cannot be intentionally re-fetched through `xelian run` once it
 is no longer the resolved latest — it remains retrievable only via an
 already-existing local cache (§11.2) or direct registry API access (§14.8).
 
@@ -1177,7 +1177,7 @@ already-existing local cache (§11.2) or direct registry API access (§14.8).
 #### 14.7.2 Hard Delete (Administrative Only)
 
 True, irreversible removal of a package archive from registry storage MUST NOT
-be exposed as a self-service `harbor` CLI command or public registry API
+be exposed as a self-service `xelian` CLI command or public registry API
 endpoint in V1. It exists only as a registry-operator/administrative
 capability (e.g., a manual operation performed by whoever runs the registry
 infrastructure), reserved for legal takedown, security incidents (e.g.,
@@ -1203,11 +1203,11 @@ The following three routes are the ratified V1 baseline:
 Registry-driven search is explicitly not part of this surface (§22). Exact
 request/response schemas are left to implementation.
 
-> **TODO-15:** Routes for `harbor yank`/`harbor login` (authentication and
+> **TODO-15:** Routes for `xelian yank`/`xelian login` (authentication and
 > yank/unyank) are necessary (§13.7, §13.9) but not covered by the ratified
 > baseline above; their exact shape remains open. An illustrative,
 > non-normative sketch: `PATCH /packages/{owner}/{package}/{version}` for
-> yank/unyank, and an OAuth token/callback route pair for `harbor login`.
+> yank/unyank, and an OAuth token/callback route pair for `xelian login`.
 
 ### 14.9 Website
 
@@ -1222,9 +1222,9 @@ i.e., it is a client of the same registry API, not a separate control plane.
 
 ### 15.1 Responsibilities
 
-The Python SDK wraps the `harbor` CLI (i.e., it MUST NOT reimplement
+The Python SDK wraps the `xelian` CLI (i.e., it MUST NOT reimplement
 resolution, validation, or execution logic independently — it shells out to
-`harbor`) and exposes a Python interface to:
+`xelian`) and exposes a Python interface to:
 
 - install packages
 - execute packages
@@ -1241,23 +1241,23 @@ resolution, validation, or execution logic independently — it shells out to
 The SDK's initial API surface consists of four top-level functions:
 
 ```python
-import harbor
+import xelian
 
-harbor.install("owner/package")          # download + prepare, without launching
-pkg = harbor.run("owner/research_assistant")     # generic: install (if needed) + launch
+xelian.install("owner/package")          # download + prepare, without launching
+pkg = xelian.run("owner/research_assistant")     # generic: install (if needed) + launch
 response = pkg.chat("Summarize the latest arXiv papers on MCP.")
 
-agent = harbor.agent("owner/research_assistant")  # convenience wrapper: asserts package-type == "agent"
-mcp = harbor.mcp("owner/some_mcp_server")         # convenience wrapper: asserts package-type == "mcp"
+agent = xelian.agent("owner/research_assistant")  # convenience wrapper: asserts package-type == "agent"
+mcp = xelian.mcp("owner/some_mcp_server")         # convenience wrapper: asserts package-type == "mcp"
 mcp.expose()  # makes the local MCP server available to an MCP client
 ```
 
-- `harbor.install(target)` MUST perform pipeline steps 1–9 (§9.1) without
+- `xelian.install(target)` MUST perform pipeline steps 1–9 (§9.1) without
   launching (step 11) — it prepares a package for use without starting it.
-- `harbor.run(target)` MUST perform the full pipeline (§9.1) and return a
+- `xelian.run(target)` MUST perform the full pipeline (§9.1) and return a
   handle appropriate to the package's `package-type`.
-- `harbor.agent(target)` and `harbor.mcp(target)` MUST behave identically to
-  `harbor.run(target)`, except each MUST raise an error if the resolved
+- `xelian.agent(target)` and `xelian.mcp(target)` MUST behave identically to
+  `xelian.run(target)`, except each MUST raise an error if the resolved
   package's `package-type` does not match (`agent`/`mcp` respectively).
 
 > **TODO-29 (partially open):** Exact method names on the returned handle
@@ -1270,7 +1270,7 @@ mcp.expose()  # makes the local MCP server available to an MCP client
 
 ### 16.1 Declaration
 
-Packages declare requested permissions in `harbor.toml`'s `permissions` array
+Packages declare requested permissions in `xelian.toml`'s `permissions` array
 (§6.1), drawn from a **closed enum**:
 
 ```text
@@ -1283,16 +1283,16 @@ location
 notifications
 ```
 
-Harbor MUST validate `permissions` values against this enum during validation
+Xelian MUST validate `permissions` values against this enum during validation
 (§8.1 step 1) and MUST reject a manifest declaring any value outside it.
 
 ### 16.2 Runtime Prompting
 
-Harbor MUST prompt the user to grant or deny each declared permission on the
-**first run** of a given package version. Harbor SHOULD NOT re-prompt on
+Xelian MUST prompt the user to grant or deny each declared permission on the
+**first run** of a given package version. Xelian SHOULD NOT re-prompt on
 subsequent runs of a version the user has already granted permissions to.
 
-In V1, declared permissions are **informational/disclosure-only**: Harbor
+In V1, declared permissions are **informational/disclosure-only**: Xelian
 prompts the user and displays the request, but does not technically sandbox
 or restrict the process's actual filesystem/network/device access. Technical
 enforcement via sandboxing is future work (§23).
@@ -1307,7 +1307,7 @@ first-run prompt.
 
 ## 17. Features
 
-Features are declarative capability tags in `harbor.toml`'s `features` array
+Features are declarative capability tags in `xelian.toml`'s `features` array
 (§6.1), used for registry display, drawn from a closed list:
 
 ```text
@@ -1322,9 +1322,9 @@ embeddings
 ```
 
 Unlike `permissions`, features carry no runtime behavior in V1 and are purely
-informational: Harbor MUST NOT alter execution based on declared features.
+informational: Xelian MUST NOT alter execution based on declared features.
 Because features have no security implications (unlike permissions, §16.1),
-Harbor SHOULD (not MUST) warn on a manifest declaring a feature tag outside
+Xelian SHOULD (not MUST) warn on a manifest declaring a feature tag outside
 this list, rather than failing validation outright. The registry/website MAY
 use features for future filtering (§23), but CLI-driven filtering is out of
 scope for V1 (§22).
@@ -1334,12 +1334,12 @@ scope for V1 (§22).
 ## 18. Model Management (Ollama)
 
 Packages MAY declare a `primary-model` (§6.2). If declared and not already
-present locally, Harbor MUST download it automatically before launch, cache it
+present locally, Xelian MUST download it automatically before launch, cache it
 locally, and reuse it on future runs (§9.9).
 
-Ollama is the sole supported model provider in V1. Harbor MUST NOT require
+Ollama is the sole supported model provider in V1. Xelian MUST NOT require
 users to manually install or configure Ollama: if the Ollama binary/daemon
-itself is not present on the system, Harbor MUST install it automatically
+itself is not present on the system, Xelian MUST install it automatically
 (§9.9), consistent with the "batteries included" requirement that applies
 identically to Python/Node runtimes (§10.3).
 
@@ -1362,7 +1362,7 @@ pre-release versions is future work, tied to version pinning (§23).
 ### 19.2 Immutability
 
 Once published, a `(name, version)` pair's archive contents MUST NOT be
-altered or overwritten. `harbor push` targeting an already-published version
+altered or overwritten. `xelian push` targeting an already-published version
 MUST fail. This invariant is preserved even by the yank mechanism (§14.7),
 which changes visibility/resolution, never archive bytes.
 
@@ -1370,7 +1370,7 @@ which changes visibility/resolution, never archive bytes.
 
 Package names MUST consist only of lowercase ASCII letters, digits, `_`
 (underscore), and `-` (hyphen), and MUST be between 3 and 64 characters in
-length, inclusive. Harbor MUST reject `harbor push` for a name that does not
+length, inclusive. Xelian MUST reject `xelian push` for a name that does not
 conform.
 
 ```text
@@ -1390,7 +1390,7 @@ code_assistant
 ### 20.1 Integrity
 
 All package downloads MUST be verified against a SHA-256 checksum before
-extraction or execution (§9.4). This is Harbor's baseline integrity guarantee
+extraction or execution (§9.4). This is Xelian's baseline integrity guarantee
 in V1.
 
 ### 20.2 No Signing in V1
@@ -1403,14 +1403,14 @@ authorial identity beyond the registry account that authenticated the publish.
 
 ### 20.3 Validation Isolation
 
-Harbor MUST NOT execute package code during validation (`harbor push`, §8.4)
+Xelian MUST NOT execute package code during validation (`xelian push`, §8.4)
 or during registry-side receipt (§14.5). The only code execution boundary is
-`harbor run`'s explicit launch step (§9.10), which is inherently
+`xelian run`'s explicit launch step (§9.10), which is inherently
 user-initiated and permission-gated (§16).
 
 ### 20.4 Permission Disclosure vs. Enforcement
 
-Declared `permissions` (§16) are **disclosure-only** in V1: Harbor discloses
+Declared `permissions` (§16) are **disclosure-only** in V1: Xelian discloses
 and prompts, but does not technically enforce a sandbox boundary. Users MUST
 NOT treat a permission prompt as a proven access-control guarantee until
 technical enforcement (§23) ships.
@@ -1422,33 +1422,33 @@ technical enforcement (§23) ships.
 | Registry → local disk | SHA-256 checksum verified (§9.4) |
 | Local disk → execution | None beyond permission disclosure (§16, §20.4) — package code is trusted once the user opts to run it |
 | Registry account → package namespace | Authenticated ownership check (§14.4) |
-| Package content correctness | Not verified by Harbor at all — Harbor validates *structure*, not *behavior* |
+| Package content correctness | Not verified by Xelian at all — Xelian validates *structure*, not *behavior* |
 
 ---
 
 ## 21. Design Invariants
 
-These invariants are the architectural rules of Harbor and MUST remain true
-unless Harbor is intentionally and explicitly redesigned. Every normative
+These invariants are the architectural rules of Xelian and MUST remain true
+unless Xelian is intentionally and explicitly redesigned. Every normative
 section above is subordinate to this list; where a conflict is found between a
 section and an invariant below, the invariant governs and the section MUST be
 corrected.
 
-- Harbor packages (`.harbor`) are the canonical unit of distribution.
-- The Harbor runtime executes Harbor packages only — never arbitrary
+- Xelian packages (`.xelian`) are the canonical unit of distribution.
+- The Xelian runtime executes Xelian packages only — never arbitrary
   repositories or arbitrary registry content directly.
 - One package format supports every package type.
 - Package types affect runtime behavior only, never package structure.
-- Harbor's package format is language agnostic.
+- Xelian's package format is language agnostic.
 - Native dependency/package managers remain the source of truth for
   dependency resolution.
-- Harbor automatically manages language runtimes; users never manually
+- Xelian automatically manages language runtimes; users never manually
   install them.
 - GitHub is an import source, not the canonical registry.
 - The registry distributes packages only; it never executes code.
 - Published packages are immutable. (Yanking, §14.7, changes visibility, not
   bytes.)
-- Harbor validates packages before execution, and validation MUST NOT execute
+- Xelian validates packages before execution, and validation MUST NOT execute
   arbitrary package code.
 - Simplicity is preferred over feature completeness.
 - Convention over configuration.
@@ -1463,14 +1463,14 @@ implied requirements anywhere in this document:
 
 - private registries
 - package signing
-- binary packages (beyond the `.harbor` tar.gz container itself)
+- binary packages (beyond the `.xelian` tar.gz container itself)
 - OCI image compatibility
 - a Docker execution backend
 - hosted/cloud execution of packages
 - CLI-driven registry search
 - additional language runtimes beyond Python and Node.js
 - self-service hard deletion of published versions (§14.7.2)
-- version pinning for `harbor run` (`owner/package@version`) (§9.2, §13.3)
+- version pinning for `xelian run` (`owner/package@version`) (§9.2, §13.3)
 - multi-owner/team package namespaces (§14.4)
 - enforcement-grade permission sandboxing (§20.4) — disclosure only
 
@@ -1493,7 +1493,7 @@ are committed for V1:
 - Multi-owner/team package namespaces (§14.4).
 - A formalized administrative hard-delete/tombstone process (§14.7.2,
   TODO-20).
-- Version pinning for `harbor run` (`owner/package@version`) and, contingent
+- Version pinning for `xelian run` (`owner/package@version`) and, contingent
   on it, explicit pre-release opt-in resolution (§9.2, §19.1).
 - Additional MCP transports beyond stdio: HTTP/SSE, WebSocket (§9.10.2).
 
@@ -1521,15 +1521,15 @@ immutable (§19.2, §21) — deletion is a more severe violation of that
 invariant than overwriting, since it breaks reproducibility for existing
 dependents entirely. This was independently reconfirmed as V1 (not future)
 scope after a follow-up review pass; §14.7's yank mechanism and the
-`harbor yank`/`harbor login` commands (§13.7, §13.9) are current V1 spec, not
+`xelian yank`/`xelian login` commands (§13.7, §13.9) are current V1 spec, not
 proposals.
 
-**No version pinning in V1 (§9.2, §13.3).** `harbor run owner/package`
+**No version pinning in V1 (§9.2, §13.3).** `xelian run owner/package`
 resolving only to "latest stable" (never a caller-selected version) was
 chosen to keep the initial resolution algorithm and cache addressing scheme
 minimal. This has a direct consequence for yank (§14.7.1): since no pin
 syntax exists, a yanked version cannot be deliberately re-selected through
-`harbor run` at all once superseded — yank's effect and "simply not being the
+`xelian run` at all once superseded — yank's effect and "simply not being the
 latest anymore" become very similar in V1. The mechanism remains specified as
 written because it still has V1 utility (preventing a bad version from ever
 being handed out as "latest," even retroactively) and because deferring it
@@ -1538,7 +1538,7 @@ now would have required re-deriving it later against ecosystem precedent
 
 ---
 
-## Appendix B: Full `harbor.toml` Reference Table
+## Appendix B: Full `xelian.toml` Reference Table
 
 | Field | Required? | Type | Spec section |
 |---|---|---|---|
@@ -1577,19 +1577,19 @@ normative sections above compose.
 
 ```bash
 cd research_assistant/
-harbor init
-# edit harbor.toml, write src/main.py, README.md, LICENSE
-harbor login
-harbor push
+xelian init
+# edit xelian.toml, write src/main.py, README.md, LICENSE
+xelian login
+xelian push
 ```
 
 Internally: §8.1's eight-step validation pipeline runs, then §14.5's publish
-flow uploads the resulting `.harbor` archive.
+flow uploads the resulting `.xelian` archive.
 
 ### C.2 A different user runs it
 
 ```bash
-harbor run janedoe/research_assistant
+xelian run janedoe/research_assistant
 ```
 
 Internally: §9.1's eleven-step pipeline resolves `janedoe/research_assistant`
@@ -1607,8 +1607,8 @@ if absent (§9.9) → validates required `[environment]` variables are present
 
 ```bash
 # edit README.md
-# bump version in harbor.toml: 1.2.0 -> 1.2.1
-harbor push
+# bump version in xelian.toml: 1.2.0 -> 1.2.1
+xelian push
 ```
 
 Per §14.6, this MUST be a new version — there is no path to edit the
@@ -1617,16 +1617,16 @@ published `1.2.0`'s README in place.
 ### C.4 Author yanks a broken version
 
 ```bash
-harbor yank janedoe/research_assistant --version 1.2.0
+xelian yank janedoe/research_assistant --version 1.2.0
 ```
 
 Assume `1.2.0` was the highest published version at the time. Per §14.7.1,
-after yanking: `harbor run janedoe/research_assistant` now resolves to the
+after yanking: `xelian run janedoe/research_assistant` now resolves to the
 next-highest non-yanked, non-pre-release version instead (or fails with a
 clear error if none exists). Anyone who already has `1.2.0` cached locally
 (§11.2) is entirely unaffected. Because V1 has no version pinning (§9.2),
 there is no way for a new user to deliberately fetch `1.2.0` again through
-`harbor run` once it is superseded and yanked — only direct registry API
+`xelian run` once it is superseded and yanked — only direct registry API
 access (§14.8) or a pre-existing local cache can still reach it.
 
 ---
@@ -1640,8 +1640,8 @@ were removed once resolved). Two items remain genuinely open:
 
 | ID | Section | Summary |
 |---|---|---|
-| TODO-15 | §14.8 | Exact routes/schemas for the `harbor yank` and `harbor login` registry endpoints, beyond the ratified three-route V1 baseline (`POST /packages`, `GET /packages/{owner}/{package}`, `GET /download/{owner}/{package}/{version}`). |
-| TODO-20 | §14.7.2 | The administrative hard-delete/tombstone process itself (tooling, audit trail, version-number reuse prevention). Independent of `harbor yank` (§14.7.1), which is fully specified and ships in V1. |
+| TODO-15 | §14.8 | Exact routes/schemas for the `xelian yank` and `xelian login` registry endpoints, beyond the ratified three-route V1 baseline (`POST /packages`, `GET /packages/{owner}/{package}`, `GET /download/{owner}/{package}/{version}`). |
+| TODO-20 | §14.7.2 | The administrative hard-delete/tombstone process itself (tooling, audit trail, version-number reuse prevention). Independent of `xelian yank` (§14.7.1), which is fully specified and ships in V1. |
 
 A residual, low-priority naming detail (leading-character rules, reserved
 names) is also still open — see the note at the end of §19.3.

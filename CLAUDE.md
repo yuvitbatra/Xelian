@@ -1,4 +1,4 @@
-# PROJECT: HARBOR — a local-first registry + runtime for AI agents, MCP servers
+# PROJECT: XELIAN — a local-first registry + runtime for AI agents, MCP servers
 # ("Hugging Face + Ollama for agents")
 
 ## YOUR ROLE (read this first, it governs everything)
@@ -14,8 +14,8 @@ You are the CEO and CTO, opus, haiku and sonnet are your workers. You are respon
 ## THE PRODUCT (v1 scope)
 A developer can:
 1. Package an agent / MCP server in a standard format.
-2. `harbor push` it to a public registry.
-3. Anyone else can `harbor run user/name` and it works locally with ZERO setup —
+2. `xelian push` it to a public registry.
+3. Anyone else can `xelian run user/name` and it works locally with ZERO setup —
    the exact Ollama feel: one-line install, single static binary, no account needed
    to pull/run, drops into a chat REPL in seconds. This works for mcp servers/
    agents easily
@@ -23,13 +23,13 @@ A developer can:
 5. Cache downloaded packages locally for fast subsequent launches.
 6. Public registry with agents
 7. Agents/MCP server etc should be easy to publish and run seamlessly
-8. register and run directly from github using link. harbor add github_link, and caches it for user and runs it
+8. register and run directly from github using link. xelian add github_link, and caches it for user and runs it
 
 ---
 
 ## PROJECT VISION
 
-Harbor is a local-first registry and runtime for AI agents.
+Xelian is a local-first registry and runtime for AI agents.
 
 The goal is to make running agents feel exactly like running models with Ollama.
 
@@ -38,7 +38,7 @@ Instead of downloading model weights, users download runnable agents.
 Example:
 
 ```bash
-harbor run username/my-agent
+xelian run username/my-agent
 ```
 
 and it simply works.
@@ -71,7 +71,7 @@ Commands should be obvious and memorable.
 
 A new user should be able to:
 
-- install Harbor
+- install Xelian
 - run an agent
 - chat with it
 - run it and use it in python if using the package
@@ -87,7 +87,7 @@ Avoid requiring configuration files whenever possible.
 
 ### Single Static Binary
 
-The Harbor CLI should be distributed as a single executable with minimal dependencies.
+The Xelian CLI should be distributed as a single executable with minimal dependencies.
 
 ### Simplicity
 
@@ -107,17 +107,17 @@ Protect the MVP from feature creep.
 
 ## PACKAGE PHILOSOPHY
 
-Harbor's most important contribution is defining a **standard package format** for AI agents.
+Xelian's most important contribution is defining a **standard package format** for AI agents.
 
 Models converged around artifacts like GGUF.
 
 Agents currently do not have an equivalent standard.
 
-Harbor aims to define a standard package format for locally runnable AI agents and MCP servers.
+Xelian aims to define a standard package format for locally runnable AI agents and MCP servers.
 
-Every Harbor package should expose a consistent interface regardless of implementation language.
+Every Xelian package should expose a consistent interface regardless of implementation language.
 
-A Harbor package may internally contain:
+A Xelian package may internally contain:
 
 - a Python project
 - a Node project
@@ -146,11 +146,11 @@ The runtime abstracts these differences away.
 
 ## SUCCESS CRITERIA
 
-Harbor V1 is successful if a developer can:
+Xelian V1 is successful if a developer can:
 
 - Package and publish an existing open-source agent or MCP server in under 5 minutes.
-- Publish it with harbor push (one command).
-- harbor run user/name automatically downloads, installs, and launches the package. Agents should open an interactive REPL; MCP servers should start and expose the server locally.
+- Publish it with xelian push (one command).
+- xelian run user/name automatically downloads, installs, and launches the package. Agents should open an interactive REPL; MCP servers should start and expose the server locally.
 - Use it in Python with the SDK with minimal boilerplate.
 - Run an MCP server locally with one command, fully functional.
 

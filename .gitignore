@@ -1,6 +1,6 @@
 /target
 .superpowers/
-*.harbor
+*.xelian
 
 # Python (registry backend + SDK)
 .venv/

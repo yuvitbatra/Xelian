@@ -1,4 +1,4 @@
-# Harbor Backlog
+# Xelian Backlog
 
 > A flat, strictly ordered task list derived from `IMPLEMENTATION.md` and
 > `SPEC.md`. Work top to bottom: pick the next unchecked task whose dependencies
@@ -19,17 +19,17 @@
 
 - [x] **H-001 — Initialize Cargo workspace**
   - Difficulty: S · Duration: 2h · Deps: none
-  - Acceptance: `harbor-cli` (bin) + `harbor-core` (lib) build under one
-    workspace; `cargo build` succeeds; binary is named `harbor`.
+  - Acceptance: `xelian-cli` (bin) + `xelian-core` (lib) build under one
+    workspace; `cargo build` succeeds; binary is named `xelian`.
 
 - [x] **H-002 — Wire clap command surface (all 9 commands + flags)**
   - Difficulty: M · Duration: 4h · Deps: H-001
-  - Acceptance: `harbor --help` lists `init, push, run, add, list, rm, login,
+  - Acceptance: `xelian --help` lists `init, push, run, add, list, rm, login,
     logout, yank` with correct flags — `rm` has `--env`/`--all` (§13.6), `yank`
     has `--version`/`--undo` (§13.9); each stub exits non-zero with "not
     implemented"; `-V` prints the binary version.
 
-- [x] **H-003 — Cache layout module for `~/.harbor/`**
+- [x] **H-003 — Cache layout module for `~/.xelian/`**
   - Difficulty: S · Duration: 3h · Deps: H-001
   - Acceptance: helper resolves and lazily creates `packages/`, `runtimes/`,
     `envs/`, `models/`, `logs/`, `tmp/` under a resolved home dir (§11.1);
@@ -69,39 +69,39 @@
 
 ---
 
-## Phase 2 — harbor init
+## Phase 2 — xelian init
 
-- [x] **H-020 — Generate `harbor.toml` skeleton**
+- [x] **H-020 — Generate `xelian.toml` skeleton**
   - Difficulty: M · Duration: 4h · Deps: H-014
-  - Acceptance: `harbor init` writes a `harbor.toml` with valid defaults +
+  - Acceptance: `xelian init` writes a `xelian.toml` with valid defaults +
     clearly marked placeholders (name from dir if §19.3-valid, else placeholder);
     output parses under H-014 (modulo intentional placeholders); no network
     (§13.1).
 
-- [x] **H-021 — Generate `harbor.lock` skeleton + clobber guard**
+- [x] **H-021 — Generate `xelian.lock` skeleton + clobber guard**
   - Difficulty: S · Duration: 2h · Deps: H-020
-  - Acceptance: a valid `harbor.lock` shell is written; existing `harbor.toml`
+  - Acceptance: a valid `xelian.lock` shell is written; existing `xelian.toml`
     is not silently overwritten (documented flag/prompt behavior); no network.
 
 ---
 
-## Phase 3 — harbor.lock & checksums
+## Phase 3 — xelian.lock & checksums
 
 - [x] **H-030 — SHA-256 helper + native-lock-checksum**
   - Difficulty: S · Duration: 3h · Deps: H-001
   - Acceptance: SHA-256 of a native lockfile matches independent `sha256sum`;
     computed only when a native lockfile is declared (§7.2, §7.3).
 
-- [x] **H-031 — `package-checksum` excluding `harbor.lock`**
+- [x] **H-031 — `package-checksum` excluding `xelian.lock`**
   - Difficulty: M · Duration: 4h · Deps: H-030
   - Acceptance: checksum is deterministic for identical inputs; mutating
-    `harbor.lock` does NOT change `package-checksum` (§7.3); `harbor.lock` is
+    `xelian.lock` does NOT change `package-checksum` (§7.3); `xelian.lock` is
     never itself hashed.
 
-- [x] **H-032 — Populate all `harbor.lock` keys**
+- [x] **H-032 — Populate all `xelian.lock` keys**
   - Difficulty: M · Duration: 3h · Deps: H-031, H-010
   - Acceptance: every §7.2 key is present with correct values
-    (`spec-version`, `harbor-version`, `package-version` copied from manifest,
+    (`spec-version`, `xelian-version`, `package-version` copied from manifest,
     `generated-at` ISO 8601 UTC, native paths, both checksums).
 
 ---
@@ -110,7 +110,7 @@
 
 - [x] **H-040 — tar.gz archive builder**
   - Difficulty: M · Duration: 4h · Deps: H-032
-  - Acceptance: builds a `.harbor` inspectable via `tar -tzf` with the §5.2/§5.3
+  - Acceptance: builds a `.xelian` inspectable via `tar -tzf` with the §5.2/§5.3
     layout; deterministic enough to keep H-031 checksums stable.
 
 - [x] **H-041 — `.gitignore` exclusion (use `ignore` crate)**
@@ -133,19 +133,19 @@
 
 - [x] **H-050 — Local-archive run entry + checksum verify**
   - Difficulty: M · Duration: 4h · Deps: H-042
-  - Acceptance: `harbor run ./x.harbor` recomputes SHA-256 and aborts before
+  - Acceptance: `xelian run ./x.xelian` recomputes SHA-256 and aborts before
     extraction on mismatch (§9.4); a tampered archive never extracts.
 
 - [x] **H-051 — Safe extraction into version-scoped cache**
   - Difficulty: M · Duration: 4h · Deps: H-050, H-003
   - Acceptance: extracts into the source-based cache (decision 2026-07-16):
-    `~/.harbor/packages/local/<name>/<version>/` for local archives (registry
+    `~/.xelian/packages/local/<name>/<version>/` for local archives (registry
     and GitHub sources get their own namespaces later); rejects `..`/absolute
     tar paths; skips re-extraction of an already-present version (§9.5).
 
 - [x] **H-052 — Manifest re-validation + OS check**
   - Difficulty: S · Duration: 3h · Deps: H-051, H-014
-  - Acceptance: re-parses/re-validates `harbor.toml` (§9.6); if `os` is declared
+  - Acceptance: re-parses/re-validates `xelian.toml` (§9.6); if `os` is declared
     and current OS not listed, fails immediately with a clear message and goes no
     further (§9.6.1).
 
@@ -162,7 +162,7 @@
   - Difficulty: L · Duration: 6h · Deps: H-060
   - Acceptance: auto-installs `uv` if absent; provisions a CPython satisfying the
     `runtime` PEP 440 constraint via `uv` (§9.7, §10.1); constraint matching is
-    delegated to `uv`, not parsed in Harbor (§6.1).
+    delegated to `uv`, not parsed in Xelian (§6.1).
 
 - [x] **H-062 — Node path: ensure Node + `npm`**
   - Difficulty: M · Duration: 5h · Deps: H-060
@@ -175,14 +175,14 @@
 
 - [x] **H-070 — Environment cache keyed on (name, version)**
   - Difficulty: M · Duration: 4h · Deps: H-061
-  - Acceptance: exactly one env per `(name, version)` under `~/.harbor/envs/`,
+  - Acceptance: exactly one env per `(name, version)` under `~/.xelian/envs/`,
     mirroring the source-based cache layout (decision 2026-07-16); key is
     `(name, version)` only, no dependency hash (§9.8); reused on subsequent runs.
 
 - [x] **H-071 — Delegate dependency install to native manager**
   - Difficulty: M · Duration: 5h · Deps: H-070
   - Acceptance: deps installed via `uv`/`npm` against the native manifest+lockfile
-    (§6.1.2, §9.8); Harbor never re-declares/re-resolves deps; interrupted
+    (§6.1.2, §9.8); Xelian never re-declares/re-resolves deps; interrupted
     installs do not leave a corrupt env used as valid (stage in `tmp/`, §11.1).
 
 ---
@@ -197,7 +197,7 @@
 - [x] **H-081 — Agent launch: attach REPL to terminal**
   - Difficulty: M · Duration: 5h · Deps: H-080
   - Acceptance: `agent` entrypoint runs with stdin/stdout/stderr attached to the
-    terminal as an interactive REPL; `harbor run` blocks for the session
+    terminal as an interactive REPL; `xelian run` blocks for the session
     (§9.10.1).
 
 - [x] **H-082 — MCP launch: stdio server + port fallback**
@@ -230,12 +230,12 @@
 - [x] **H-101 — Download + cache `primary-model` before launch**
   - Difficulty: M · Duration: 4h · Deps: H-100
   - Acceptance: declared `primary-model` is downloaded if missing from
-    `~/.harbor/models/`/Ollama store and reused on later runs (§9.9, §18);
+    `~/.xelian/models/`/Ollama store and reused on later runs (§9.9, §18);
     correctly sequenced as pipeline step 10 before launch (§9.1).
 
 ---
 
-## Phase 11 — GitHub import (harbor add)
+## Phase 11 — GitHub import (xelian add)
 
 - [x] **H-110 — Resolve default branch to SHA + download at SHA**
   - Difficulty: M · Duration: 5h · Deps: H-101
@@ -248,7 +248,7 @@
   - Acceptance: `pyproject.toml`→python, `package.json`→node, `Cargo.toml`→clear
     "unsupported language" error (§12.2 step 2); detection list is extensible.
 
-- [x] **H-112 — Infer `harbor.toml` with placeholders**
+- [x] **H-112 — Infer `xelian.toml` with placeholders**
   - Difficulty: L · Duration: 6h · Deps: H-111
   - Acceptance: infers `language`, `runtime`, `entrypoint`, `dependencies`;
     non-inferable fields get placeholders; import does not fail on placeholders
@@ -256,25 +256,25 @@
 
 - [x] **H-113 — Build package + run from step 6 onward**
   - Difficulty: M · Duration: 4h · Deps: H-112, H-042
-  - Acceptance: generates `harbor.lock` + `.harbor` (§12.2 steps 4–5), caches by
+  - Acceptance: generates `xelian.lock` + `.xelian` (§12.2 steps 4–5), caches by
     SHA (step 6), and runs via the existing pipeline from manifest validation
     onward (step 7, §9.6+).
 
 ---
 
-## Phase 12 — harbor list & harbor rm
+## Phase 12 — xelian list & xelian rm
 
-- [x] **H-120 — `harbor list` (local cache only)**
+- [x] **H-120 — `xelian list` (local cache only)**
   - Difficulty: S · Duration: 3h · Deps: H-113
   - Acceptance: lists locally cached packages only, no registry search (§13.5,
     §22).
 
-- [x] **H-121 — `harbor rm` variants + credential isolation**
+- [x] **H-121 — `xelian rm` variants + credential isolation**
   - Difficulty: M · Duration: 4h · Deps: H-120
   - Acceptance: `rm owner/package` removes cached versions but keeps envs;
     `--env` also removes the env; `--all` clears `packages/`/`envs/`/`runtimes/`/
     `models/` but never `credentials.toml` (§13.6, §11.3); deletes are guarded to
-    stay within `~/.harbor/`; never touches the registry.
+    stay within `~/.xelian/`; never touches the registry.
 
 ---
 
@@ -283,13 +283,13 @@
 - [x] **H-130 — FastAPI project + data model**
   - Difficulty: M · Duration: 4h · Deps: none (Python; can start after H-042 exists to produce test archives)
   - Acceptance: `Account`/`Package`/`Versions[]` modeled per §14.2 with storage
-    for archive, checksum, `harbor.lock`, README, metadata, `published_at`,
+    for archive, checksum, `xelian.lock`, README, metadata, `published_at`,
     `yanked`.
 
 - [x] **H-131 — `POST /packages` with publish-time checks**
   - Difficulty: L · Duration: 6h · Deps: H-130
   - Acceptance: accepts an upload; verifies archive SHA-256 matches
-    `package-checksum` in the accompanying `harbor.lock` (§14.5); rejects an
+    `package-checksum` in the accompanying `xelian.lock` (§14.5); rejects an
     already-published `(name, version)` (§14.5, §19.2); never executes the
     package (§14.1). Request/response schema documented as the client contract
     (§14.8).
@@ -315,20 +315,20 @@
     credentials. Auth middleware protects `POST /packages`. Owner namespace
     enforcement matches authenticated user (§14.4).
 
-- [x] **H-141 — `harbor login` browser flow + `credentials.toml` (0600)**
+- [x] **H-141 — `xelian login` browser flow + `credentials.toml` (0600)**
   - Difficulty: M · Duration: 5h · Deps: H-140, H-003
   - Acceptance: prompts for username/password, exchanges for token at
-    `POST /auth/token`, writes `~/.harbor/credentials.toml` at `0600` atomically.
+    `POST /auth/token`, writes `~/.xelian/credentials.toml` at `0600` atomically.
     Stores registry URL for reuse.
 
-- [x] **H-142 — `harbor logout`**
+- [x] **H-142 — `xelian logout`**
   - Difficulty: S · Duration: 2h · Deps: H-141
-  - Acceptance: removes `credentials.toml`; `harbor rm --all` preserves it
+  - Acceptance: removes `credentials.toml`; `xelian rm --all` preserves it
     (cross-check H-121 passes). Idempotent — no error if already logged out.
 
 ---
 
-## Phase 15 — harbor push end-to-end
+## Phase 15 — xelian push end-to-end
 
 - [x] **H-150 — Registry HTTP client (authenticated)**
   - Difficulty: M · Duration: 4h · Deps: H-142
@@ -336,7 +336,7 @@
     and `publish()` methods. Multipart upload with `Authorization: Bearer`
     header. Error handling for 401/403/409/422 responses.
 
-- [x] **H-151 — `harbor push`: validate then upload**
+- [x] **H-151 — `xelian push`: validate then upload**
   - Difficulty: M · Duration: 5h · Deps: H-150, H-042, H-131
   - Acceptance: reads credentials first (fails with "not logged in" if missing),
     runs full §8.1 validation before any network call, uploads to
@@ -345,11 +345,11 @@
 
 ---
 
-## Phase 16 — harbor run from registry
+## Phase 16 — xelian run from registry
 
 - [x] **H-160 — Target-form discrimination**
   - Difficulty: S · Duration: 3h · Deps: H-052
-  - Acceptance: registry-ref vs. GitHub-URL vs. local `.harbor` path (decision
+  - Acceptance: registry-ref vs. GitHub-URL vs. local `.xelian` path (decision
      2026-07-16) distinguished syntactically before resolution; any other input
      fails clearly rather than guessing (§9.2); no `@version` pin syntax accepted
      (§9.2, §22).
@@ -364,13 +364,13 @@
 - [x] **H-162 — Wire download into local run pipeline**
   - Difficulty: M · Duration: 4h · Deps: H-161, H-101
   - Acceptance: downloaded archive is checksum-verified (§9.4) then flows through
-     the existing extract→…→launch pipeline; end-to-end `harbor push` then, on a
-     clean cache, `harbor run owner/package` launches (Appendix C.1–C.2); cache
+     the existing extract→…→launch pipeline; end-to-end `xelian push` then, on a
+     clean cache, `xelian run owner/package` launches (Appendix C.1–C.2); cache
      persists (§9.11).
 
 ---
 
-## Phase 17 — harbor yank
+## Phase 17 — xelian yank
 
 - [x] **H-170 — Registry yank/unyank route (owner-authorized)**
   - Difficulty: M · Duration: 4h · Deps: H-132, H-140
@@ -379,10 +379,10 @@
      the owning account (§14.4); never deletes archive/checksum/metadata
      (§14.7.1).
 
-- [x] **H-171 — `harbor yank` CLI (+ `--undo`)**
+- [x] **H-171 — `xelian yank` CLI (+ `--undo`)**
   - Difficulty: S · Duration: 3h · Deps: H-170, H-150
-  - Acceptance: `harbor yank owner/package --version <v>` yanks; `--undo`
-     reverses (§13.9); after yanking the latest, `harbor run` resolves to the next
+  - Acceptance: `xelian yank owner/package --version <v>` yanks; `--undo`
+     reverses (§13.9); after yanking the latest, `xelian run` resolves to the next
      non-yanked version or fails clearly (§14.3, §14.7.1); already-cached clients
      unaffected; no hard delete (§14.7.2, §22).
 
@@ -392,7 +392,7 @@
 
 - [x] **H-180 — SDK skeleton wrapping the CLI**
   - Difficulty: M · Duration: 4h · Deps: H-162
-  - Acceptance: `sdk/` Python package shells out to the `harbor` binary; no
+  - Acceptance: `sdk/` Python package shells out to the `xelian` binary; no
     reimplementation of resolution/validation/execution (§15.1).
 
 - [x] **H-181 — `install` / `run` / `agent` / `mcp` entry points**
@@ -444,10 +444,10 @@
     do first**
   - Acceptance: name collision with CNCF Harbor (goharbor.io — a famous
     registry where `harbor push` already means something else) is explicitly
-    resolved: either a new name is chosen or keeping "Harbor" is a recorded
+    resolved: either a new name is chosen or keeping "Xelian" is a recorded
     decision. For the chosen name: GitHub org/repo, domain, PyPI, crates.io,
     and Homebrew formula names are confirmed available and claimed; binary
-    name, `~/.harbor` dir name, and docs updated if renamed. Domain at $0:
+    name, `~/.xelian` dir name, and docs updated if renamed. Domain at $0:
     claim the GitHub Student Developer Pack free domain (Namecheap `.me`, 1
     year) — fall back to `is-a.dev`/`eu.org` if unavailable; Vercel/Render
     free subdomains are acceptable for the website but the domain MUST be
@@ -501,7 +501,7 @@
 - [ ] **H-213 — Clean-machine quickstart test**
   - Difficulty: M · Duration: 4h · Deps: H-230
   - Acceptance: a CI job runs the public install script inside a bare Docker
-    image (no Rust, no repo checkout), then `harbor run <seed-package>` against
+    image (no Rust, no repo checkout), then `xelian run <seed-package>` against
     a live registry and asserts a response — proving the README quickstart
     verbatim. Runs nightly + before every release.
 
@@ -515,7 +515,7 @@
 
 - [ ] **H-215 — SDK integration tests**
   - Difficulty: S · Duration: 3h · Deps: H-210
-  - Acceptance: pytest suite runs `harbor.install/run/agent/mcp` against the
+  - Acceptance: pytest suite runs `xelian.install/run/agent/mcp` against the
     real built binary and a local registry: agent `.chat()` round-trips, mcp
     `.expose()` returns usable transport info, type mismatch raises,
     missing-binary and not-logged-in errors are clear. Wired into CI.
@@ -559,16 +559,16 @@
 
 - [ ] **H-223 — Non-interactive auth + URL precedence**
   - Difficulty: S · Duration: 3h · Deps: H-221
-  - Acceptance: `harbor login --username X --password-stdin` and
-    `HARBOR_TOKEN` env var work without a TTY (rpassword currently hard-fails
-    in scripts/CI/SDK contexts); `harbor login` honors `HARBOR_REGISTRY_URL`
+  - Acceptance: `xelian login --username X --password-stdin` and
+    `XELIAN_TOKEN` env var work without a TTY (rpassword currently hard-fails
+    in scripts/CI/SDK contexts); `xelian login` honors `XELIAN_REGISTRY_URL`
     over the stored credentials URL (today the env var is silently ignored
     once any credentials file exists); signup reachable from CLI or website.
 
-- [ ] **H-224 — Search: registry endpoint + `harbor search`**
+- [ ] **H-224 — Search: registry endpoint + `xelian search`**
   - Difficulty: M · Duration: 5h · Deps: H-220
   - Acceptance: `GET /search?q=` over name/description/tags (SQL LIKE is
-    fine); `harbor search <term>` renders results; website search (H-191)
+    fine); `xelian search <term>` renders results; website search (H-191)
     consumes the same endpoint. Without this there is literally no way to
     discover what exists.
 
@@ -642,7 +642,7 @@
 - [ ] **H-242 — Pre-package influencer/tool-author projects**
   - Difficulty: M · Duration: 4h · Deps: H-240
   - Acceptance: 10+ packages that wrap tools built by the specific people you
-    intend to contact in H-252 (`harbor run <them>/<their-tool>` works) — the
+    intend to contact in H-252 (`xelian run <them>/<their-tool>` works) — the
     outreach hook is "your project already runs on this," which converts far
     better than "please try my thing."
 
@@ -668,7 +668,7 @@
   - Acceptance: a tracked list of 20–30 targets (local-AI YouTubers, MCP
     tutorial writers, AI-newsletter authors, agent-framework maintainers);
     each gets a personalized DM/email with (a) the 30s GIF, (b) the hook that
-    their own tool is already runnable via `harbor run them/their-tool`
+    their own tool is already runnable via `xelian run them/their-tool`
     (H-242), (c) early-access/founder framing and an offer of a walkthrough.
     Track sends/replies/coverage; follow up once, politely, after ~5 days.
     Expect a 10–20% reply rate — that's 3–6 pieces of coverage, which is a
@@ -677,8 +677,8 @@
 - [ ] **H-253 — MCP ecosystem placement**
   - Difficulty: M · Duration: 4h + ongoing · Deps: H-240
   - Acceptance: PRs merged into `awesome-mcp-servers`-style lists; listed in
-    MCP directories; at least one "set up MCP with harbor" tutorial published
-    (yours counts, a third party's counts double). Goal: `harbor run x/y`
+    MCP directories; at least one "set up MCP with xelian" tutorial published
+    (yours counts, a third party's counts double). Goal: `xelian run x/y`
     appears as the easy path in MCP setup docs — the tutorial-default position
     is how Ollama became Ollama.
 
@@ -692,7 +692,7 @@
   - Difficulty: M · Duration: ongoing · Deps: H-251
   - Acceptance: issues get a first response <24h; a visible release ships
     weekly; the first 10 external publishers get hands-on help; a simple
-    dashboard/query tracks the one metric that matters — weekly `harbor run`
+    dashboard/query tracks the one metric that matters — weekly `xelian run`
     downloads from the registry (stars measure attention; pulls measure
     product).
 

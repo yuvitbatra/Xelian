@@ -426,37 +426,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "harbor-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "harbor-core",
- "rpassword",
- "tempfile",
-]
-
-[[package]]
-name = "harbor-core"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "dirs",
- "flate2",
- "hex",
- "ignore",
- "semver",
- "serde",
- "serde_json",
- "sha2",
- "tar",
- "tempfile",
- "thiserror",
- "toml",
- "ureq",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1452,6 +1421,37 @@ checksum = "32e45ad4206f6d2479085147f02bc2ef834ac85886624a23575ae137c8aa8156"
 dependencies = [
  "libc",
  "rustix",
+]
+
+[[package]]
+name = "xelian-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "rpassword",
+ "tempfile",
+ "xelian-core",
+]
+
+[[package]]
+name = "xelian-core"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "dirs",
+ "flate2",
+ "hex",
+ "ignore",
+ "semver",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tar",
+ "tempfile",
+ "thiserror",
+ "toml",
+ "ureq",
 ]
 
 [[package]]

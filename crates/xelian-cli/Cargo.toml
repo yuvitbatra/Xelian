@@ -1,0 +1,18 @@
+[package]
+name = "xelian-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "xelian"
+path = "src/main.rs"
+
+[dependencies]
+xelian-core = { workspace = true }
+clap = { workspace = true }
+anyhow = { workspace = true }
+rpassword = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
