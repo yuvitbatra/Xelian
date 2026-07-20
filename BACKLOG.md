@@ -271,16 +271,25 @@
   - Verified end-to-end (launch + JSON-RPC): fetch-mcp, servers/src/{time,git,
     fetch}, chroma-mcp, playwright-mcp, firecrawl-mcp. See `test_add.txt`.
 
+- [x] **H-118 — Node install robustness** (2026-07-20)
+  - `npm ci` fails hard when package-lock.json has drifted from package.json
+    (EUSAGE), which is common upstream; fall back to `npm install`. Also retry
+    without lifecycle scripts when a package's own `prepare` build fails, since
+    Xelian builds it separately. Verified: `mcp-playwright`.
+
 ### Known gaps (deliberately not done — would change architecture or scope)
 
 - [ ] **H-115 — npm-workspace TypeScript monorepos**
   - `servers/src/memory` and siblings build against the workspace root; their
     tsconfig compiles to CJS under an ESM `package.json`. Needs real workspace
     build support, not another inference rule.
-- [ ] **H-116 — Console-script-only Python packages**
-  - `mcp-atlassian` exposes `pkg:main` with no runnable file. Would need launch
-    to support `python -c "from pkg import main; main()"`, i.e. a third launch
-    mode beyond path and `-m`. Currently a clear MANUAL error.
+- [x] **H-116 — Console-script-only Python packages** (2026-07-20)
+  - Solved without a new launch mode: when a project declares only
+    `[project.scripts] x = "pkg:main"` and ships no runnable file, `xelian add`
+    generates `xelian_launcher.py` that imports and calls the declared target —
+    the same thing a pip-generated console script does. Keeps the manifest's
+    entrypoint-as-path contract. Verified: `mcp-atlassian` completes a full MCP
+    handshake.
 - [ ] **H-117 — Docker / `make run` projects (e.g. OpenHands)**
   - Would make Docker a runtime manager. Contradicts local-first + the V1
     Python/Node runtime set; needs an explicit product decision first.

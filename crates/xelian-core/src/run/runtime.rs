@@ -756,17 +756,44 @@ impl RuntimeManager for NodeRuntimeManager {
             // without lifecycle scripts rather than failing the whole
             // install — dependencies are what this step actually needs.
             if let Err(first_err) = run_command_checked(&mut npm_cmd) {
-                if !package_has_lifecycle_build(&stage_dir) {
+                let message = first_err.to_string();
+
+                // `npm ci` refuses to run when package-lock.json has drifted
+                // from package.json (EUSAGE). That is common in real
+                // repositories and is not a reason to give up: `npm install`
+                // resolves and updates the lockfile instead. We lose exact
+                // lockfile pinning for that package, which is the right
+                // trade against not running at all.
+                let lock_out_of_sync = is_lock
+                    && (message.contains("EUSAGE")
+                        || message.contains("can only install packages when your package.json"));
+
+                // A failing `prepare`/`postinstall` that merely builds the
+                // package is also recoverable: Xelian runs the build itself,
+                // afterwards, in the right directory.
+                let lifecycle_build_failed = package_has_lifecycle_build(&stage_dir);
+
+                if !lock_out_of_sync && !lifecycle_build_failed {
                     return Err(first_err);
                 }
-                eprintln!(
-                    "Dependency install failed while running the package's own build script; \
-                     retrying without lifecycle scripts (Xelian builds the package separately)..."
-                );
 
                 let mut retry = Command::new(&npm_binary);
-                retry.arg(if is_lock { "ci" } else { "install" });
-                retry.arg("--ignore-scripts");
+                if lock_out_of_sync {
+                    eprintln!(
+                        "package-lock.json is out of sync with package.json; \
+                         falling back to `npm install`..."
+                    );
+                    retry.arg("install");
+                } else {
+                    retry.arg(if is_lock { "ci" } else { "install" });
+                }
+                if lifecycle_build_failed {
+                    eprintln!(
+                        "Retrying without the package's own lifecycle scripts \
+                         (Xelian builds the package separately)..."
+                    );
+                    retry.arg("--ignore-scripts");
+                }
                 retry.current_dir(&stage_dir);
                 if let Some(old_path) = std::env::var_os("PATH") {
                     let mut new_paths = vec![bin_dir.to_path_buf()];

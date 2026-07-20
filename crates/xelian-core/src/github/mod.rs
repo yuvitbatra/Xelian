@@ -654,6 +654,20 @@ pub fn infer_manifest(
         }
     })?;
 
+    // A generated launcher (console-script-only projects) must exist on disk
+    // before the archive is built and before launch resolves the entrypoint.
+    if let Some(source) = &found.shim {
+        let launcher = checkout.join(&found.path);
+        fs::write(&launcher, source).map_err(|e| GithubError::Io {
+            path: launcher.clone(),
+            source: e,
+        })?;
+        eprintln!(
+            "Generated {} — this project runs via its console script",
+            found.path
+        );
+    }
+
     let package_type = pkgtype::infer(checkout, language);
 
     let (runtime, dep_manifest, dep_lockfile): (String, &str, Option<&str>) = match language {
@@ -714,7 +728,9 @@ pub fn infer_manifest(
 
     Ok(InferredManifest {
         toml: manifest_toml,
-        needs_build: !found.exists,
+        // A generated launcher was just written, so it exists now; only a
+        // real build output still needs a build step.
+        needs_build: !found.exists && found.shim.is_none(),
     })
 }
 
