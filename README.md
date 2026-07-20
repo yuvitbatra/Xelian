@@ -101,8 +101,11 @@ That check runs *before* dependency installation, so an un-inferable repo fails
 in seconds rather than after a multi-minute install. Languages without a v1
 runtime (Go, Rust) say so by name.
 
-See [test_add.txt](test_add.txt) for a corpus of real repositories with their
-measured status.
+Verified against real repositories, including the whole
+`modelcontextprotocol/servers` family, `mcp-atlassian`, `playwright-mcp`,
+`firecrawl-mcp-server`, `exa-mcp-server` and `chroma-mcp` — each imported from
+a bare URL and confirmed to complete an MCP `initialize` + `tools/list`
+handshake.
 
 ## One endpoint for all your MCP servers
 
