@@ -279,10 +279,15 @@
 
 ### Known gaps (deliberately not done — would change architecture or scope)
 
-- [ ] **H-115 — npm-workspace TypeScript monorepos**
-  - `servers/src/memory` and siblings build against the workspace root; their
-    tsconfig compiles to CJS under an ESM `package.json`. Needs real workspace
-    build support, not another inference rule.
+- [x] **H-115 — npm-workspace TypeScript monorepos** (2026-07-21)
+  - Root cause was not the workspace build: npm runs the package's own
+    `prepare` script inside the install *staging* directory, where a
+    subpackage's `tsconfig` `extends` cannot resolve, so tsc silently falls
+    back to CommonJS. That stale CJS output was promoted into the env and
+    shadowed the correct ESM build Xelian produces in the real package
+    directory. The env's build-output directory is now replaced with a link to
+    the package. Verified with full MCP handshakes: servers/src/{memory,
+    everything,filesystem,sequentialthinking}, aws-kb-retrieval-server.
 - [x] **H-116 — Console-script-only Python packages** (2026-07-20)
   - Solved without a new launch mode: when a project declares only
     `[project.scripts] x = "pkg:main"` and ships no runnable file, `xelian add`

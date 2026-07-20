@@ -164,8 +164,25 @@ fn link_build_outputs_into_env(package_dir: &Path, env_dir: &Path) -> Result<(),
             continue;
         }
         let in_env = env_dir.join(name);
-        if in_env.exists() || fs::symlink_metadata(&in_env).is_ok() {
-            continue;
+        match fs::symlink_metadata(&in_env) {
+            // Already a symlink: it points back at the package, which is
+            // exactly what we want.
+            Ok(meta) if meta.file_type().is_symlink() => continue,
+            // A *real* directory here is stale output from the package's own
+            // lifecycle script, which npm ran inside the install staging
+            // directory before this build. That copy is wrong — staging does
+            // not reproduce the repository around the package, so a monorepo
+            // subpackage's `tsconfig` `extends` fails there and tsc silently
+            // falls back to CommonJS. Loading it under an ESM `package.json`
+            // fails with "exports is not defined". The build we just ran, in
+            // the real package directory, is authoritative; replace it.
+            Ok(_) => {
+                fs::remove_dir_all(&in_env).map_err(|e| GithubError::Io {
+                    path: in_env.clone(),
+                    source: e,
+                })?;
+            }
+            Err(_) => {}
         }
         symlink_dir(&produced, &in_env).map_err(|e| GithubError::Io {
             path: in_env.clone(),
@@ -245,6 +262,50 @@ mod tests {
     use super::*;
 
     #[cfg(unix)]
+    #[test]
+    fn stale_lifecycle_build_output_in_the_env_is_replaced() {
+        // npm ran the package's own `prepare` build inside the install
+        // staging dir, where a monorepo subpackage's tsconfig `extends`
+        // cannot resolve, so tsc emitted CommonJS. Under an ESM
+        // package.json that fails at runtime with "exports is not defined".
+        // Our build, run in the real package dir, must win.
+        let d = tempfile::tempdir().unwrap();
+        let pkg = d.path().join("pkg");
+        let env = d.path().join("env");
+        fs::create_dir_all(pkg.join("dist")).unwrap();
+        fs::create_dir_all(env.join("dist")).unwrap();
+        fs::write(pkg.join("dist/index.js"), b"import x from 'y';").unwrap();
+        fs::write(env.join("dist/index.js"), b"\"use strict\"; exports.x = 1;").unwrap();
+
+        link_build_outputs_into_env(&pkg, &env).unwrap();
+
+        assert!(
+            fs::symlink_metadata(env.join("dist"))
+                .unwrap()
+                .file_type()
+                .is_symlink(),
+            "stale real directory must be replaced by a link to the package"
+        );
+        let loaded = fs::read_to_string(env.join("dist/index.js")).unwrap();
+        assert!(loaded.contains("import"), "must resolve to our ESM build");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn an_existing_symlinked_output_dir_is_left_alone() {
+        let d = tempfile::tempdir().unwrap();
+        let pkg = d.path().join("pkg");
+        let env = d.path().join("env");
+        fs::create_dir_all(pkg.join("dist")).unwrap();
+        fs::create_dir_all(&env).unwrap();
+        fs::write(pkg.join("dist/index.js"), b"built").unwrap();
+        std::os::unix::fs::symlink(pkg.join("dist"), env.join("dist")).unwrap();
+
+        link_build_outputs_into_env(&pkg, &env).unwrap();
+
+        assert_eq!(fs::read(env.join("dist/index.js")).unwrap(), b"built");
+    }
+
     #[test]
     fn external_build_tools_are_detected_from_the_script() {
         // fetch-mcp shape: builds with bun, which is not a devDependency.
