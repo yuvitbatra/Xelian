@@ -260,6 +260,31 @@
     SHA (step 6), and runs via the existing pipeline from manifest validation
     onward (step 7, §9.6+).
 
+- [x] **H-114 — Real-world import coverage** (2026-07-20)
+  - Difficulty: L · Deps: H-113
+  - Measured 1/25 real repos importable before; now the large majority, with an
+    actionable error for the rest. Subdirectory URLs, Poetry/setup.py console
+    scripts, `<pkg>/__main__.py`, build-output entrypoints, MCP-vs-agent
+    detection, automatic `npm run build` (+ bun/pnpm/yarn provisioning).
+    Fixed: cache poisoning on failed import; `push` publishing PLEASE_EDIT
+    metadata; `push` refusing to package a gitignored build output.
+  - Verified end-to-end (launch + JSON-RPC): fetch-mcp, servers/src/{time,git,
+    fetch}, chroma-mcp, playwright-mcp, firecrawl-mcp. See `test_add.txt`.
+
+### Known gaps (deliberately not done — would change architecture or scope)
+
+- [ ] **H-115 — npm-workspace TypeScript monorepos**
+  - `servers/src/memory` and siblings build against the workspace root; their
+    tsconfig compiles to CJS under an ESM `package.json`. Needs real workspace
+    build support, not another inference rule.
+- [ ] **H-116 — Console-script-only Python packages**
+  - `mcp-atlassian` exposes `pkg:main` with no runnable file. Would need launch
+    to support `python -c "from pkg import main; main()"`, i.e. a third launch
+    mode beyond path and `-m`. Currently a clear MANUAL error.
+- [ ] **H-117 — Docker / `make run` projects (e.g. OpenHands)**
+  - Would make Docker a runtime manager. Contradicts local-first + the V1
+    Python/Node runtime set; needs an explicit product decision first.
+
 ---
 
 ## Phase 12 — xelian list & xelian rm
