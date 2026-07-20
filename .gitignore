@@ -1,6 +1,7 @@
 /target
 .superpowers/
 *.xelian
+*.md
 
 # Python (registry backend + SDK)
 .venv/
