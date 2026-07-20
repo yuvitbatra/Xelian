@@ -4,6 +4,13 @@
 #   XELIAN_R2_*                   from Cloudflare R2 (archives MUST live in R2 —
 #                                 Render free-tier disks are ephemeral)
 # Keep-warm: point a free UptimeRobot monitor at /health every 5 minutes.
+#
+# AFTER DEPLOY — point the CLI at production. The shipped `xelian` binary
+# defaults to http://localhost:8000, so release builds MUST bake the deployed
+# URL in at compile time, or every `xelian run` hits localhost and fails:
+#   XELIAN_DEFAULT_REGISTRY_URL=https://<your-service>.onrender.com \
+#     cargo install --path crates/xelian-cli
+# (Users can also override per-shell with `export XELIAN_REGISTRY_URL=...`.)
 services:
   - type: web
     name: xelian-registry

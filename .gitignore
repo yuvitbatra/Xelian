@@ -1,7 +1,10 @@
 /target
 .superpowers/
+
+# Built package archives (produced by `xelian push`), but NOT the committed
+# golden interop fixture the registry/CLI checksum tests depend on.
 *.xelian
-*.md
+!tests/golden/fixture.xelian
 
 # Python (registry backend + SDK)
 .venv/

@@ -5,7 +5,7 @@ runtime for AI agents and MCP servers — package once, publish with one
 command, and anyone can run it locally with zero setup.
 
 ```bash
-xelian run demo/echo-agent
+xelian run xelian/calc
 ```
 
 <!-- TODO(owner): record the 30s install→run→chat GIF with asciinema:
@@ -26,8 +26,9 @@ Until binary releases ship, build from source (Rust toolchain required):
 
 ```bash
 cargo install --path crates/xelian-cli   # 1. install the CLI
-xelian run demo/echo-agent               # 2. download + run an agent
+xelian run xelian/calc                    # 2. download + run an agent
 # 3. chat — agents open a REPL; MCP servers start and expose locally
+#    e.g. type  2*(3+4)**2  and press enter
 ```
 
 `xelian run` resolves the package on the registry, downloads and verifies the
@@ -81,10 +82,10 @@ xelian gateway logs           # unified stderr logs from all backends
 ```python
 import xelian
 
-agent = xelian.run("demo/echo-agent")
-print(agent.chat("hello"))
+agent = xelian.run("xelian/calc")
+print(agent.chat("2*(3+4)**2"))
 
-server = xelian.mcp("someone/mcp-server")
+server = xelian.mcp("xelian/time-mcp")
 server.expose()   # local MCP transport for any MCP client
 ```
 
@@ -94,7 +95,7 @@ A Xelian package is a `.xelian` archive (tar.gz) containing your project plus
 two files:
 
 - **`xelian.toml`** — the manifest: name, version, `package-type`
-  (`agent` | `mcp-server`), language, runtime constraint, entrypoint,
+  (`agent` | `mcp`), language, runtime constraint, entrypoint,
   declared `permissions` and `features`, author, and the native dependency
   manifest to install from (e.g. `pyproject.toml`, `package.json`).
 - **`xelian.lock`** — the lockfile: a deterministic content checksum over

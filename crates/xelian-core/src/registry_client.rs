@@ -173,8 +173,9 @@ impl RegistryClient {
         let response = ureq::get(&url).call().map_err(map_ureq_error)?;
 
         let mut reader = response.into_reader();
-        let mut file = std::fs::File::create(dest)
-            .map_err(|e| RegistryError::Network(format!("cannot create {}: {e}", dest.display())))?;
+        let mut file = std::fs::File::create(dest).map_err(|e| {
+            RegistryError::Network(format!("cannot create {}: {e}", dest.display()))
+        })?;
         let written = std::io::copy(&mut reader, &mut file)
             .map_err(|e| RegistryError::Network(e.to_string()))?;
         Ok(written)

@@ -1,9 +1,13 @@
-//! `xelian init`: generates a `xelian.toml` + `xelian.lock` skeleton in a
-//! target directory (SPEC.md §13.1).
+//! `xelian init`: generates a `xelian.toml` + `xelian.lock` skeleton plus the
+//! starter files a runnable package needs (entrypoint, native dependency
+//! manifest, README, LICENSE) in a target directory (SPEC.md §13.1), so
+//! `init` → `push` → `run` works with zero edits.
 //!
-//! `xelian init` MUST NOT contact the network or the registry — nothing in
-//! this module performs any I/O beyond reading/writing the two skeleton
-//! files under the given directory.
+//! `xelian init` MUST NOT contact the network or the registry — all I/O in
+//! this module is confined to writing skeleton files under the given
+//! directory, and it never overwrites a file a user already has (starter
+//! files are written only when absent; only `xelian.toml`/`xelian.lock` are
+//! regenerated under `--force`).
 
 use std::path::{Path, PathBuf};
 
@@ -54,6 +58,11 @@ pub struct InitOutcome {
     /// Whether `name` is the generic placeholder (i.e. the directory name
     /// didn't satisfy §19.3) rather than derived from the directory.
     pub name_is_placeholder: bool,
+    /// Starter files created alongside the manifest (entrypoint, native
+    /// dependency manifest, README, LICENSE). Only files that did not already
+    /// exist are created and listed here — existing user files are never
+    /// touched, even under `--force`.
+    pub scaffolded: Vec<PathBuf>,
 }
 
 /// Whether `name` satisfies the package naming rules (SPEC.md §19.3):
@@ -107,6 +116,114 @@ email = "you@example.com"
 manifest = "pyproject.toml"
 "#
     )
+}
+
+/// Renders a minimal, immediately-runnable agent entrypoint (SPEC.md §9.10.1).
+///
+/// The generated `xelian init` package must `push` and `run` with zero edits,
+/// so this is a working echo agent: it inherits the terminal's stdin/stdout
+/// and replies to each line. A user replaces the body with real logic.
+fn render_entrypoint_py(name: &str) -> String {
+    format!(
+        r#"# Starter Xelian agent for `{name}`.
+#
+# `xelian run <you>/{name}` connects your terminal straight to this program's
+# stdin/stdout. Replace the echo below with your agent's real logic.
+import sys
+
+
+def main() -> None:
+    print("{name}: ready — type a message, Ctrl-D to exit.", flush=True)
+    for line in sys.stdin:
+        message = line.rstrip("\n")
+        if not message:
+            continue
+        print(f"you said: {{message}}", flush=True)
+
+
+if __name__ == "__main__":
+    main()
+"#
+    )
+}
+
+/// Renders the native Python dependency manifest referenced by
+/// `[dependencies] manifest = "pyproject.toml"` in the generated `xelian.toml`.
+fn render_pyproject_toml(name: &str) -> String {
+    format!(
+        r#"[project]
+name = "{name}"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = []
+"#
+    )
+}
+
+/// Renders the required `README.md` (SPEC.md §5.3).
+fn render_readme_md(name: &str) -> String {
+    format!(
+        r#"# {name}
+
+TODO: describe your package.
+
+## Run it
+
+```bash
+xelian run <you>/{name}
+```
+"#
+    )
+}
+
+/// Renders the required `LICENSE` (SPEC.md §5.3) — MIT, matching the manifest's
+/// default `license = "MIT"`.
+fn render_license() -> String {
+    r#"MIT License
+
+Copyright (c) TODO: Your Name
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"#
+    .to_string()
+}
+
+/// Writes `contents` to `path` only if `path` does not already exist, creating
+/// parent directories as needed. Returns `Ok(true)` if the file was created,
+/// `Ok(false)` if it already existed and was left untouched. Existing user
+/// files are never overwritten — not even under `xelian init --force`, which
+/// regenerates only `xelian.toml`/`xelian.lock`.
+fn write_if_absent(path: &Path, contents: &str) -> Result<bool, InitError> {
+    if path.exists() {
+        return Ok(false);
+    }
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| InitError::Io {
+            path: parent.to_path_buf(),
+            source: e,
+        })?;
+    }
+    std::fs::write(path, contents).map_err(|e| InitError::Io {
+        path: path.to_path_buf(),
+        source: e,
+    })?;
+    Ok(true)
 }
 
 /// Generate a `xelian.toml` + `xelian.lock` package skeleton in `dir`
@@ -167,11 +284,28 @@ pub fn init_package(dir: &Path, force: bool) -> Result<InitOutcome, InitError> {
         source: e,
     })?;
 
+    // Scaffold the starter files the manifest references (entrypoint + native
+    // manifest) plus the two required root files (§5.3), so `init` → `push` →
+    // `run` works with zero edits. Never clobber files a user already has.
+    let scaffold: [(PathBuf, String); 4] = [
+        (dir.join("src").join("main.py"), render_entrypoint_py(&name)),
+        (dir.join("pyproject.toml"), render_pyproject_toml(&name)),
+        (dir.join("README.md"), render_readme_md(&name)),
+        (dir.join("LICENSE"), render_license()),
+    ];
+    let mut scaffolded = Vec::new();
+    for (path, contents) in &scaffold {
+        if write_if_absent(path, contents)? {
+            scaffolded.push(path.clone());
+        }
+    }
+
     Ok(InitOutcome {
         manifest_path,
         lockfile_path,
         name,
         name_is_placeholder,
+        scaffolded,
     })
 }
 
@@ -271,6 +405,73 @@ mod tests {
 
         let lock_contents = std::fs::read_to_string(&outcome.lockfile_path).unwrap();
         assert_ne!(lock_contents, "custom lock");
+    }
+
+    #[test]
+    fn scaffolds_runnable_starter_files() {
+        let (_base, dir) = named_dir("weather");
+
+        let outcome = init_package(&dir, false).expect("init should succeed");
+
+        // The four starter files the manifest references / §5.3 requires.
+        for rel in ["src/main.py", "pyproject.toml", "README.md", "LICENSE"] {
+            assert!(
+                dir.join(rel).is_file(),
+                "init should scaffold {rel}, but it is missing"
+            );
+        }
+        // All four are reported as freshly created.
+        assert_eq!(outcome.scaffolded.len(), 4);
+
+        // The generated package validates and builds with no edits — the whole
+        // point of a runnable skeleton.
+        crate::validate::validate_and_build(&dir, None)
+            .expect("a freshly-init'd package must validate and build");
+
+        // The entrypoint the manifest points at actually exists on disk.
+        let manifest_str = std::fs::read_to_string(&outcome.manifest_path).unwrap();
+        let manifest = Manifest::from_toml_str(&manifest_str).unwrap();
+        let entrypoint = dir.join(&manifest.entrypoint);
+        assert!(entrypoint.is_file());
+
+        // If a Python interpreter is present, the generated entrypoint must
+        // compile — validation alone never executes it, so only this guards
+        // against a template that emits syntactically-broken Python (e.g. a
+        // raw-string delimiter eating a docstring quote).
+        if let Ok(out) = std::process::Command::new("python3")
+            .arg("-c")
+            .arg("import py_compile,sys; py_compile.compile(sys.argv[1], doraise=True)")
+            .arg(&entrypoint)
+            .output()
+        {
+            assert!(
+                out.status.success(),
+                "generated entrypoint does not compile:\n{}",
+                String::from_utf8_lossy(&out.stderr)
+            );
+        }
+    }
+
+    #[test]
+    fn scaffolding_never_clobbers_existing_user_files() {
+        let (_base, dir) = named_dir("weather");
+        std::fs::create_dir_all(dir.join("src")).unwrap();
+        std::fs::write(dir.join("src").join("main.py"), "print('mine')\n").unwrap();
+        std::fs::write(dir.join("README.md"), "# my real readme\n").unwrap();
+
+        let outcome = init_package(&dir, false).expect("init should succeed");
+
+        // Pre-existing files are left byte-for-byte intact...
+        assert_eq!(
+            std::fs::read_to_string(dir.join("src").join("main.py")).unwrap(),
+            "print('mine')\n"
+        );
+        assert_eq!(
+            std::fs::read_to_string(dir.join("README.md")).unwrap(),
+            "# my real readme\n"
+        );
+        // ...and only the genuinely-missing ones are reported as scaffolded.
+        assert_eq!(outcome.scaffolded.len(), 2); // pyproject.toml + LICENSE
     }
 
     #[test]

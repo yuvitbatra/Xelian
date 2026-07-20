@@ -156,6 +156,9 @@ fn cmd_init(force: bool) -> anyhow::Result<()> {
         Ok(outcome) => {
             println!("Created {}", outcome.manifest_path.display());
             println!("Created {}", outcome.lockfile_path.display());
+            for path in &outcome.scaffolded {
+                println!("Created {}", path.display());
+            }
             if outcome.name_is_placeholder {
                 println!(
                     "Note: the current directory name isn't a valid package name, \
@@ -164,6 +167,15 @@ fn cmd_init(force: bool) -> anyhow::Result<()> {
                     outcome.name
                 );
             }
+            println!();
+            println!("This is a runnable echo agent. Next steps:");
+            println!("  1. edit src/main.py — your agent's logic");
+            println!("  2. edit xelian.toml — description and [author]");
+            println!("  3. xelian login && xelian push");
+            println!(
+                "Try it right now:  echo hi | xelian run <you>/{}",
+                outcome.name
+            );
             Ok(())
         }
         Err(err) => Err(anyhow::anyhow!(err)),
@@ -208,6 +220,25 @@ fn cmd_push() -> anyhow::Result<()> {
         std::fs::read_to_string(&manifest_path).context("failed to read xelian.toml")?;
     let manifest = xelian_core::manifest::Manifest::from_toml_str(&manifest_str)
         .map_err(|e| anyhow::anyhow!("failed to parse xelian.toml: {e}"))?;
+
+    // Nudge (non-blocking): publishing the `xelian init` placeholders to a
+    // public registry ships "TODO" metadata other users will see.
+    let looks_like_placeholder = |s: &str| {
+        let s = s.trim();
+        s.starts_with("TODO") || s == "you@example.com"
+    };
+    if looks_like_placeholder(&manifest.description) {
+        println!(
+            "warning: `description` is still the init placeholder — edit it before publishing."
+        );
+    }
+    if looks_like_placeholder(&manifest.author.name)
+        || looks_like_placeholder(&manifest.author.email)
+    {
+        println!(
+            "warning: `[author]` is still the init placeholder — fill in your name and email."
+        );
+    }
 
     println!(
         "Publishing {}/{} v{} to {} ...",
@@ -693,11 +724,11 @@ fn cmd_list() -> anyhow::Result<()> {
 
     for pkg in &packages {
         let source = match &pkg.source {
-            xelian_core::cache::PackageSource::Local => "local ",
+            xelian_core::cache::PackageSource::Local => "local",
             xelian_core::cache::PackageSource::Github { .. } => "github",
-            xelian_core::cache::PackageSource::Registry { .. } => "regsty",
+            xelian_core::cache::PackageSource::Registry { .. } => "registry",
         };
-        println!("{source}  {:<30}  {}", pkg.name, pkg.version);
+        println!("{source:<8}  {:<30}  {}", pkg.name, pkg.version);
     }
     Ok(())
 }
@@ -820,7 +851,11 @@ fn cmd_login(username_arg: Option<String>, password_stdin: bool) -> anyhow::Resu
             use xelian_core::registry_client::RegistryError;
             match &e {
                 RegistryError::Auth(msg) => {
-                    anyhow::bail!("login failed: {msg}")
+                    anyhow::bail!(
+                        "login failed: {msg}\n\
+                         No account yet? Create one at the registry website, then \
+                         `xelian login` with those credentials."
+                    )
                 }
                 RegistryError::Network(msg) => {
                     anyhow::bail!("cannot reach registry at {}: {msg}", registry_url)
