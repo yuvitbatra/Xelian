@@ -133,12 +133,15 @@ import sys
 
 
 def main() -> None:
-    print("{name}: ready — type a message, Ctrl-D to exit.", flush=True)
+    # Xelian prints the readiness banner and the `> ` prompt before handing
+    # over the terminal, so an agent should not print its own — two "ready"
+    # lines read as a glitch. Just print a `> ` before each subsequent turn.
     for line in sys.stdin:
         message = line.rstrip("\n")
         if not message:
             continue
         print(f"you said: {{message}}", flush=True)
+        print("> ", end="", flush=True)
 
 
 if __name__ == "__main__":

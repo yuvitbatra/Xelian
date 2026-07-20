@@ -5,7 +5,7 @@
 //! (§9.10.1); for MCP servers stdin/stdout are the JSON-RPC stdio transport
 //! (§9.10.2) and must carry nothing but the protocol.
 
-use std::io;
+use std::io::{self, Write};
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
@@ -98,10 +98,20 @@ fn announce_ready(manifest: &Manifest) {
         PackageType::Agent => {
             eprintln!();
             eprintln!(
-                "  {} {} is ready — type your message and press enter (Ctrl-C to exit).",
+                "  {} {} ready — type a message and press enter (Ctrl-C to exit).",
                 manifest.name, manifest.version
             );
             eprintln!();
+            // A literal prompt, so the terminal visibly waits for input rather
+            // than sitting on a blank line that reads as a hang. Written
+            // without a newline and flushed, so the cursor rests after it.
+            //
+            // Only for agents: an MCP server's stdin is a JSON-RPC transport
+            // with no human at the other end. Written to stderr like every
+            // other Xelian message, so it can never contaminate an agent's
+            // own stdout.
+            let _ = write!(io::stderr(), "> ");
+            let _ = io::stderr().flush();
         }
         PackageType::Mcp => {
             eprintln!();
