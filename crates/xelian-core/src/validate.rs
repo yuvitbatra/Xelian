@@ -96,6 +96,13 @@ fn normalize_rel_path(p: &str) -> String {
     p.replace('\\', "/")
 }
 
+/// Whether an archive-relative path lives in a conventional build-output
+/// directory. Such a path being `.gitignore`d is expected, not a mistake.
+fn is_build_output(rel_path: &str) -> bool {
+    const OUTPUT_DIRS: &[&str] = &["dist/", "build/", "lib/", "out/", "target/"];
+    OUTPUT_DIRS.iter().any(|d| rel_path.starts_with(d))
+}
+
 /// Run the full SPEC.md §8.1 validation + build pipeline against the package
 /// rooted at `root` (the directory containing `xelian.toml`), stopping at the
 /// first failure. `out` overrides the default archive path
@@ -145,9 +152,24 @@ pub fn validate_and_build(root: &Path, out: Option<&Path>) -> Result<BuildOutcom
         });
     }
     if !files.iter().any(|(p, _)| *p == entrypoint_rel) {
-        return Err(ValidateError::EntrypointExcluded {
-            path: manifest.entrypoint.clone(),
-        });
+        // A build output is the normal case here: TypeScript projects commit
+        // `dist/` to .gitignore precisely because it is generated, yet the
+        // compiled file is exactly what the package must ship. A package
+        // without its own entrypoint is broken by definition, so force-include
+        // it — the same way the freshly written xelian.lock is force-included
+        // below rather than being subject to .gitignore.
+        //
+        // Only a real, existing file is force-included (checked immediately
+        // above), and only the declared entrypoint: this does not smuggle in
+        // the rest of an ignored directory.
+        if is_build_output(&entrypoint_rel) {
+            files.push((entrypoint_rel.clone(), root.join(&manifest.entrypoint)));
+            files.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
+        } else {
+            return Err(ValidateError::EntrypointExcluded {
+                path: manifest.entrypoint.clone(),
+            });
+        }
     }
 
     // --- Step 5: [commands] values are non-empty, non-whitespace strings ---
@@ -319,6 +341,38 @@ manifest = "pyproject.toml"
             ValidateError::MissingRequiredFile { name } => assert_eq!(name, "LICENSE"),
             other => panic!("expected MissingRequiredFile, got: {other:?}"),
         }
+    }
+
+    #[test]
+    fn gitignored_build_output_entrypoint_is_force_included() {
+        // An imported TypeScript package: `dist/` is gitignored (it is
+        // generated), but the compiled entrypoint is exactly what must ship.
+        let dir = tempdir().unwrap();
+        scaffold_valid_package(dir.path());
+        write_file(dir.path(), "dist/index.js", "console.log(1)\n");
+        write_file(dir.path(), ".gitignore", "dist/\n");
+        let manifest = fs::read_to_string(dir.path().join("xelian.toml"))
+            .unwrap()
+            .replace(
+                "entrypoint = \"src/main.py\"",
+                "entrypoint = \"dist/index.js\"",
+            );
+        fs::write(dir.path().join("xelian.toml"), manifest).unwrap();
+
+        let outcome = validate_and_build(dir.path(), None).expect("build output must be packaged");
+
+        let f = fs::File::open(&outcome.archive_path).unwrap();
+        let decoder = flate2::read::GzDecoder::new(f);
+        let mut archive = tar::Archive::new(decoder);
+        let names: Vec<String> = archive
+            .entries()
+            .unwrap()
+            .map(|e| e.unwrap().path().unwrap().to_string_lossy().into_owned())
+            .collect();
+        assert!(
+            names.contains(&"dist/index.js".to_string()),
+            "the declared entrypoint must be in the archive, got: {names:?}"
+        );
     }
 
     #[test]

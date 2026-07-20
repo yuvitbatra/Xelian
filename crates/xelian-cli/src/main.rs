@@ -233,20 +233,57 @@ fn cmd_push() -> anyhow::Result<()> {
     let manifest = xelian_core::manifest::Manifest::from_toml_str(&manifest_str)
         .map_err(|e| anyhow::anyhow!("failed to parse xelian.toml: {e}"))?;
 
-    // Nudge (non-blocking): publishing the `xelian init` placeholders to a
-    // public registry ships "TODO" metadata other users will see.
-    let looks_like_placeholder = |s: &str| {
+    // Placeholders must not reach a public registry (SPEC.md §12.2 step 3:
+    // publish "MUST reject any field still holding an invalid placeholder").
+    //
+    // `TODO`/`you@example.com` come from `xelian init`; `PLEASE_EDIT` comes
+    // from `xelian add`'s inference. The init ones stay warnings for
+    // backwards compatibility, but an imported package carries a placeholder
+    // *license* — publishing that misstates the legal terms of someone else's
+    // code, so it blocks.
+    let init_placeholder = |s: &str| {
         let s = s.trim();
         s.starts_with("TODO") || s == "you@example.com"
     };
-    if looks_like_placeholder(&manifest.description) {
+    let import_placeholder = |s: &str| s.trim().starts_with("PLEASE_EDIT");
+
+    let mut blocking: Vec<&str> = Vec::new();
+    if import_placeholder(&manifest.license) {
+        blocking.push("license");
+    }
+    if import_placeholder(&manifest.author.name) {
+        blocking.push("author.name");
+    }
+    if import_placeholder(&manifest.author.email)
+        || manifest.author.email.trim() == "please-edit@example.invalid"
+    {
+        blocking.push("author.email");
+    }
+    if import_placeholder(&manifest.description) {
+        blocking.push("description");
+    }
+    if import_placeholder(&manifest.entrypoint) {
+        blocking.push("entrypoint");
+    }
+    if !blocking.is_empty() {
+        anyhow::bail!(
+            "cannot publish: {} still {} the placeholder value written by `xelian add`.\n\
+             Edit xelian.toml in {} and set {} before pushing.\n\n\
+             Note: publishing an imported package republishes someone else's code — \
+             set `license` to the upstream project's actual license.",
+            blocking.join(", "),
+            if blocking.len() == 1 { "holds" } else { "hold" },
+            cwd.display(),
+            if blocking.len() == 1 { "it" } else { "them" },
+        );
+    }
+
+    if init_placeholder(&manifest.description) {
         println!(
             "warning: `description` is still the init placeholder — edit it before publishing."
         );
     }
-    if looks_like_placeholder(&manifest.author.name)
-        || looks_like_placeholder(&manifest.author.email)
-    {
+    if init_placeholder(&manifest.author.name) || init_placeholder(&manifest.author.email) {
         println!(
             "warning: `[author]` is still the init placeholder — fill in your name and email."
         );
@@ -703,15 +740,15 @@ fn cmd_add(url: &str) -> anyhow::Result<()> {
     let cached_suffix = if outcome.from_cache { " (cached)" } else { "" };
     let short_sha = &outcome.sha[..outcome.sha.len().min(7)];
     eprintln!(
-        "imported {}/{}@{} at {}{}",
-        outcome.repo.owner,
-        outcome.repo.repo,
+        "imported {}@{} at {}{}",
+        outcome.repo.label(),
         short_sha,
         outcome.package_dir.display(),
         cached_suffix
     );
 
-    let env_dir = home.github_env_dir(&outcome.repo.owner, &outcome.repo.repo, &outcome.sha);
+    let cache_key = outcome.repo.cache_key(&outcome.sha);
+    let env_dir = home.github_env_dir(&outcome.repo.owner, &outcome.repo.repo, &cache_key);
     let prepared_env =
         xelian_core::run::prepare_environment(&outcome.package_dir, &manifest, &home, env_dir)
             .map_err(|e| anyhow::anyhow!(e))?;
@@ -719,8 +756,28 @@ fn cmd_add(url: &str) -> anyhow::Result<()> {
     let env_dir = &prepared_env.env_dir;
     let bin_dir = &prepared_env.bin_dir;
 
-    let grants_path =
-        home.github_grants_path(&outcome.repo.owner, &outcome.repo.repo, &outcome.sha);
+    // TypeScript packages declare an entrypoint (`dist/index.js`) that only
+    // exists after their own build runs. Dependencies had to be installed
+    // first — the build tooling is itself a dependency.
+    if outcome.needs_build && !outcome.package_dir.join(&manifest.entrypoint).is_file() {
+        xelian_core::github::build::run_node_build(&outcome.package_dir, env_dir, bin_dir)
+            .map_err(|e| anyhow::anyhow!(e))?;
+
+        if !outcome.package_dir.join(&manifest.entrypoint).is_file() {
+            anyhow::bail!(xelian_core::github::GithubError::EntrypointNotBuilt {
+                entrypoint: manifest.entrypoint.clone(),
+                path: outcome.package_dir.display().to_string(),
+            });
+        }
+
+        // The archive and lock were built before the build step ran, so they
+        // do not contain the emitted output. Regenerate both so the cached
+        // package matches what actually runs — and so a later `xelian push`
+        // of this import publishes something runnable.
+        xelian_core::github::build_import(&outcome.package_dir).map_err(|e| anyhow::anyhow!(e))?;
+    }
+
+    let grants_path = home.github_grants_path(&outcome.repo.owner, &outcome.repo.repo, &cache_key);
 
     prepare_env_and_launch_inner(
         &manifest,

@@ -66,21 +66,42 @@ fn rejects_a_non_github_host() {
 }
 
 #[test]
-fn rejects_extra_path_segments_in_the_url() {
+fn rejects_unrecognized_path_segments_in_the_url() {
+    // `/tree/<ref>/<subdir>` is a supported form (monorepo subpackages), but
+    // an arbitrary GitHub page URL is not — it names no package.
     let home_dir = tempfile::tempdir().expect("home dir");
     let output = run_xelian_add_with_home(
-        "https://github.com/octocat/hello-world/tree/main",
+        "https://github.com/octocat/hello-world/pulls/3",
         home_dir.path(),
     );
 
     assert!(
         !output.status.success(),
-        "extra path segments must be rejected"
+        "unrecognized path segments must be rejected"
     );
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
         stderr.contains("invalid GitHub repository URL"),
         "stderr:\n{stderr}"
+    );
+    assert!(!home_dir.path().join(".xelian/packages/github").exists());
+}
+
+#[test]
+fn accepts_a_monorepo_subdirectory_url_without_network() {
+    // Parsing must accept the `/tree/<ref>/<subdir>` form. This asserts the
+    // URL is *not* rejected as malformed; it will fail later on network or
+    // language detection, which is a different (and acceptable) failure.
+    let home_dir = tempfile::tempdir().expect("home dir");
+    let output = run_xelian_add_with_home(
+        "https://github.com/modelcontextprotocol/servers/tree/main/src/everything",
+        home_dir.path(),
+    );
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        !stderr.contains("invalid GitHub repository URL"),
+        "subdirectory URLs must parse:\n{stderr}"
     );
 }
 

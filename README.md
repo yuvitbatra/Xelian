@@ -49,11 +49,60 @@ xelian push          # validate, build the .xelian archive, publish
 
 Anyone can now `xelian run <you>/my-agent`.
 
-Already have an agent on GitHub? Import and run it directly:
+## Run anything on GitHub, with no packaging step
+
+Most agents and MCP servers were never packaged for Xelian. `xelian add` takes
+a plain GitHub URL and works out the rest — language, entrypoint, whether it's
+an agent or an MCP server, and how to build it:
 
 ```bash
-xelian add https://github.com/user/repo
+xelian add https://github.com/zcaceres/fetch-mcp
 ```
+
+That single command resolves the default branch to a commit SHA, downloads and
+caches the repo at that SHA, infers a `xelian.toml`, provisions Python or Node,
+installs dependencies, runs the project's own build if its entrypoint is a
+build output, and launches it. TypeScript servers that compile to `dist/` work
+without you knowing they were TypeScript.
+
+**Monorepo subpackages** — how most MCP servers actually ship — work by pasting
+the URL GitHub gives you when you browse to the folder:
+
+```bash
+xelian add https://github.com/modelcontextprotocol/servers/tree/main/src/git
+```
+
+Imports are addressed by commit SHA, so re-running is reproducible and starts
+from cache.
+
+### What it can and cannot infer
+
+`xelian add` reads `[project.scripts]`, Poetry's `[tool.poetry.scripts]`,
+`setup.py` entry points, `<package>/__main__.py`, and `package.json`'s `main`
+and `bin` — including entrypoints that don't exist yet because a build produces
+them.
+
+It cannot invent an entrypoint that isn't there. Libraries with no CLI
+(`openai/swarm`), and projects that only run via Docker or `make`
+(`OpenHands`), stop with the cache path and the single field to set:
+
+```
+could not determine how to run this package.
+
+Imported and cached at:
+  ~/.xelian/packages/github/openai/swarm/<sha>
+
+Xelian inferred everything except `entrypoint`. To finish the import:
+  1. edit <path>/xelian.toml and set `entrypoint` to the file that starts the program
+  2. re-run the same `xelian add` command
+```
+
+That check runs *before* dependency installation, so an un-inferable repo fails
+in seconds rather than after a multi-minute install. Languages without a v1
+runtime (Go, Rust) say so by name.
+
+See [test_add.txt](test_add.txt) for a corpus of real repositories with their
+measured status.
 
 ## One endpoint for all your MCP servers
 

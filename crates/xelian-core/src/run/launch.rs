@@ -47,6 +47,8 @@ pub fn launch(
 
     let (program, args, work_dir) = build_launch_command(manifest, package_dir, env_dir, bin_dir)?;
 
+    announce_ready(manifest);
+
     let mut cmd = Command::new(&program);
     cmd.args(&args);
     cmd.current_dir(&work_dir);
@@ -82,6 +84,37 @@ pub fn launch(
     Ok(child.wait()?)
 }
 
+/// Print the "it worked, it's yours now" line immediately before handing the
+/// terminal to the child.
+///
+/// Without this, a successful launch is indistinguishable from a hang: an
+/// agent REPL that has not yet printed its own prompt, and an MCP server
+/// (which is silent by design, since its stdout is the JSON-RPC transport),
+/// both look like nothing happened.
+///
+/// Goes to stderr — stdout belongs to the child (§9.10.2).
+fn announce_ready(manifest: &Manifest) {
+    match manifest.package_type {
+        PackageType::Agent => {
+            eprintln!();
+            eprintln!(
+                "  {} {} is ready — type your message and press enter (Ctrl-C to exit).",
+                manifest.name, manifest.version
+            );
+            eprintln!();
+        }
+        PackageType::Mcp => {
+            eprintln!();
+            eprintln!(
+                "  {} {} is running as an MCP server over stdio.",
+                manifest.name, manifest.version
+            );
+            eprintln!("  Connect an MCP client to this process, or press Ctrl-C to stop.");
+            eprintln!();
+        }
+    }
+}
+
 /// Build the (program, args, working_directory) for launching the entrypoint.
 fn build_launch_command(
     manifest: &Manifest,
@@ -97,6 +130,19 @@ fn build_launch_command(
                     "Python binary not found at {}",
                     python_bin.display()
                 )));
+            }
+            // A `__main__.py` is the entrypoint of a *package*, and running it
+            // by path puts its directory on sys.path instead of the package
+            // root — which breaks every `from . import x` inside it. Invoke it
+            // the way Python intends (`python -m pkg`) instead. This keeps the
+            // manifest's entrypoint-as-path contract intact; only the launch
+            // mechanics differ.
+            if let Some((module, root)) = module_invocation(&manifest.entrypoint) {
+                return Ok((
+                    python_bin.to_string_lossy().to_string(),
+                    vec!["-m".to_string(), module],
+                    package_dir.join(root),
+                ));
             }
             Ok((
                 python_bin.to_string_lossy().to_string(),
@@ -139,6 +185,34 @@ fn build_launch_command(
     }
 }
 
+/// If `entrypoint` is a package's `__main__.py`, return the dotted module name
+/// to run with `-m` and the working directory to run it from.
+///
+/// `src/mcp_atlassian/__main__.py` → (`mcp_atlassian`, `src`)
+/// `agent/cli/__main__.py`         → (`agent.cli`, ``)
+///
+/// Returns `None` for anything else, including a bare top-level
+/// `__main__.py`, which has no package to be a member of.
+fn module_invocation(entrypoint: &str) -> Option<(String, String)> {
+    let rest = entrypoint.strip_suffix("/__main__.py")?;
+    let components: Vec<&str> = rest.split('/').filter(|c| !c.is_empty()).collect();
+    if components.is_empty() {
+        return None;
+    }
+
+    // A leading `src/` is a layout convention, not part of the module path.
+    let (root, module_parts) = if components[0] == "src" && components.len() > 1 {
+        ("src".to_string(), &components[1..])
+    } else {
+        (String::new(), &components[..])
+    };
+
+    if module_parts.is_empty() {
+        return None;
+    }
+    Some((module_parts.join("."), root))
+}
+
 /// Bind to an OS-assigned free port and return it.
 fn bind_free_port() -> io::Result<u16> {
     let listener = TcpListener::bind(("127.0.0.1", 0))?;
@@ -165,6 +239,36 @@ fn resolve_port(requested: u16) -> Result<u16, LaunchError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn package_dunder_main_becomes_a_module_invocation() {
+        assert_eq!(
+            module_invocation("src/mcp_atlassian/__main__.py"),
+            Some(("mcp_atlassian".to_string(), "src".to_string()))
+        );
+        assert_eq!(
+            module_invocation("agent/__main__.py"),
+            Some(("agent".to_string(), String::new()))
+        );
+        assert_eq!(
+            module_invocation("agent/cli/__main__.py"),
+            Some(("agent.cli".to_string(), String::new()))
+        );
+    }
+
+    #[test]
+    fn plain_scripts_are_not_module_invocations() {
+        assert_eq!(module_invocation("main.py"), None);
+        assert_eq!(module_invocation("src/main.py"), None);
+        assert_eq!(module_invocation("index.js"), None);
+    }
+
+    #[test]
+    fn a_bare_top_level_dunder_main_is_not_a_package() {
+        // `__main__.py` alone has no package to be a member of, so `-m` would
+        // have nothing to name — run it by path instead.
+        assert_eq!(module_invocation("__main__.py"), None);
+    }
 
     #[test]
     fn resolve_port_zero_returns_an_os_assigned_port() {

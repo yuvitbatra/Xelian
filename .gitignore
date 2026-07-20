@@ -18,3 +18,5 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+test_add.txt

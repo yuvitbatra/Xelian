@@ -86,7 +86,7 @@ pub(super) fn binary_reports_version(path: &Path) -> bool {
 }
 
 /// Helper to check if a binary is in the system PATH.
-pub(super) fn find_in_path(binary_name: &str) -> Option<PathBuf> {
+pub(crate) fn find_in_path(binary_name: &str) -> Option<PathBuf> {
     if let Some(paths) = std::env::var_os("PATH") {
         for path in std::env::split_paths(&paths) {
             let candidate = path.join(binary_name);
@@ -361,6 +361,26 @@ impl RuntimeManager for PythonRuntimeManager {
         std::fs::write(env_dir.join("xelian-env.ok"), b"")?;
         Ok(())
     }
+}
+
+/// Whether a package's install-time lifecycle scripts would run a build.
+///
+/// Used to decide if an install failure is worth retrying with
+/// `--ignore-scripts`: a failing `prepare`/`postinstall` that merely builds
+/// the package is recoverable, because Xelian builds it separately.
+fn package_has_lifecycle_build(dir: &Path) -> bool {
+    let Ok(contents) = std::fs::read_to_string(dir.join("package.json")) else {
+        return false;
+    };
+    let Ok(v) = serde_json::from_str::<serde_json::Value>(&contents) else {
+        return false;
+    };
+    let Some(scripts) = v.get("scripts") else {
+        return false;
+    };
+    ["prepare", "prepublishOnly", "postinstall", "install"]
+        .iter()
+        .any(|k| scripts.get(k).and_then(|s| s.as_str()).is_some())
 }
 
 /// Node.js runtime manager implementing [`RuntimeManager`].
@@ -725,7 +745,40 @@ impl RuntimeManager for NodeRuntimeManager {
                 npm_cmd.env("PATH", bin_dir);
             }
 
-            run_command_checked(&mut npm_cmd)?;
+            // A package's own lifecycle scripts (`prepare`, `postinstall`)
+            // run during install, in the staging directory. For a monorepo
+            // subpackage a `prepare: npm run build` fails there, because its
+            // tsconfig `extends` a path relative to the real checkout that
+            // staging does not reproduce.
+            //
+            // That failure is not fatal to us: Xelian runs the package's
+            // build itself, afterwards, in the right directory. So retry
+            // without lifecycle scripts rather than failing the whole
+            // install — dependencies are what this step actually needs.
+            if let Err(first_err) = run_command_checked(&mut npm_cmd) {
+                if !package_has_lifecycle_build(&stage_dir) {
+                    return Err(first_err);
+                }
+                eprintln!(
+                    "Dependency install failed while running the package's own build script; \
+                     retrying without lifecycle scripts (Xelian builds the package separately)..."
+                );
+
+                let mut retry = Command::new(&npm_binary);
+                retry.arg(if is_lock { "ci" } else { "install" });
+                retry.arg("--ignore-scripts");
+                retry.current_dir(&stage_dir);
+                if let Some(old_path) = std::env::var_os("PATH") {
+                    let mut new_paths = vec![bin_dir.to_path_buf()];
+                    new_paths.extend(std::env::split_paths(&old_path));
+                    if let Ok(joined) = std::env::join_paths(new_paths) {
+                        retry.env("PATH", joined);
+                    }
+                } else {
+                    retry.env("PATH", bin_dir);
+                }
+                run_command_checked(&mut retry)?;
+            }
 
             // 3. Write sentinel inside the staging folder before renaming
             std::fs::write(stage_dir.join("xelian-env.ok"), b"")?;
