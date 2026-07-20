@@ -79,6 +79,14 @@ xelian gateway logs           # unified stderr logs from all backends
 
 ## Python SDK
 
+Install the SDK from a source checkout (not yet on PyPI). It shells out to the
+`xelian` CLI, so make sure that's installed too (or point `XELIAN_BIN` at a
+built binary):
+
+```bash
+pip install ./sdk        # from the repo root
+```
+
 ```python
 import xelian
 
@@ -105,6 +113,20 @@ two files:
 The runtime abstracts the implementation language away — a Python agent, a
 Node MCP server, and anything else with a manifest all expose the same
 interface. The full specification lives in [SPEC.md](SPEC.md).
+
+## Environment variables
+
+| Variable | Used by | What it does |
+|----------|---------|--------------|
+| `XELIAN_REGISTRY_URL` | CLI | Registry base URL for this shell. Overrides the built-in default (`http://localhost:8000` unless a release build baked one in). |
+| `XELIAN_DEFAULT_REGISTRY_URL` | CLI (build time) | Bakes the production registry URL into a release binary at compile time. |
+| `XELIAN_TOKEN` / `XELIAN_USERNAME` | CLI | Non-interactive auth (CI): use these instead of `xelian login`. |
+| `XELIAN_BIN` | Python SDK | Absolute path to the `xelian` binary, if it isn't on `PATH`. |
+| `DATABASE_URL` | Registry | Postgres connection string (required; no SQLite fallback). |
+| `XELIAN_R2_BUCKET` / `XELIAN_R2_ENDPOINT` / `XELIAN_R2_ACCESS_KEY_ID` / `XELIAN_R2_SECRET_ACCESS_KEY` | Registry | Cloudflare R2 archive storage. Required in production (free-tier disks are ephemeral); falls back to local disk if unset. |
+| `XELIAN_REGISTRY_ROOT` | Registry | Local-disk archive directory when R2 is not configured (default `~/.xelian-registry`). |
+| `PORT` | Registry | Port to bind (Render/Fly/Cloud Run inject it; default 8000). |
+| `XELIAN_MAX_ARCHIVE_MB` / `XELIAN_MAX_UNCOMPRESSED_MB` / `XELIAN_RATE_LIMIT_AUTH` / `XELIAN_RATE_LIMIT_PUBLISH` | Registry | Upload-size caps and per-IP rate-limit tuning. |
 
 ## Repository layout
 

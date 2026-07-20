@@ -754,8 +754,12 @@ pub fn cmd_logs(target: Option<&str>, lines: usize) -> anyhow::Result<()> {
             anyhow::bail!("no log at {} — has this backend ever run?", path.display());
         }
         let content = std::fs::read_to_string(&path)?;
-        let tail: Vec<&str> = content.lines().rev().take(lines).collect();
         println!("==> {} <==", path.display());
+        if content.trim().is_empty() {
+            println!("(log is empty — no output yet)");
+            continue;
+        }
+        let tail: Vec<&str> = content.lines().rev().take(lines).collect();
         for line in tail.into_iter().rev() {
             println!("{line}");
         }

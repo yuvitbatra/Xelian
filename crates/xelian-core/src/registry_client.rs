@@ -92,13 +92,26 @@ pub enum RegistryError {
 pub struct RegistryClient {
     /// Base URL of the registry (e.g. `http://localhost:8000`).
     pub base_url: String,
+    /// Shared connection agent with bounded timeouts, so an unreachable or
+    /// slow registry fails fast instead of hanging the CLI, and connections
+    /// are reused across calls.
+    agent: ureq::Agent,
 }
 
 impl RegistryClient {
     /// Create a new client targeting the given registry base URL.
     pub fn new(base_url: &str) -> Self {
+        // Bounded timeouts (M-5/L-7): a dead host must not hang the CLI for
+        // the OS default (~30–60s). Connect is short; read/write are generous
+        // so large archive pulls/pushes still complete.
+        let agent = ureq::AgentBuilder::new()
+            .timeout_connect(std::time::Duration::from_secs(10))
+            .timeout_read(std::time::Duration::from_secs(120))
+            .timeout_write(std::time::Duration::from_secs(120))
+            .build();
         Self {
             base_url: base_url.trim_end_matches('/').to_string(),
+            agent,
         }
     }
 
@@ -109,7 +122,9 @@ impl RegistryClient {
         let url = format!("{}/auth/token", self.base_url);
         let body = serde_json::json!({ "username": username, "password": password });
 
-        let response = ureq::post(&url)
+        let response = self
+            .agent
+            .post(&url)
             .set("Content-Type", "application/json")
             .send_json(body)
             .map_err(map_ureq_error)?;
@@ -130,7 +145,7 @@ impl RegistryClient {
     ) -> Result<PackageInfoResponse, RegistryError> {
         let url = format!("{}/packages/{}/{}", self.base_url, owner, name);
 
-        let response = ureq::get(&url).call().map_err(map_ureq_error)?;
+        let response = self.agent.get(&url).call().map_err(map_ureq_error)?;
 
         response
             .into_json::<PackageInfoResponse>()
@@ -149,7 +164,7 @@ impl RegistryClient {
     ) -> Result<Vec<u8>, RegistryError> {
         let url = format!("{}/download/{}/{}/{}", self.base_url, owner, name, version);
 
-        let response = ureq::get(&url).call().map_err(map_ureq_error)?;
+        let response = self.agent.get(&url).call().map_err(map_ureq_error)?;
 
         let mut body: Vec<u8> = Vec::new();
         response
@@ -170,7 +185,7 @@ impl RegistryClient {
     ) -> Result<u64, RegistryError> {
         let url = format!("{}/download/{}/{}/{}", self.base_url, owner, name, version);
 
-        let response = ureq::get(&url).call().map_err(map_ureq_error)?;
+        let response = self.agent.get(&url).call().map_err(map_ureq_error)?;
 
         let mut reader = response.into_reader();
         let mut file = std::fs::File::create(dest).map_err(|e| {
@@ -187,7 +202,9 @@ impl RegistryClient {
     pub fn search(&self, query: &str) -> Result<Vec<SearchResult>, RegistryError> {
         let url = format!("{}/search", self.base_url);
 
-        let response = ureq::get(&url)
+        let response = self
+            .agent
+            .get(&url)
             .query("q", query)
             .call()
             .map_err(map_ureq_error)?;
@@ -212,7 +229,9 @@ impl RegistryClient {
         let url = format!("{}/packages/{}/{}/{}", self.base_url, owner, name, version);
         let body = serde_json::json!({ "yanked": yanked });
 
-        match ureq::patch(&url)
+        match self
+            .agent
+            .patch(&url)
             .set("Content-Type", "application/json")
             .set("Authorization", &format!("Bearer {}", creds.token))
             .send_json(body)
@@ -286,7 +305,9 @@ impl RegistryClient {
 
         let content_type = format!("multipart/form-data; boundary={boundary}");
 
-        let response = ureq::post(&url)
+        let response = self
+            .agent
+            .post(&url)
             .set("Content-Type", &content_type)
             .set("Authorization", &format!("Bearer {}", creds.token))
             .send_bytes(&body)

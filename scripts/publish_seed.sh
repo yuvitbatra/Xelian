@@ -5,8 +5,12 @@
 # Usage:  scripts/publish_seed.sh            # against http://localhost:8000
 #         XELIAN_REGISTRY_URL=... scripts/publish_seed.sh
 #
-# The account password comes from XELIAN_SEED_PASSWORD, or is generated on
-# first run and stored (0600) in ~/.xelian/seed-account-password.txt.
+# The account password MUST come from XELIAN_SEED_PASSWORD. It is never written
+# to disk (C-2): a plaintext password file is a standing credential leak. On the
+# very first run, generate one, print it once, and tell the operator to store it
+# in a password manager (and export it for future runs). After the first login
+# the CLI's revocable token in ~/.xelian/credentials.toml carries subsequent
+# pushes, so the password is only needed to (re)authenticate.
 
 set -euo pipefail
 
@@ -18,16 +22,24 @@ OWNER="xelian"
 REGISTRY_URL="${XELIAN_REGISTRY_URL:-http://localhost:8000}"
 export XELIAN_REGISTRY_URL="$REGISTRY_URL"
 
-PASS_FILE="$HOME/.xelian/seed-account-password.txt"
+# One-time migration: remove any plaintext password left by older versions.
+LEGACY_PASS_FILE="$HOME/.xelian/seed-account-password.txt"
+if [ -f "$LEGACY_PASS_FILE" ]; then
+  echo "note: removing legacy plaintext password file $LEGACY_PASS_FILE (C-2)."
+  echo "      if you still need it, copy it into a password manager NOW, then re-run."
+  rm -f "$LEGACY_PASS_FILE"
+fi
+
 if [ -n "${XELIAN_SEED_PASSWORD:-}" ]; then
   PASSWORD="$XELIAN_SEED_PASSWORD"
-elif [ -f "$PASS_FILE" ]; then
-  PASSWORD="$(cat "$PASS_FILE")"
 else
   PASSWORD="$(openssl rand -hex 12)"
-  mkdir -p "$HOME/.xelian"
-  (umask 077 && printf '%s' "$PASSWORD" > "$PASS_FILE")
-  echo "Generated password for the '$OWNER' account -> $PASS_FILE"
+  echo "Generated a password for the '$OWNER' account (shown once — save it now):"
+  echo
+  echo "    $PASSWORD"
+  echo
+  echo "Store it in a password manager, then for future runs:"
+  echo "    export XELIAN_SEED_PASSWORD='<that password>'"
 fi
 
 curl -sf "$REGISTRY_URL/health" > /dev/null || {

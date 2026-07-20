@@ -7,6 +7,13 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 
+# Release binaries ship to users, so optimize for size and strip symbols
+# (Perf #4). LTO + a single codegen unit shrink the single static binary.
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
 [workspace.dependencies]
 xelian-core = { path = "crates/xelian-core" }
 clap = { version = "4", features = ["derive"] }

@@ -11,6 +11,7 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+*.egg-info/
 
 # Secrets — real values only ever go in a local .env or the Render
 # dashboard, never in git. .env.example (checked in) documents the keys.

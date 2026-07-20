@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import sys
@@ -16,11 +17,25 @@ class InstallInfo(NamedTuple):
 
 
 def find_binary() -> str:
+    # 1. Explicit override always wins (M-8): a user or test can pin the exact
+    #    binary via XELIAN_BIN, and it takes precedence over any discovery.
+    override = os.environ.get("XELIAN_BIN")
+    if override:
+        if Path(override).is_file():
+            return override
+        raise FileNotFoundError(f"XELIAN_BIN points at {override!r}, which is not a file")
+
+    # 2. An installed `xelian` on PATH — the normal case for end users.
+    which = shutil.which("xelian")
+    if which:
+        return which
+
+    # 3. Development fallback: a locally-built binary in this repo's target/,
+    #    so the SDK works from a source checkout with no install step.
     if getattr(sys, "frozen", False):
         base = Path(sys.executable).parent
     else:
         base = Path(__file__).resolve().parent.parent.parent
-
     for candidate in [
         base / "target" / "debug" / "xelian",
         base / "target" / "release" / "xelian",
@@ -28,13 +43,10 @@ def find_binary() -> str:
         if candidate.is_file():
             return str(candidate)
 
-    which = shutil.which("xelian")
-    if which:
-        return which
-
     raise FileNotFoundError(
-        "xelian binary not found. Make sure 'xelian' is installed and on your PATH, "
-        "or run this from the project root with a built binary in target/"
+        "xelian binary not found. Install the `xelian` CLI and ensure it is on "
+        "your PATH, set XELIAN_BIN to its path, or build it from a source "
+        "checkout (cargo build) so target/debug/xelian exists."
     )
 
 

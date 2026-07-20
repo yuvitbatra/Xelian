@@ -31,17 +31,16 @@ enum Command {
         /// Registry ref (owner/package), GitHub URL, or local .xelian path.
         target: String,
 
-        /// Only prepare the package (pipeline steps 1–9: download, extract,
-        /// install deps) without provisioning a model or launching it. Used by
-        /// the Python SDK for `xelian.install()` (SPEC.md §15.2).
+        /// Prepare only — download, extract, and install dependencies, then
+        /// stop without launching (think `npm install`, no `start`). Mostly
+        /// used by the Python SDK's `xelian.install()` (SPEC.md §15.2).
         #[arg(long)]
         install_only: bool,
 
-        /// Run the full pipeline up to but not including launch (steps 1–10:
-        /// adds model provisioning and permission disclosure on top of
-        /// --install-only). Used by the Python SDK's `run()/agent()/mcp()` so
-        /// those steps happen in the binary rather than being reimplemented in
-        /// Python (SPEC.md §15.1). Prints the same XELIAN_INSTALLED line.
+        /// Prepare everything up to launch — like --install-only plus model
+        /// provisioning and permission disclosure, but still no launch. Used by
+        /// the Python SDK's `run()/mcp()` (SPEC.md §15.1); prints the
+        /// XELIAN_INSTALLED line.
         #[arg(long, conflicts_with = "install_only")]
         prepare: bool,
     },
@@ -74,6 +73,10 @@ enum Command {
         /// Remove everything under packages/, envs/, runtimes/, and models/.
         #[arg(long)]
         all: bool,
+
+        /// Skip the confirmation prompt for --all (for scripts/CI).
+        #[arg(long, short = 'y')]
+        yes: bool,
     },
 
     /// Authenticate the CLI against the registry.
@@ -173,7 +176,7 @@ fn cmd_init(force: bool) -> anyhow::Result<()> {
             println!("  2. edit xelian.toml — description and [author]");
             println!("  3. xelian login && xelian push");
             println!(
-                "Try it right now:  echo hi | xelian run <you>/{}",
+                "Once pushed, anyone can:  xelian run <you>/{}",
                 outcome.name
             );
             Ok(())
@@ -187,9 +190,18 @@ fn cmd_push() -> anyhow::Result<()> {
 
     let cwd = std::env::current_dir().context("failed to determine the current directory")?;
 
-    // --- Resolve registry URL and check credentials before validation ---
     let home = xelian_core::cache::XelianHome::resolve()?;
     let registry_url = xelian_core::auth::resolve_registry_url(&home);
+
+    // Check the local package exists before anything else (M-1): a missing
+    // xelian.toml is the user's most likely mistake and shouldn't be masked by
+    // a "not logged in" error when they simply ran `push` in the wrong dir.
+    if !cwd.join("xelian.toml").is_file() {
+        anyhow::bail!(
+            "no xelian.toml in {} — run `xelian init` here first, or cd into your package",
+            cwd.display()
+        );
+    }
 
     let creds = xelian_core::auth::effective_credentials(&home)
         .map_err(|e| anyhow::anyhow!("failed to read credentials: {e}"))?
@@ -293,6 +305,17 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
 
     match run_target {
         xelian_core::run::RunTarget::LocalArchive(path) => {
+            // A local file that isn't gzip-framed can't be a .xelian archive
+            // (they're tar.gz). Catch the common slip — `xelian run xelian.toml`
+            // or any non-archive file — with a legible message instead of the
+            // raw "invalid gzip header" from the extractor (M-9).
+            if !looks_like_gzip(&path) {
+                anyhow::bail!(
+                    "{} is not a .xelian package archive (a gzip-compressed tarball). \
+                     Pass a .xelian file, an owner/name from the registry, or a GitHub URL.",
+                    path.display()
+                );
+            }
             let prepared = xelian_core::run::run_local_archive(&path, &home)
                 .map_err(|e| anyhow::anyhow!(e))?;
 
@@ -733,10 +756,29 @@ fn cmd_list() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn cmd_rm(target: Option<&str>, remove_env: bool, all: bool) -> anyhow::Result<()> {
+fn cmd_rm(target: Option<&str>, remove_env: bool, all: bool, yes: bool) -> anyhow::Result<()> {
+    use std::io::IsTerminal;
+
     let home = xelian_core::cache::XelianHome::resolve()?;
 
     if all {
+        // Guard the destructive wipe (M-10): require an explicit confirmation.
+        // On a TTY, prompt; non-interactively, refuse unless --yes is given so
+        // a stray `rm --all` in a script can't silently nuke the cache.
+        if !yes {
+            if std::io::stdin().is_terminal() {
+                eprint!("Remove ALL cached packages, environments, runtimes, and models? [y/N] ");
+                std::io::Write::flush(&mut std::io::stderr()).ok();
+                let mut answer = String::new();
+                std::io::stdin().read_line(&mut answer).ok();
+                if !matches!(answer.trim(), "y" | "Y" | "yes" | "Yes") {
+                    println!("Aborted; nothing was removed.");
+                    return Ok(());
+                }
+            } else {
+                anyhow::bail!("refusing to `rm --all` non-interactively without --yes");
+            }
+        }
         xelian_core::cache::remove_all(&home)
             .map_err(|e| anyhow::anyhow!("failed to clear cache: {e}"))?;
         println!("Cleared packages/, envs/, runtimes/, models/ (credentials.toml left intact).");
@@ -766,8 +808,28 @@ fn cmd_rm(target: Option<&str>, remove_env: bool, all: bool) -> anyhow::Result<(
     Ok(())
 }
 
+/// Cheap sniff for the gzip magic bytes (0x1f 0x8b) — a `.xelian` archive is a
+/// gzip-framed tarball, so this rejects non-archive files before the extractor
+/// emits a cryptic "invalid gzip header" (M-9). A read failure returns false;
+/// the extractor will then surface the real I/O error.
+fn looks_like_gzip(path: &std::path::Path) -> bool {
+    use std::io::Read;
+    let mut magic = [0u8; 2];
+    std::fs::File::open(path)
+        .and_then(|mut f| f.read_exact(&mut magic))
+        .map(|_| magic == [0x1f, 0x8b])
+        .unwrap_or(false)
+}
+
 /// `xelian search <query>` (H-224): discovery from the terminal.
 fn cmd_search(query: &str) -> anyhow::Result<()> {
+    // An empty/whitespace query can never match — answer locally instead of
+    // making a doomed network round-trip (M-2).
+    if query.trim().is_empty() {
+        println!("no packages match {query:?} — provide a search term, e.g. `xelian search mcp`");
+        return Ok(());
+    }
+
     let home = xelian_core::cache::XelianHome::resolve()?;
     let registry_url = xelian_core::auth::resolve_registry_url(&home);
     let client = xelian_core::registry_client::RegistryClient::new(&registry_url);
@@ -813,9 +875,13 @@ fn cmd_login(username_arg: Option<String>, password_stdin: bool) -> anyhow::Resu
             eprint!("Registry username: ");
             std::io::Write::flush(&mut std::io::stderr()).ok();
             let mut username = String::new();
-            std::io::stdin()
+            let read = std::io::stdin()
                 .read_line(&mut username)
                 .context("failed to read username")?;
+            // read == 0 is EOF (Ctrl-D) with nothing typed.
+            if read == 0 || username.trim().is_empty() {
+                anyhow::bail!("no username provided");
+            }
             username.trim().to_string()
         }
     };
@@ -830,7 +896,15 @@ fn cmd_login(username_arg: Option<String>, password_stdin: bool) -> anyhow::Resu
         }
         password
     } else {
-        rpassword::prompt_password("Registry password: ").context("failed to read password")?
+        match rpassword::prompt_password("Registry password: ") {
+            Ok(p) => p,
+            // rpassword surfaces Ctrl-D / closed stdin as UnexpectedEof; make
+            // that legible instead of the raw "failed to read password" (H-2).
+            Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
+                anyhow::bail!("no password provided (end of input)")
+            }
+            Err(e) => return Err(anyhow::Error::new(e).context("failed to read password")),
+        }
     };
 
     let client = xelian_core::registry_client::RegistryClient::new(&registry_url);
@@ -868,9 +942,19 @@ fn cmd_login(username_arg: Option<String>, password_stdin: bool) -> anyhow::Resu
 
 fn cmd_logout() -> anyhow::Result<()> {
     let home = xelian_core::cache::XelianHome::resolve()?;
+    // Report truthfully: only claim a logout if a stored credential actually
+    // existed (H-1). A stored token is also revoked server-side elsewhere;
+    // here we only manage the local credential file.
+    let was_logged_in = xelian_core::auth::read_credentials(&home)
+        .map(|c| c.is_some())
+        .unwrap_or(false);
     xelian_core::auth::delete_credentials(&home)
         .map_err(|e| anyhow::anyhow!("failed to remove credentials: {e}"))?;
-    println!("Logged out.");
+    if was_logged_in {
+        println!("Logged out.");
+    } else {
+        println!("Not logged in.");
+    }
     Ok(())
 }
 
@@ -939,7 +1023,12 @@ fn main() {
         } => cmd_run(target, *install_only, *prepare),
         Command::Add { url } => cmd_add(url),
         Command::List => cmd_list(),
-        Command::Rm { target, env, all } => cmd_rm(target.as_deref(), *env, *all),
+        Command::Rm {
+            target,
+            env,
+            all,
+            yes,
+        } => cmd_rm(target.as_deref(), *env, *all, *yes),
         Command::Login {
             username,
             password_stdin,

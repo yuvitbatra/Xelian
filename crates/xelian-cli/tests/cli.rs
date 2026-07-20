@@ -114,9 +114,26 @@ fn rm_env_requires_target() {
 }
 
 #[test]
-fn rm_all_succeeds_even_on_empty_cache() {
-    // --all with no target is valid at the parser level. With an empty temp
-    // home it should succeed (clear nothing, print confirmation).
+fn rm_all_with_yes_succeeds_even_on_empty_cache() {
+    // --all with no target is valid at the parser level. With --yes (required
+    // non-interactively, M-10) and an empty temp home it should succeed
+    // (clear nothing, print confirmation).
+    let dir = tempfile::tempdir().expect("create tempdir");
+    let output = xelian()
+        .current_dir(dir.path())
+        .args(["rm", "--all", "--yes"])
+        .env("HOME", dir.path())
+        .output()
+        .expect("run xelian rm --all --yes");
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("Cleared packages"));
+}
+
+#[test]
+fn rm_all_without_yes_refuses_non_interactively() {
+    // Non-interactive `rm --all` without --yes must refuse rather than wipe
+    // the cache silently (M-10). stdin is not a TTY in the test harness.
     let dir = tempfile::tempdir().expect("create tempdir");
     let output = xelian()
         .current_dir(dir.path())
@@ -124,9 +141,9 @@ fn rm_all_succeeds_even_on_empty_cache() {
         .env("HOME", dir.path())
         .output()
         .expect("run xelian rm --all");
-    assert!(output.status.success());
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Cleared packages"));
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("--yes"), "stderr:\n{stderr}");
 }
 
 #[test]
@@ -146,7 +163,9 @@ fn yank_without_version_fails_with_clap_usage_error() {
 }
 
 #[test]
-fn logout_succeeds_even_without_credentials() {
+fn logout_without_credentials_reports_not_logged_in() {
+    // Logout with no stored credential still exits 0, but reports the truth
+    // rather than falsely claiming a session was ended (H-1).
     let dir = tempfile::tempdir().expect("create tempdir");
     let output = xelian()
         .current_dir(dir.path())
@@ -156,10 +175,10 @@ fn logout_succeeds_even_without_credentials() {
         .expect("run xelian logout");
     assert!(
         output.status.success(),
-        "logout without credentials should succeed"
+        "logout without credentials should still succeed"
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("Logged out"), "stdout:\n{stdout}");
+    assert!(stdout.contains("Not logged in"), "stdout:\n{stdout}");
 }
 
 #[test]
