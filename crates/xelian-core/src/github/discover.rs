@@ -186,7 +186,11 @@ mod tests {
             r#"{"name":"@x/mcp","bin":{"x":"dist/index.js"},"scripts":{"build":"tsc"},"dependencies":{"@modelcontextprotocol/sdk":"^1"}}"#,
         );
         write(d.path(), "packages/mcp/src/index.ts", "export {}\n");
-        write(d.path(), "packages/sdk/package.json", r#"{"name":"@x/sdk"}"#);
+        write(
+            d.path(),
+            "packages/sdk/package.json",
+            r#"{"name":"@x/sdk"}"#,
+        );
 
         let found = find_subpackages(d.path());
         assert_eq!(found.len(), 1, "only the runnable member: {found:?}");

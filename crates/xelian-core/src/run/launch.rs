@@ -84,43 +84,41 @@ pub fn launch(
     Ok(child.wait()?)
 }
 
-/// Print the "it worked, it's yours now" line immediately before handing the
+/// Print a clear, consistent readiness marker immediately before handing the
 /// terminal to the child.
 ///
-/// Without this, a successful launch is indistinguishable from a hang: an
-/// agent REPL that has not yet printed its own prompt, and an MCP server
-/// (which is silent by design, since its stdout is the JSON-RPC transport),
-/// both look like nothing happened.
+/// Without it, a successful launch is indistinguishable from a hang: an agent
+/// REPL that has not yet printed its own prompt, and an MCP server (silent by
+/// design, since its stdout is the JSON-RPC transport), both look like nothing
+/// happened. Both types therefore get the same prominent `✓ … ready` line, so
+/// "it's up" is never ambiguous.
 ///
-/// Goes to stderr — stdout belongs to the child (§9.10.2).
+/// Everything here goes to stderr — stdout belongs to the child (§9.10.2) —
+/// so it is safe even for an MCP server whose stdout carries raw protocol.
+/// Only the agent gets a literal `> ` input prompt afterwards; an MCP server's
+/// stdin is a machine transport with no human at the other end.
 fn announce_ready(manifest: &Manifest) {
+    // A bright, unambiguous "it's up now" marker shared by both package types.
+    let ready = format!(
+        "\n  \x1b[1;32m✓\x1b[0m {} {} ready",
+        manifest.name, manifest.version
+    );
+
     match manifest.package_type {
         PackageType::Agent => {
-            eprintln!();
-            eprintln!(
-                "  {} {} ready — type a message and press enter (Ctrl-C to exit).",
-                manifest.name, manifest.version
-            );
-            eprintln!();
-            // A literal prompt, so the terminal visibly waits for input rather
-            // than sitting on a blank line that reads as a hang. Written
-            // without a newline and flushed, so the cursor rests after it.
-            //
-            // Only for agents: an MCP server's stdin is a JSON-RPC transport
-            // with no human at the other end. Written to stderr like every
-            // other Xelian message, so it can never contaminate an agent's
-            // own stdout.
+            eprintln!("{ready} — type a message and press enter (Ctrl-C to exit).\n");
+            // A literal prompt so the terminal visibly waits for input rather
+            // than resting on a blank line. No newline, flushed, so the cursor
+            // sits right after it.
             let _ = write!(io::stderr(), "> ");
             let _ = io::stderr().flush();
         }
         PackageType::Mcp => {
-            eprintln!();
-            eprintln!(
-                "  {} {} is running as an MCP server over stdio.",
-                manifest.name, manifest.version
-            );
-            eprintln!("  Connect an MCP client to this process, or press Ctrl-C to stop.");
-            eprintln!();
+            eprintln!("{ready} — MCP server listening on stdio.");
+            eprintln!("  Connect an MCP client to this process, or press Ctrl-C to stop.\n");
+            // A flush so the readiness marker is on screen the instant the
+            // server is up, even though the child now owns the terminal.
+            let _ = io::stderr().flush();
         }
     }
 }
