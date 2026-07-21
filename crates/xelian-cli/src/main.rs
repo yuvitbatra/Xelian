@@ -423,9 +423,32 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
             eprintln!("resolving {owner}/{name} from registry at {registry_url} ...");
 
             let client = xelian_core::registry_client::RegistryClient::new(&registry_url);
-            let info = client
-                .fetch_metadata(&owner, &name)
-                .map_err(|e| anyhow::anyhow!("failed to resolve {owner}/{name}: {e}"))?;
+            let info = match client.fetch_metadata(&owner, &name) {
+                Ok(info) => info,
+                Err(e) => {
+                    // No published archive under this name. Fall back to the
+                    // discovery catalog: hundreds of third-party projects are
+                    // indexed (not hosted) and run from their GitHub source
+                    // under their own license (§12). `xelian run owner/repo`
+                    // for a catalog entry behaves like `xelian add <url>`.
+                    match client.resolve_catalog_url(&owner, &name) {
+                        Ok(Some(url)) => {
+                            eprintln!(
+                                "{owner}/{name} is a catalog package (runs from its source under \
+                                 its own license); importing {url} ..."
+                            );
+                            let launch = !prepare && !install_only;
+                            return import_github_and_run(&url, &home, launch);
+                        }
+                        _ => {
+                            return Err(anyhow::anyhow!(
+                                "failed to resolve {owner}/{name}: {e}\n\
+                                 (not a published package, and not found in the catalog)"
+                            ));
+                        }
+                    }
+                }
+            };
 
             let version = info.latest_version.ok_or_else(|| {
                 anyhow::anyhow!(
@@ -724,8 +747,20 @@ fn prepare_env_and_launch_inner(
 fn cmd_add(url: &str) -> anyhow::Result<()> {
     let home = xelian_core::cache::XelianHome::resolve()?;
     home.ensure_layout()?;
+    import_github_and_run(url, &home, true)
+}
 
-    let outcome = xelian_core::github::import_github(url, &home).map_err(|e| anyhow::anyhow!(e))?;
+/// Import a GitHub URL and run it through the execution pipeline. Shared by
+/// `xelian add` and by `xelian run owner/name` when the name resolves to a
+/// catalog (index) entry rather than a published archive. `launch` mirrors the
+/// final launch/prepare distinction (`false` stops before launch and prints
+/// the install descriptor).
+fn import_github_and_run(
+    url: &str,
+    home: &xelian_core::cache::XelianHome,
+    launch: bool,
+) -> anyhow::Result<()> {
+    let outcome = xelian_core::github::import_github(url, home).map_err(|e| anyhow::anyhow!(e))?;
 
     let (manifest, warnings) = xelian_core::run::validate_extracted(&outcome.package_dir)
         .map_err(|e| anyhow::anyhow!(e))?;
@@ -750,7 +785,7 @@ fn cmd_add(url: &str) -> anyhow::Result<()> {
     let cache_key = outcome.repo.cache_key(&outcome.sha);
     let env_dir = home.github_env_dir(&outcome.repo.owner, &outcome.repo.repo, &cache_key);
     let prepared_env =
-        xelian_core::run::prepare_environment(&outcome.package_dir, &manifest, &home, env_dir)
+        xelian_core::run::prepare_environment(&outcome.package_dir, &manifest, home, env_dir)
             .map_err(|e| anyhow::anyhow!(e))?;
 
     let env_dir = &prepared_env.env_dir;
@@ -787,8 +822,8 @@ fn cmd_add(url: &str) -> anyhow::Result<()> {
         env_dir,
         bin_dir,
         &grants_path,
-        &home,
-        true,
+        home,
+        launch,
     )
 }
 

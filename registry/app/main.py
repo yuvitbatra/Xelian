@@ -296,6 +296,21 @@ def _load_catalog() -> dict:
     return {"counts": {"total": 0, "mcp": 0, "agents": 0}, "packages": []}
 
 
+@app.get("/catalog/{owner}/{name}")
+def catalog_entry(owner: str, name: str):
+    """Resolve a single catalog entry by `owner/name` (its GitHub full name).
+
+    Lets `xelian run owner/name` fall back to the discovery index when no
+    archive is published under that name: the CLI runs the returned GitHub
+    `url` via its import path, so third-party projects run under their own
+    license without the registry hosting their code."""
+    full = f"{owner}/{name}".lower()
+    for entry in _load_catalog()["packages"]:
+        if entry.get("full_name", "").lower() == full:
+            return entry
+    raise HTTPException(404, detail=f"{owner}/{name} is not in the catalog")
+
+
 @app.get("/catalog")
 def catalog(
     q: str | None = None,

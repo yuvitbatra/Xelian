@@ -60,6 +60,13 @@ export default function Explore() {
             {counts.agents} agents
           </p>
         ) : null}
+        <p className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+          These are third-party open-source projects, each shown with its own
+          license. Xelian doesn&apos;t host their code — it links to the original
+          repository and runs it under that license, with attribution. Run any
+          with <code className="font-mono text-gray-800">xelian run owner/repo</code>{" "}
+          or <code className="font-mono text-gray-800">xelian add &lt;url&gt;</code>.
+        </p>
       </section>
 
       <div className="sticky top-0 z-10 flex flex-col gap-3 bg-white/90 py-4 backdrop-blur sm:flex-row sm:items-center">

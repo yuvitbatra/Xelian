@@ -723,3 +723,14 @@ class TestCatalog:
         assert rows, "catalog should not be empty"
         for p in rows:
             assert p["license"] in permissive, f"{p['full_name']} has non-permissive {p['license']}"
+
+    def test_catalog_resolve_by_full_name(self):
+        # Pick any catalog entry and resolve it by owner/name.
+        any_entry = client.get("/catalog?limit=1").json()["packages"][0]
+        owner, name = any_entry["full_name"].split("/", 1)
+        resp = client.get(f"/catalog/{owner}/{name}")
+        assert resp.status_code == 200
+        assert resp.json()["url"] == any_entry["url"]
+
+    def test_catalog_resolve_404_for_unknown(self):
+        assert client.get("/catalog/definitely/not-a-real-entry-xyz").status_code == 404

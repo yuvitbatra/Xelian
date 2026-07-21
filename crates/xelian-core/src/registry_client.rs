@@ -36,6 +36,12 @@ pub struct VersionRecordResponse {
 }
 
 /// Response from `GET /packages/{owner}/{package}` (SPEC.md §14.8).
+/// A single discovery-index entry from `GET /catalog/{owner}/{name}` (§12).
+#[derive(Debug, Clone, Deserialize)]
+pub struct CatalogEntry {
+    pub url: String,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct PackageInfoResponse {
     pub owner: String,
@@ -150,6 +156,31 @@ impl RegistryClient {
         response
             .into_json::<PackageInfoResponse>()
             .map_err(|e| RegistryError::ResponseParse(e.to_string()))
+    }
+
+    /// Resolve a catalog entry by `owner/name` to its GitHub URL, if it exists
+    /// in the discovery index (SPEC.md §12: GitHub is an import source).
+    ///
+    /// Returns `Ok(Some(url))` for a catalog hit, `Ok(None)` for a 404 (not in
+    /// the catalog), and `Err` for any other failure. This backs
+    /// `xelian run owner/name` falling through to the import path for the
+    /// hundreds of indexed-but-not-archived packages.
+    pub fn resolve_catalog_url(
+        &self,
+        owner: &str,
+        name: &str,
+    ) -> Result<Option<String>, RegistryError> {
+        let url = format!("{}/catalog/{}/{}", self.base_url, owner, name);
+        match self.agent.get(&url).call() {
+            Ok(response) => {
+                let entry = response
+                    .into_json::<CatalogEntry>()
+                    .map_err(|e| RegistryError::ResponseParse(e.to_string()))?;
+                Ok(Some(entry.url))
+            }
+            Err(ureq::Error::Status(404, _)) => Ok(None),
+            Err(e) => Err(map_ureq_error(e)),
+        }
     }
 
     /// Download a specific version's archive (SPEC.md §14.8).

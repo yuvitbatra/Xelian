@@ -7,7 +7,11 @@ import TypeBadge from "./type-badge";
 /** A single discovery-index entry: a real GitHub repo runnable via `xelian add`. */
 export default function CatalogCard({ entry }: { entry: CatalogEntry }) {
   const [copied, setCopied] = useState(false);
-  const command = `xelian add ${entry.url}`;
+  // Prefer the short `run owner/repo` form — it resolves through the catalog to
+  // the same GitHub source. Falls back to the explicit URL if full_name is absent.
+  const command = entry.full_name
+    ? `xelian run ${entry.full_name}`
+    : `xelian add ${entry.url}`;
 
   return (
     <div className="flex flex-col rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-gray-300">
