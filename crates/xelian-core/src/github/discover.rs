@@ -28,8 +28,20 @@ pub struct Subpackage {
 
 /// Directories a monorepo conventionally keeps its member packages in, checked
 /// in addition to any `workspaces`/`packages` globs declared in the root
-/// `package.json`.
-const CONVENTIONAL_PARENTS: &[&str] = &["packages", "apps", "lib", "src", "servers", "mcp-servers"];
+/// `package.json`. `libs` covers Python monorepos like `langchain`
+/// (`libs/langchain`, `libs/core`, …); `modules`/`plugins` cover other common
+/// layouts.
+const CONVENTIONAL_PARENTS: &[&str] = &[
+    "packages",
+    "apps",
+    "lib",
+    "libs",
+    "src",
+    "servers",
+    "mcp-servers",
+    "modules",
+    "plugins",
+];
 
 /// Find every runnable subpackage under a repository root.
 ///
@@ -246,6 +258,29 @@ mod tests {
             },
         ];
         assert_eq!(pick_unambiguous(&subs), None);
+    }
+
+    #[test]
+    fn discovers_a_libs_style_python_monorepo() {
+        // langchain shape: members under libs/, not packages/.
+        let d = tempdir().unwrap();
+        write(d.path(), "README.md", "# monorepo\n");
+        write(
+            d.path(),
+            "libs/theagent/pyproject.toml",
+            "[project]\nname = \"theagent\"\n[project.scripts]\ntheagent = \"theagent:main\"\n",
+        );
+        write(
+            d.path(),
+            "libs/theagent/theagent/__init__.py",
+            "def main(): pass\n",
+        );
+
+        let found = find_subpackages(d.path());
+        assert!(
+            found.iter().any(|s| s.subdir == "libs/theagent"),
+            "libs/ members must be discovered: {found:?}"
+        );
     }
 
     #[test]
