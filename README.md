@@ -20,6 +20,16 @@ README, export the right env vars, hope. Xelian defines a standard package
 format for locally runnable agents and MCP servers, plus a runtime that makes
 running one feel like `ollama run llama3`.
 
+## Try it in one command
+
+```bash
+scripts/try-it.sh        # build → import a real GitHub repo → publish → run from a clean machine
+```
+
+Self-contained and safe (throwaway registry, never touches your real
+`~/.xelian`). See [TRY_IT.md](TRY_IT.md) for step-by-step commands covering
+every capability.
+
 ## Quickstart
 
 Until binary releases ship, build from source (Rust toolchain required):
