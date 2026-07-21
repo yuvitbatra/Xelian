@@ -52,7 +52,7 @@ git tag v0.1.0 && git push origin v0.1.0   # fires release.yml → published bin
 README command reads cleanly.
 
 ### 4. Seed discovery content (≈1–2 h)
-`registry/catalog.json` is the index (410 entries). Two ways to expose it:
+`registry/catalog.json` is the index (847 entries). Two ways to expose it:
 - **Index (recommended, safe):** serve the catalog from the registry/website as
   a browsable list; each entry's "Run" is `xelian add <url>`. You host *no*
   third-party code — you link and run it, credited, under its own license. This
@@ -80,7 +80,7 @@ the same (backlog H-241) and fix every point of confusion.
 
 ## Honest caveats
 
-- The 410 catalog entries are **license-verified and quality-filtered**, and a
+- The 847 catalog entries are **license-verified and quality-filtered**, and a
   sample runs, but not every one is individually verified end-to-end (that
   needs a token + hours). `xelian add` fails gracefully on the ones that need a
   manual entrypoint, so a bad entry degrades to a clear message, not a crash.
