@@ -50,17 +50,20 @@ A local-first registry + runtime for AI agents and MCP servers — "Hugging Face
 - v0.1.1 binaries are baked to this URL, so `curl | sh` install → `xelian run`
   "just works".
 
-### What still needs YOU (each is one action)
-1. **Publish the 16 example packages** so `xelian run xelian/calc` works: I need
-   the `xelian` account password you set (or your OK to reset it — its old
-   archives were lost to Render's first ephemeral disk). Then:
-   `XELIAN_SEED_PASSWORD=… scripts/publish_seed.sh`
-2. **Deploy the website** (Vercel, free) so the 847 are browsable in a UI. Set
+### Fully operational
+- **16 example packages published** — `xelian run xelian/calc` → `98`,
+  `xelian run xelian/time-mcp` → MCP handshake, all from the live registry.
+- **R2 storage fixed** (a truncated access key in the Render dashboard, now
+  corrected; the registry now validates credentials at startup and exposes
+  `/status`).
+
+### Optional distribution (each one action, all pre-verified)
+1. **Deploy the website** (Vercel, free) so the 847 are browsable in a UI. Set
    `NEXT_PUBLIC_REGISTRY_URL=https://xelian-registry.onrender.com`.
-3. **Homebrew tap** (`Formula/xelian.rb` is ready): create a public repo
+2. **Homebrew tap** (`Formula/xelian.rb` is ready): create a public repo
    `homebrew-xelian`, put the formula in it, then `brew tap yuvitbatra/xelian &&
    brew install xelian`.
-4. **SDK on PyPI** (verified build-ready — wheel + sdist pass `twine check`,
+3. **SDK on PyPI** (verified build-ready — wheel + sdist pass `twine check`,
    and `xelian.mcp()` works against the live registry): `cd sdk &&
    python -m build && twine upload dist/*` (needs a PyPI account/token).
 
