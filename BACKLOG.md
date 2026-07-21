@@ -286,6 +286,15 @@
     `upstash/context7` root auto-descends to `packages/mcp` and completes an
     MCP handshake; `supabase/mcp` lists its three servers.
 
+- [ ] **H-120 — pnpm/yarn `workspace:` protocol in extracted subpackages**
+  - A monorepo subpackage (e.g. `supabase/mcp`'s servers) declares deps like
+    `"@scope/util": "workspace:^"`. `npm install` on the extracted subpackage
+    rejects the `workspace:` protocol (EUNSUPPORTEDPROTOCOL). A correct fix
+    installs from the monorepo root with the declared package manager (pnpm)
+    so sibling packages resolve. Non-trivial; `add` currently fails with the
+    npm error. Discovery still lists these servers (actionable), so the dead
+    end is a clear message, not a crash.
+
 ### Known gaps (deliberately not done — would change architecture or scope)
 
 - [x] **H-115 — npm-workspace TypeScript monorepos** (2026-07-21)
