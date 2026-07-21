@@ -6,6 +6,9 @@ RUN pip install --no-cache-dir uv && uv export --frozen --no-dev -o requirements
     && pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+# The discovery index served by GET /catalog. Without it the Explore page is
+# empty in production (the app looks for catalog.json next to /app).
+COPY catalog.json ./catalog.json
 
 # Required at runtime:
 #   DATABASE_URL                  Neon Postgres URL (no SQLite fallback)
