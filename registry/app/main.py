@@ -269,6 +269,24 @@ def health():
     return {"ok": True}
 
 
+@app.get("/status")
+def status():
+    """Operational diagnostics: which storage backend is active and whether its
+    credentials look well-formed. Lets an operator spot a misconfigured R2 key
+    (the usual cause of publish 500s) without having to attempt a publish."""
+    backend = type(archive_storage).__name__
+    info: dict = {"storage_backend": backend, "storage_ok": True, "warnings": []}
+    if backend == "R2Storage":
+        problems = storage_backend.validate_r2_credentials(
+            os.environ.get("XELIAN_R2_ACCESS_KEY_ID", ""),
+            os.environ.get("XELIAN_R2_SECRET_ACCESS_KEY", ""),
+        )
+        if problems:
+            info["storage_ok"] = False
+            info["warnings"] = problems
+    return info
+
+
 # --- Catalog (discovery index) ---------------------------------------------
 #
 # The catalog is the *index* of permissively-licensed public repositories that

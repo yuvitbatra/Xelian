@@ -734,3 +734,18 @@ class TestCatalog:
 
     def test_catalog_resolve_404_for_unknown(self):
         assert client.get("/catalog/definitely/not-a-real-entry-xyz").status_code == 404
+
+
+class TestStorageDiagnostics:
+    def test_validate_r2_credentials_flags_truncation(self):
+        from app import storage
+        # A 31-char access key (the real production bug) must be flagged.
+        problems = storage.validate_r2_credentials("a" * 31, "b" * 64)
+        assert any("32 characters" in p or "32" in p for p in problems)
+        # Well-formed lengths pass.
+        assert storage.validate_r2_credentials("a" * 32, "b" * 64) == []
+
+    def test_status_reports_backend(self):
+        resp = client.get("/status")
+        assert resp.status_code == 200
+        assert "storage_backend" in resp.json()
