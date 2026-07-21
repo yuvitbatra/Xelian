@@ -79,6 +79,43 @@ export async function searchPackages(query: string): Promise<PackageSummary[]> {
   return res.json();
 }
 
+// --- Catalog (discovery index of runnable GitHub repos) ---
+
+export interface CatalogEntry {
+  name: string;
+  owner: string;
+  full_name: string;
+  url: string;
+  description: string;
+  stars: number;
+  license: string | null;
+  type: string; // "mcp" | "agent"
+}
+
+export interface CatalogPage {
+  total: number;
+  counts: { total: number; mcp: number; agents: number };
+  packages: CatalogEntry[];
+}
+
+export async function browseCatalog(opts: {
+  q?: string;
+  type?: "mcp" | "agent" | "all";
+  limit?: number;
+  offset?: number;
+}): Promise<CatalogPage> {
+  const params = new URLSearchParams();
+  if (opts.q) params.set("q", opts.q);
+  if (opts.type && opts.type !== "all") params.set("type", opts.type);
+  params.set("limit", String(opts.limit ?? 60));
+  params.set("offset", String(opts.offset ?? 0));
+  const res = await fetch(`${REGISTRY_URL}/catalog?${params.toString()}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) return fail(res);
+  return res.json();
+}
+
 export async function getPackage(
   owner: string,
   name: string,

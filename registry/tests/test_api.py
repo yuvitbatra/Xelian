@@ -684,3 +684,42 @@ class TestSearch:
     def test_search_no_match(self):
         self._publish("some-pkg")
         assert client.get("/search", params={"q": "zzz-nothing"}).json() == []
+
+
+class TestCatalog:
+    """The discovery index endpoint (`/catalog`) serves the curated,
+    permissively-licensed GitHub repos runnable via `xelian add`."""
+
+    def test_catalog_returns_entries_and_counts(self):
+        resp = client.get("/catalog?limit=5")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total"] >= 1
+        assert body["counts"]["total"] == body["counts"]["mcp"] + body["counts"]["agents"]
+        assert len(body["packages"]) <= 5
+        first = body["packages"][0]
+        for key in ("full_name", "url", "type", "license"):
+            assert key in first
+
+    def test_catalog_type_filter(self):
+        resp = client.get("/catalog?type=mcp&limit=50")
+        assert resp.status_code == 200
+        assert all(p["type"] == "mcp" for p in resp.json()["packages"])
+
+    def test_catalog_search_matches_name(self):
+        # Every catalog entry is permissively licensed; pick any and search it.
+        any_entry = client.get("/catalog?limit=1").json()["packages"][0]
+        needle = any_entry["name"][:4]
+        resp = client.get(f"/catalog?q={needle}")
+        assert resp.status_code == 200
+        assert resp.json()["total"] >= 1
+
+    def test_catalog_entries_are_permissively_licensed(self):
+        permissive = {
+            "MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause",
+            "ISC", "MPL-2.0", "Unlicense", "0BSD",
+        }
+        rows = client.get("/catalog?limit=200").json()["packages"]
+        assert rows, "catalog should not be empty"
+        for p in rows:
+            assert p["license"] in permissive, f"{p['full_name']} has non-permissive {p['license']}"

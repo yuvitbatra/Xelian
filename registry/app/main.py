@@ -253,6 +253,7 @@ def root():
             "health": "GET /health",
             "list_packages": "GET /packages",
             "search": "GET /search?q=",
+            "catalog": "GET /catalog?q=&type=mcp|agent",
             "package_metadata": "GET /packages/{owner}/{name}",
             "download": "GET /download/{owner}/{name}/{version}",
             "signup": "POST /auth/signup",
@@ -266,6 +267,67 @@ def root():
 @app.get("/health")
 def health():
     return {"ok": True}
+
+
+# --- Catalog (discovery index) ---------------------------------------------
+#
+# The catalog is the *index* of permissively-licensed public repositories that
+# run via `xelian add <url>` — Xelian links to and runs them under their own
+# license, it does not host their code. It is a static, curated artifact
+# (`catalog.json`, produced by scripts/harvest_catalog.py), so it is loaded
+# once and served filtered. This is distinct from `/packages`, which lists
+# archives actually published to this registry.
+
+import json as _json
+from functools import lru_cache
+from pathlib import Path as _Path
+
+
+@lru_cache(maxsize=1)
+def _load_catalog() -> dict:
+    # Ships next to the app in the image; falls back to the repo path in dev.
+    for candidate in (
+        _Path(__file__).resolve().parent.parent / "catalog.json",
+        _Path(__file__).resolve().parents[2] / "registry" / "catalog.json",
+    ):
+        if candidate.is_file():
+            with candidate.open() as f:
+                return _json.load(f)
+    return {"counts": {"total": 0, "mcp": 0, "agents": 0}, "packages": []}
+
+
+@app.get("/catalog")
+def catalog(
+    q: str | None = None,
+    type: str | None = None,
+    limit: int = 60,
+    offset: int = 0,
+):
+    """Browse the discovery index. `q` matches name/owner/description; `type`
+    filters to `mcp` or `agent`; results are paginated (already star-ranked)."""
+    data = _load_catalog()
+    rows = data["packages"]
+
+    if type in ("mcp", "agent"):
+        rows = [r for r in rows if r.get("type") == type]
+    if q:
+        needle = q.lower()
+        rows = [
+            r
+            for r in rows
+            if needle in r.get("name", "").lower()
+            or needle in r.get("owner", "").lower()
+            or needle in (r.get("description") or "").lower()
+        ]
+
+    total = len(rows)
+    page = rows[max(0, offset) : max(0, offset) + max(1, min(limit, 200))]
+    return {
+        "generated_at": data.get("generated_at"),
+        "total": total,
+        "counts": data.get("counts", {}),
+        "packages": page,
+    }
 
 
 # --- Auth routes (§13.7, §14.4) ---

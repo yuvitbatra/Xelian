@@ -22,6 +22,12 @@ export default function Header() {
           </Link>
           <nav className="hidden items-center gap-6 sm:flex">
             <Link
+              href="/explore"
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
+              Explore
+            </Link>
+            <Link
               href="/"
               className="text-sm text-gray-600 hover:text-gray-900"
             >
