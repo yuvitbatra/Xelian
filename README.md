@@ -5,7 +5,7 @@ runtime for AI agents and MCP servers — package once, publish with one
 command, and anyone can run it locally with zero setup.
 
 ```bash
-xelian run xelian/calc
+xelian run QuantGeekDev/docker-mcp     # any of 847 catalog packages, by name
 ```
 
 <!-- TODO(owner): record the 30s install→run→chat GIF with asciinema:
@@ -43,10 +43,9 @@ curl -fsSL https://raw.githubusercontent.com/yuvitbatra/Xelian/main/scripts/inst
 Or build from source (Rust toolchain required):
 
 ```bash
-cargo install --path crates/xelian-cli   # 1. install the CLI
-xelian run xelian/calc                    # 2. download + run an agent
-# 3. chat — agents open a REPL; MCP servers start and expose locally
-#    e.g. type  2*(3+4)**2  and press enter
+cargo install --path crates/xelian-cli       # 1. install the CLI
+xelian run QuantGeekDev/docker-mcp           # 2. run any of 847 catalog packages by name
+xelian add https://github.com/zcaceres/fetch-mcp   # or import any GitHub repo directly
 ```
 
 `xelian run` resolves the package on the registry, downloads and verifies the
