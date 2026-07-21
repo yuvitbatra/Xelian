@@ -33,6 +33,35 @@ pub enum RuntimeError {
 
     #[error("Validation failed: {0}")]
     Validation(String),
+
+    #[error(
+        "this package depends on {dependency:?}, a pnpm/yarn `workspace:` \
+         dependency that points at a sibling package in its monorepo. Xelian \
+         installs each package in isolation with npm, which cannot resolve the \
+         `workspace:` protocol.\n\
+         Workaround: clone the monorepo and build it with its own package \
+         manager (e.g. `pnpm install && pnpm --filter <pkg> build`), then point \
+         `xelian add` at the built output. (Tracked as H-120.)"
+    )]
+    WorkspaceProtocolUnsupported { dependency: String },
+}
+
+/// The first dependency in `package.json` declared with the pnpm/yarn
+/// `workspace:` protocol, if any. Such deps reference sibling packages that
+/// only resolve inside their monorepo, so npm cannot install them.
+fn workspace_protocol_dependency(package_dir: &Path) -> Option<String> {
+    let contents = std::fs::read_to_string(package_dir.join("package.json")).ok()?;
+    let v: serde_json::Value = serde_json::from_str(&contents).ok()?;
+    for section in ["dependencies", "devDependencies", "optionalDependencies"] {
+        if let Some(map) = v.get(section).and_then(|d| d.as_object()) {
+            for (name, spec) in map {
+                if spec.as_str().is_some_and(|s| s.starts_with("workspace:")) {
+                    return Some(name.clone());
+                }
+            }
+        }
+    }
+    None
 }
 
 /// Helper to execute a command and handle errors.
@@ -698,6 +727,15 @@ impl RuntimeManager for NodeRuntimeManager {
             return Ok(());
         }
 
+        // A pnpm/yarn workspace subpackage declares deps like
+        // `"@scope/util": "workspace:^"`, which reference sibling packages in
+        // the monorepo. `npm install` cannot resolve the `workspace:` protocol
+        // and fails with a cryptic EUNSUPPORTEDPROTOCOL dump. Detect it up
+        // front and explain it clearly instead (H-120).
+        if let Some(dep) = workspace_protocol_dependency(package_dir) {
+            return Err(RuntimeError::WorkspaceProtocolUnsupported { dependency: dep });
+        }
+
         // Staging directory to avoid half-complete states
         let rand_val = chrono::Utc::now().timestamp_millis();
         let stage_dir = home
@@ -858,6 +896,31 @@ pub fn get_runtime_manager(language: Language) -> Box<dyn RuntimeManager> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn detects_workspace_protocol_dependencies() {
+        let d = tempfile::tempdir().unwrap();
+        std::fs::write(
+            d.path().join("package.json"),
+            r#"{"name":"srv","dependencies":{"@scope/util":"workspace:^","httpx":"^1"}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            workspace_protocol_dependency(d.path()).as_deref(),
+            Some("@scope/util")
+        );
+    }
+
+    #[test]
+    fn plain_dependencies_are_not_workspace_protocol() {
+        let d = tempfile::tempdir().unwrap();
+        std::fs::write(
+            d.path().join("package.json"),
+            r#"{"name":"srv","dependencies":{"@modelcontextprotocol/sdk":"^1.0.0"}}"#,
+        )
+        .unwrap();
+        assert_eq!(workspace_protocol_dependency(d.path()), None);
+    }
 
     /// Test double demonstrating that the `RuntimeManager` interface is extensible
     /// and that a new language can be added cleanly via the trait boundary.
