@@ -1,0 +1,4111 @@
+{
+  "generated_at": "2026-07-21T12:16:19Z",
+  "note": "Curated index of permissively-licensed public MCP servers and AI agents runnable via `xelian add`. Xelian does not host this code \u2014 it links to and runs each project under its own license (MIT/Apache-2.0/BSD/ISC/MPL-2.0), with attribution. Ranked by trusted-source then stars; spam/star-farmed and non-runnable (lists, tutorials) entries filtered out. Runnability of each entry is determined at `xelian add` time.",
+  "counts": {
+    "total": 410,
+    "mcp": 220,
+    "agents": 190
+  },
+  "packages": [
+    {
+      "name": "gemini-cli",
+      "owner": "google-gemini",
+      "full_name": "google-gemini/gemini-cli",
+      "url": "https://github.com/google-gemini/gemini-cli",
+      "description": "An open-source AI agent that brings the power of Gemini directly into your terminal.",
+      "stars": 106099,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "context7",
+      "owner": "upstash",
+      "full_name": "upstash/context7",
+      "url": "https://github.com/upstash/context7",
+      "description": "Context7 Platform -- Up-to-date code documentation for LLMs and AI code editors",
+      "stars": 59512,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "UI-TARS-desktop",
+      "owner": "bytedance",
+      "full_name": "bytedance/UI-TARS-desktop",
+      "url": "https://github.com/bytedance/UI-TARS-desktop",
+      "description": "The Open-Source Multimodal AI Agent Stack: Connecting Cutting-Edge AI Models and Agent Infra",
+      "stars": 38158,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "playwright-mcp",
+      "owner": "microsoft",
+      "full_name": "microsoft/playwright-mcp",
+      "url": "https://github.com/microsoft/playwright-mcp",
+      "description": "Playwright MCP server",
+      "stars": 35340,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "claude-plugins-official",
+      "owner": "anthropics",
+      "full_name": "anthropics/claude-plugins-official",
+      "url": "https://github.com/anthropics/claude-plugins-official",
+      "description": "Official, Anthropic-managed directory of high quality Claude Code Plugins.",
+      "stars": 32417,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "python-sdk",
+      "owner": "modelcontextprotocol",
+      "full_name": "modelcontextprotocol/python-sdk",
+      "url": "https://github.com/modelcontextprotocol/python-sdk",
+      "description": "The official Python SDK for Model Context Protocol servers and clients",
+      "stars": 23674,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "Figma-Context-MCP",
+      "owner": "GLips",
+      "full_name": "GLips/Figma-Context-MCP",
+      "url": "https://github.com/GLips/Figma-Context-MCP",
+      "description": "MCP server to provide Figma layout information to AI coding agents like Cursor",
+      "stars": 15454,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "open_deep_research",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/open_deep_research",
+      "url": "https://github.com/langchain-ai/open_deep_research",
+      "description": "",
+      "stars": 12073,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp",
+      "owner": "awslabs",
+      "full_name": "awslabs/mcp",
+      "url": "https://github.com/awslabs/mcp",
+      "description": "Open source MCP Servers for AWS",
+      "stars": 9482,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "DesktopCommanderMCP",
+      "owner": "wonderwhy-er",
+      "full_name": "wonderwhy-er/DesktopCommanderMCP",
+      "url": "https://github.com/wonderwhy-er/DesktopCommanderMCP",
+      "description": "This is MCP server for Claude that gives it terminal control, file system search and diff file editing capabilities",
+      "stars": 8659,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "firecrawl-mcp-server",
+      "owner": "firecrawl",
+      "full_name": "firecrawl/firecrawl-mcp-server",
+      "url": "https://github.com/firecrawl/firecrawl-mcp-server",
+      "description": "\ud83d\udd25 Official Firecrawl MCP Server - Adds powerful web scraping and search to Cursor, Claude and any other LLM clients.",
+      "stars": 7008,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "UltraRAG",
+      "owner": "OpenBMB",
+      "full_name": "OpenBMB/UltraRAG",
+      "url": "https://github.com/OpenBMB/UltraRAG",
+      "description": "A Low-Code MCP Framework for Building Complex and Innovative RAG Pipelines",
+      "stars": 5657,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-atlassian",
+      "owner": "sooperset",
+      "full_name": "sooperset/mcp-atlassian",
+      "url": "https://github.com/sooperset/mcp-atlassian",
+      "description": "MCP server for Atlassian tools (Confluence, Jira)",
+      "stars": 5593,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "exa-mcp-server",
+      "owner": "exa-labs",
+      "full_name": "exa-labs/exa-mcp-server",
+      "url": "https://github.com/exa-labs/exa-mcp-server",
+      "description": "Exa MCP for web search and web crawling!",
+      "stars": 4748,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "openrag",
+      "owner": "langflow-ai",
+      "full_name": "langflow-ai/openrag",
+      "url": "https://github.com/langflow-ai/openrag",
+      "description": "OpenRAG is a comprehensive, single package Retrieval-Augmented Generation platform built on Langflow, Docling, and Opensearch.",
+      "stars": 4366,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-server-cloudflare",
+      "owner": "cloudflare",
+      "full_name": "cloudflare/mcp-server-cloudflare",
+      "url": "https://github.com/cloudflare/mcp-server-cloudflare",
+      "description": "",
+      "stars": 3968,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "python-genai",
+      "owner": "googleapis",
+      "full_name": "googleapis/python-genai",
+      "url": "https://github.com/googleapis/python-genai",
+      "description": "Google Gen AI Python SDK provides an interface for developers to integrate Google's generative models into their Python applications.",
+      "stars": 3862,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "langchain-mcp-adapters",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/langchain-mcp-adapters",
+      "url": "https://github.com/langchain-ai/langchain-mcp-adapters",
+      "description": "LangChain \ud83d\udd0c MCP",
+      "stars": 3608,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "markdownify-mcp",
+      "owner": "zcaceres",
+      "full_name": "zcaceres/markdownify-mcp",
+      "url": "https://github.com/zcaceres/markdownify-mcp",
+      "description": "A Model Context Protocol server for converting almost anything to Markdown",
+      "stars": 2887,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "skills",
+      "owner": "microsoft",
+      "full_name": "microsoft/skills",
+      "url": "https://github.com/microsoft/skills",
+      "description": "Skills, MCP servers, Custom Agents, Agents.md for SDKs to ground Coding Agents",
+      "stars": 2780,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "OpenEnv",
+      "owner": "huggingface",
+      "full_name": "huggingface/OpenEnv",
+      "url": "https://github.com/huggingface/OpenEnv",
+      "description": "An interface library for RL post training with environments.",
+      "stars": 2439,
+      "license": "BSD-3-Clause",
+      "type": "mcp"
+    },
+    {
+      "name": "tavily-mcp",
+      "owner": "tavily-ai",
+      "full_name": "tavily-ai/tavily-mcp",
+      "url": "https://github.com/tavily-ai/tavily-mcp",
+      "description": "Production ready MCP server with real-time search, extract, map & crawl.",
+      "stars": 2237,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "flint-chart",
+      "owner": "microsoft",
+      "full_name": "microsoft/flint-chart",
+      "url": "https://github.com/microsoft/flint-chart",
+      "description": "\ud83e\ude84 Flint is a visualization language that lets AI agents reliably create expressive, good-looking charts from simple, human-editable chart specs.",
+      "stars": 1969,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "azure-devops-mcp",
+      "owner": "microsoft",
+      "full_name": "microsoft/azure-devops-mcp",
+      "url": "https://github.com/microsoft/azure-devops-mcp",
+      "description": "The MCP server for Azure DevOps, bringing the power of Azure DevOps directly to your agents.",
+      "stars": 1901,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "ai",
+      "owner": "stripe",
+      "full_name": "stripe/ai",
+      "url": "https://github.com/stripe/ai",
+      "description": "One-stop shop for building AI-powered products and businesses with Stripe.",
+      "stars": 1697,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-server-qdrant",
+      "owner": "qdrant",
+      "full_name": "qdrant/mcp-server-qdrant",
+      "url": "https://github.com/qdrant/mcp-server-qdrant",
+      "description": "An official Qdrant Model Context Protocol (MCP) server implementation",
+      "stars": 1475,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "azure-skills",
+      "owner": "microsoft",
+      "full_name": "microsoft/azure-skills",
+      "url": "https://github.com/microsoft/azure-skills",
+      "description": "Official agent plugin providing skills and MCP server configurations for Azure scenarios.",
+      "stars": 1306,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-framework",
+      "owner": "QuantGeekDev",
+      "full_name": "QuantGeekDev/mcp-framework",
+      "url": "https://github.com/QuantGeekDev/mcp-framework",
+      "description": "The Typescript MCP Framework",
+      "stars": 930,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "atlassian-mcp-server",
+      "owner": "atlassian",
+      "full_name": "atlassian/atlassian-mcp-server",
+      "url": "https://github.com/atlassian/atlassian-mcp-server",
+      "description": "Official remote MCP server for Atlassian. Securely connect Jira, Confluence, Jira Service Management, Bitbucket, and Compass to Claude, ChatGPT, Cursor, VS Code, and other AI tools using OAuth 2.1 or API tokens.",
+      "stars": 886,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "gcloud-mcp",
+      "owner": "googleapis",
+      "full_name": "googleapis/gcloud-mcp",
+      "url": "https://github.com/googleapis/gcloud-mcp",
+      "description": "gcloud MCP server",
+      "stars": 861,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp",
+      "owner": "cloudflare",
+      "full_name": "cloudflare/mcp",
+      "url": "https://github.com/cloudflare/mcp",
+      "description": "MCP server for the Cloudflare API",
+      "stars": 652,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "chroma-mcp",
+      "owner": "chroma-core",
+      "full_name": "chroma-core/chroma-mcp",
+      "url": "https://github.com/chroma-core/chroma-mcp",
+      "description": "A Model Context Protocol (MCP) server implementation that provides database capabilities for Chroma",
+      "stars": 576,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "CopilotAdventures",
+      "owner": "microsoft",
+      "full_name": "microsoft/CopilotAdventures",
+      "url": "https://github.com/microsoft/CopilotAdventures",
+      "description": "GitHub Copilot coding adventures",
+      "stars": 564,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-redis",
+      "owner": "redis",
+      "full_name": "redis/mcp-redis",
+      "url": "https://github.com/redis/mcp-redis",
+      "description": "The official Redis MCP Server is a natural language interface designed for agentic applications to manage and search data in Redis efficiently",
+      "stars": 548,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "docker-mcp",
+      "owner": "QuantGeekDev",
+      "full_name": "QuantGeekDev/docker-mcp",
+      "url": "https://github.com/QuantGeekDev/docker-mcp",
+      "description": "A docker MCP Server (modelcontextprotocol)",
+      "stars": 495,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "DebugMCP",
+      "owner": "microsoft",
+      "full_name": "microsoft/DebugMCP",
+      "url": "https://github.com/microsoft/DebugMCP",
+      "description": "Gift your VS Code agent a real debugger: breakpoints, stepping, inspection.",
+      "stars": 432,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-database-server",
+      "owner": "executeautomation",
+      "full_name": "executeautomation/mcp-database-server",
+      "url": "https://github.com/executeautomation/mcp-database-server",
+      "description": "MCP Database Server is a new MCP Server which helps connect with Sqlite, SqlServer and Posgresql Databases",
+      "stars": 378,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "run-model-context-protocol-servers-with-aws-lambda",
+      "owner": "awslabs",
+      "full_name": "awslabs/run-model-context-protocol-servers-with-aws-lambda",
+      "url": "https://github.com/awslabs/run-model-context-protocol-servers-with-aws-lambda",
+      "description": "Run existing Model Context Protocol (MCP) stdio-based servers in AWS Lambda functions",
+      "stars": 375,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "easy-mcp",
+      "owner": "zcaceres",
+      "full_name": "zcaceres/easy-mcp",
+      "url": "https://github.com/zcaceres/easy-mcp",
+      "description": "Absurdly easy Model Context Protocol Servers in Typescript",
+      "stars": 196,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "gemini-cli-elasticsearch",
+      "owner": "elastic",
+      "full_name": "elastic/gemini-cli-elasticsearch",
+      "url": "https://github.com/elastic/gemini-cli-elasticsearch",
+      "description": "Official Elasticsearch extension for Gemini CLI",
+      "stars": 118,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-server-llamacloud",
+      "owner": "run-llama",
+      "full_name": "run-llama/mcp-server-llamacloud",
+      "url": "https://github.com/run-llama/mcp-server-llamacloud",
+      "description": "A MCP server connecting to managed indexes on LlamaCloud",
+      "stars": 87,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "graphify",
+      "owner": "Graphify-Labs",
+      "full_name": "Graphify-Labs/graphify",
+      "url": "https://github.com/Graphify-Labs/graphify",
+      "description": "Turn any codebase, with its docs, SQL schemas, configs, and PDFs, into a queryable knowledge graph. A /graphify skill for Claude Code, Cursor, Codex, and Gemini CLI: local deterministic AST parsing, every edge explained, no vector store.",
+      "stars": 92777,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "Scrapling",
+      "owner": "D4Vinci",
+      "full_name": "D4Vinci/Scrapling",
+      "url": "https://github.com/D4Vinci/Scrapling",
+      "description": "\ud83d\udd77\ufe0f An adaptive Web Scraping framework that handles everything from a single request to a full-scale crawl!",
+      "stars": 70468,
+      "license": "BSD-3-Clause",
+      "type": "mcp"
+    },
+    {
+      "name": "headroom",
+      "owner": "headroomlabs-ai",
+      "full_name": "headroomlabs-ai/headroom",
+      "url": "https://github.com/headroomlabs-ai/headroom",
+      "description": "Compress tool outputs, logs, files, and RAG chunks before they reach the LLM. 20% fewer tokens for coding agents, 60-95% fewer tokens for JSON, same answers. Library, proxy, MCP server.",
+      "stars": 60874,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "Agent-Reach",
+      "owner": "Panniantong",
+      "full_name": "Panniantong/Agent-Reach",
+      "url": "https://github.com/Panniantong/Agent-Reach",
+      "description": "Give your AI agent eyes to see the entire internet. Read & search Twitter, Reddit, YouTube, GitHub, Bilibili, XiaoHongShu \u2014 one CLI, zero API fees.",
+      "stars": 58990,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mempalace",
+      "owner": "MemPalace",
+      "full_name": "MemPalace/mempalace",
+      "url": "https://github.com/MemPalace/mempalace",
+      "description": "The best-benchmarked open-source AI memory system. And it's free.",
+      "stars": 57548,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "chrome-devtools-mcp",
+      "owner": "ChromeDevTools",
+      "full_name": "ChromeDevTools/chrome-devtools-mcp",
+      "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
+      "description": "Chrome DevTools for coding agents",
+      "stars": 47304,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "CowAgent",
+      "owner": "zhayujie",
+      "full_name": "zhayujie/CowAgent",
+      "url": "https://github.com/zhayujie/CowAgent",
+      "description": "Open-source super AI assistant & Agent Harness. Plans tasks, runs tools and skills, self-evolves with memory and knowledge. Multi-model, multi-channel. Lightweight, extensible, one-line install. (formerly chatgpt-on-wechat)",
+      "stars": 46071,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "ai-engineering-from-scratch",
+      "owner": "rohitg00",
+      "full_name": "rohitg00/ai-engineering-from-scratch",
+      "url": "https://github.com/rohitg00/ai-engineering-from-scratch",
+      "description": "Learn it. Build it. Ship it for others.",
+      "stars": 41185,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "LibreChat",
+      "owner": "danny-avila",
+      "full_name": "danny-avila/LibreChat",
+      "url": "https://github.com/danny-avila/LibreChat",
+      "description": "Enhanced ChatGPT Clone: Features Agents, MCP, Skills, DeepSeek, Anthropic, AWS, OpenAI, Responses API, Azure, Groq, o1, GPT-5, Mistral, OpenRouter, Vertex AI, Gemini, Artifacts, AI model switching, message search, Code Interpreter, langchain, DALL-E-3, OpenAPI Actions, Functions, Secure Multi-User Auth, Presets, open-source for self-hosting. Active",
+      "stars": 41037,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "agents",
+      "owner": "wshobson",
+      "full_name": "wshobson/agents",
+      "url": "https://github.com/wshobson/agents",
+      "description": "Multi-harness agentic plugin marketplace for Claude Code, Codex CLI, Cursor, OpenCode, GitHub Copilot, and Gemini CLI",
+      "stars": 38100,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "hyperframes",
+      "owner": "heygen-com",
+      "full_name": "heygen-com/hyperframes",
+      "url": "https://github.com/heygen-com/hyperframes",
+      "description": "Write HTML. Render video. Built for agents.",
+      "stars": 36552,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "composio",
+      "owner": "ComposioHQ",
+      "full_name": "ComposioHQ/composio",
+      "url": "https://github.com/ComposioHQ/composio",
+      "description": "Composio powers 1000+ toolkits, tool search, context management, authentication, and a sandboxed workbench to help you build AI agents that turn intent into action.",
+      "stars": 29303,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "gpt-researcher",
+      "owner": "assafelovic",
+      "full_name": "assafelovic/gpt-researcher",
+      "url": "https://github.com/assafelovic/gpt-researcher",
+      "description": "An autonomous agent that conducts deep research on any data using any LLM providers",
+      "stars": 28517,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "agentscope",
+      "owner": "agentscope-ai",
+      "full_name": "agentscope-ai/agentscope",
+      "url": "https://github.com/agentscope-ai/agentscope",
+      "description": "Build and run agents you can see, understand and trust.",
+      "stars": 28107,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "page-agent",
+      "owner": "alibaba",
+      "full_name": "alibaba/page-agent",
+      "url": "https://github.com/alibaba/page-agent",
+      "description": "JavaScript in-page GUI agent. Control web interfaces with natural language.",
+      "stars": 27367,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "repomix",
+      "owner": "yamadashy",
+      "full_name": "yamadashy/repomix",
+      "url": "https://github.com/yamadashy/repomix",
+      "description": "\ud83d\udce6 Repomix is a powerful tool that packs your entire repository into a single, AI-friendly file. Perfect for when you need to feed your codebase to Large Language Models (LLMs) or other AI tools like Claude, ChatGPT, DeepSeek, Perplexity, Gemini, Gemma, Llama, Grok, and more.",
+      "stars": 27274,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "fastmcp",
+      "owner": "PrefectHQ",
+      "full_name": "PrefectHQ/fastmcp",
+      "url": "https://github.com/PrefectHQ/fastmcp",
+      "description": "\ud83d\ude80 The fast, Pythonic way to build MCP servers and clients.",
+      "stars": 26699,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "serena",
+      "owner": "oraios",
+      "full_name": "oraios/serena",
+      "url": "https://github.com/oraios/serena",
+      "description": "A powerful MCP toolkit for coding, providing semantic retrieval and editing capabilities  - the IDE for your agent",
+      "stars": 26632,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "Anthropic-Cybersecurity-Skills",
+      "owner": "mukul975",
+      "full_name": "mukul975/Anthropic-Cybersecurity-Skills",
+      "url": "https://github.com/mukul975/Anthropic-Cybersecurity-Skills",
+      "description": "817 structured cybersecurity skills for AI agents \u00b7 Mapped to 6 frameworks: MITRE ATT&CK, NIST CSF 2.0, MITRE ATLAS, D3FEND, NIST AI RMF & MITRE F3 (Fight Fraud) \u00b7 agentskills.io standard \u00b7 Works with Claude Code, GitHub Copilot, Codex CLI, Cursor, Gemini CLI & 20+ platforms \u00b7 29 security domains \u00b7 Apache 2.0",
+      "stars": 26252,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "Vibe-Trading",
+      "owner": "HKUDS",
+      "full_name": "HKUDS/Vibe-Trading",
+      "url": "https://github.com/HKUDS/Vibe-Trading",
+      "description": "\"Vibe-Trading: Your Personal Trading Agent\"",
+      "stars": 25988,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "blender-mcp",
+      "owner": "ahujasid",
+      "full_name": "ahujasid/blender-mcp",
+      "url": "https://github.com/ahujasid/blender-mcp",
+      "description": "Open-source MCP to use Blender with any LLM",
+      "stars": 24559,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "code-review-graph",
+      "owner": "tirth8205",
+      "full_name": "tirth8205/code-review-graph",
+      "url": "https://github.com/tirth8205/code-review-graph",
+      "description": "Local-first code intelligence graph for MCP and CLI. Builds a persistent map of your codebase so AI coding tools read only what matters, with benchmarked context reductions on reviews and large-repo workflows.",
+      "stars": 24204,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "OmniRoute",
+      "owner": "diegosouzapw",
+      "full_name": "diegosouzapw/OmniRoute",
+      "url": "https://github.com/diegosouzapw/OmniRoute",
+      "description": "Never stop coding. Free MIT AI gateway: one endpoint, 268+ providers (50+ free), 500+ models \u2014 Claude, GPT, Gemini, Kimi K3, GLM, DeepSeek. Works with Claude Code, Codex, Cursor, Cline & Copilot. Quota-aware auto-fallback, RTK+Caveman compression saves 15-95% tokens, MCP/A2A, multimodal, Desktop/PWA. Built by 500+ contributors.",
+      "stars": 22734,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "n8n-mcp",
+      "owner": "czlonkowski",
+      "full_name": "czlonkowski/n8n-mcp",
+      "url": "https://github.com/czlonkowski/n8n-mcp",
+      "description": "A MCP for Claude Desktop / Claude Code / Windsurf / Cursor to build n8n workflows for you",
+      "stars": 22361,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "FunASR",
+      "owner": "modelscope",
+      "full_name": "modelscope/FunASR",
+      "url": "https://github.com/modelscope/FunASR",
+      "description": "Open-source speech recognition toolkit for training, inference, streaming ASR, VAD, punctuation, speaker diarization pipelines, and OpenAI-compatible/MCP serving.",
+      "stars": 19386,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "oh-my-pi",
+      "owner": "can1357",
+      "full_name": "can1357/oh-my-pi",
+      "url": "https://github.com/can1357/oh-my-pi",
+      "description": "\u2325  AI Coding agent for the terminal \u2014 hash-anchored edits, optimized tool harness, LSP, Python, browser, subagents, and more",
+      "stars": 18848,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "trigger.dev",
+      "owner": "triggerdotdev",
+      "full_name": "triggerdotdev/trigger.dev",
+      "url": "https://github.com/triggerdotdev/trigger.dev",
+      "description": "Trigger.dev \u2013 build and deploy fully\u2011managed AI agents and workflows",
+      "stars": 15701,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "electerm",
+      "owner": "electerm",
+      "full_name": "electerm/electerm",
+      "url": "https://github.com/electerm/electerm",
+      "description": "\ud83d\udcfbTerminal/ssh/sftp/ftp/telnet/serialport/RDP/VNC/Spice client(Linux, Mac, Windows, Android)",
+      "stars": 14527,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "OpenMetadata",
+      "owner": "open-metadata",
+      "full_name": "open-metadata/OpenMetadata",
+      "url": "https://github.com/open-metadata/OpenMetadata",
+      "description": "The Open Context Layer for Data and AI ,  OpenMetadata is the open platform for building trusted data context and business semantics for humans, AI assistants, and agents.",
+      "stars": 14524,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "Skill_Seekers",
+      "owner": "yusufkaraaslan",
+      "full_name": "yusufkaraaslan/Skill_Seekers",
+      "url": "https://github.com/yusufkaraaslan/Skill_Seekers",
+      "description": "Convert documentation websites, GitHub repositories, and PDFs into Claude AI skills with automatic conflict detection",
+      "stars": 14520,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "Auto-claude-code-research-in-sleep",
+      "owner": "wanshuiyin",
+      "full_name": "wanshuiyin/Auto-claude-code-research-in-sleep",
+      "url": "https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep",
+      "description": "ARIS \u2694\ufe0f (Auto-Research-In-Sleep) \u2014 Lightweight Markdown-only skills for autonomous ML research: cross-model review loops, idea discovery, and experiment automation. No framework, no lock-in \u2014 works with Claude Code, Codex, OpenClaw, or any LLM agent.",
+      "stars": 13657,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "ai-berkshire",
+      "owner": "xbtlin",
+      "full_name": "xbtlin/ai-berkshire",
+      "url": "https://github.com/xbtlin/ai-berkshire",
+      "description": "AI \u65f6\u4ee3\u7684\u4f2f\u514b\u5e0c\u5c14\uff1a\u57fa\u4e8e Claude Code / Codex \u7684\u4ef7\u503c\u6295\u8d44\u7814\u7a76\u6846\u67b6\u3002\u5df4\u83f2\u7279\u00b7\u8292\u683c\u00b7\u6bb5\u6c38\u5e73\u00b7\u674e\u5f55\u56db\u5927\u5e08\u65b9\u6cd5\u8bba + \u591aAgent\u5e76\u884c\u7814\u7a76\u3002| AI-era Berkshire: a value investing research framework built for Claude Code / Codex. 4 masters' methodologies + multi-agent adversarial analysis.",
+      "stars": 13581,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "gateway",
+      "owner": "Portkey-AI",
+      "full_name": "Portkey-AI/gateway",
+      "url": "https://github.com/Portkey-AI/gateway",
+      "description": "A blazing fast AI Gateway with integrated guardrails. Route to 1,600+ LLMs, 50+ AI Guardrails with 1 fast & friendly API.",
+      "stars": 12491,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-chrome",
+      "owner": "hangwin",
+      "full_name": "hangwin/mcp-chrome",
+      "url": "https://github.com/hangwin/mcp-chrome",
+      "description": "Chrome MCP Server is a Chrome extension-based Model Context Protocol (MCP) server that exposes your Chrome browser functionality to AI assistants like Claude, enabling complex browser automation, content analysis, and semantic search.",
+      "stars": 12174,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "claude-context",
+      "owner": "zilliztech",
+      "full_name": "zilliztech/claude-context",
+      "url": "https://github.com/zilliztech/claude-context",
+      "description": "Code search MCP for Claude Code. Make entire codebase the context for any coding agent.",
+      "stars": 12166,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "fastapi_mcp",
+      "owner": "tadata-org",
+      "full_name": "tadata-org/fastapi_mcp",
+      "url": "https://github.com/tadata-org/fastapi_mcp",
+      "description": "Expose your FastAPI endpoints as Model Context Protocol (MCP) tools, with Auth!",
+      "stars": 11951,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "EverOS",
+      "owner": "EverMind-AI",
+      "full_name": "EverMind-AI/EverOS",
+      "url": "https://github.com/EverMind-AI/EverOS",
+      "description": "One portable memory layer for every AI agent: local-first, Markdown-native, user-owned, and self-evolving across apps, tools, and workflows.",
+      "stars": 11394,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "valuecell",
+      "owner": "ValueCell-ai",
+      "full_name": "ValueCell-ai/valuecell",
+      "url": "https://github.com/ValueCell-ai/valuecell",
+      "description": "ValueCell is a community-driven, multi-agent platform for financial applications.",
+      "stars": 10942,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "ida-pro-mcp",
+      "owner": "mrexodia",
+      "full_name": "mrexodia/ida-pro-mcp",
+      "url": "https://github.com/mrexodia/ida-pro-mcp",
+      "description": "AI-powered reverse engineering assistant that bridges IDA Pro with language models through MCP.",
+      "stars": 10584,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "hexstrike-ai",
+      "owner": "0x4m4",
+      "full_name": "0x4m4/hexstrike-ai",
+      "url": "https://github.com/0x4m4/hexstrike-ai",
+      "description": "HexStrike AI MCP Agents is an advanced MCP server that lets AI agents (Claude, GPT, Copilot, etc.) autonomously run 150+ cybersecurity tools for automated pentesting, vulnerability discovery, bug bounty automation, and security research. Seamlessly bridge LLMs with real-world offensive security capabilities.",
+      "stars": 10413,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-use",
+      "owner": "mcp-use",
+      "full_name": "mcp-use/mcp-use",
+      "url": "https://github.com/mcp-use/mcp-use",
+      "description": "The fullstack MCP framework to develop MCP Apps for ChatGPT / Claude & MCP Servers for AI Agents.",
+      "stars": 10337,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "MemOS",
+      "owner": "MemTensor",
+      "full_name": "MemTensor/MemOS",
+      "url": "https://github.com/MemTensor/MemOS",
+      "description": "Self-evolving memory OS for LLM & AI Agents: ultra-persistent memory, hybrid-retrieval, and cross-task skill reuse, with 35.24% token savings",
+      "stars": 10310,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "voltagent",
+      "owner": "VoltAgent",
+      "full_name": "VoltAgent/voltagent",
+      "url": "https://github.com/VoltAgent/voltagent",
+      "description": "AI Agent Engineering Platform built on an Open Source TypeScript AI Agent Framework",
+      "stars": 10109,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "xiaozhi-esp32-server",
+      "owner": "xinnan-tech",
+      "full_name": "xinnan-tech/xiaozhi-esp32-server",
+      "url": "https://github.com/xinnan-tech/xiaozhi-esp32-server",
+      "description": "\u672c\u9879\u76ee\u4e3axiaozhi-esp32\u63d0\u4f9b\u540e\u7aef\u670d\u52a1\uff0c\u5e2e\u52a9\u60a8\u5feb\u901f\u642d\u5efaESP32\u8bbe\u5907\u63a7\u5236\u670d\u52a1\u5668\u3002Backend service for xiaozhi-esp32, helps you quickly build an ESP32 device control server.",
+      "stars": 10100,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "QuantDinger",
+      "owner": "OpenByteInc",
+      "full_name": "OpenByteInc/QuantDinger",
+      "url": "https://github.com/OpenByteInc/QuantDinger",
+      "description": "AI quantitative trading platform for crypto, stocks, and forex with backtesting, live trading, market data, and multi-agent research.vibe-trading ,trading-agents,ai-trader,ai-trading",
+      "stars": 9862,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "loop-engineering",
+      "owner": "cobusgreyling",
+      "full_name": "cobusgreyling/loop-engineering",
+      "url": "https://github.com/cobusgreyling/loop-engineering",
+      "description": "Practical patterns, starters & CLI tools for loop engineering with AI coding agents. Design systems that prompt and orchestrate agents (inspired by Addy Osmani and Boris Cherny). Includes loop-audit, loop-init, loop-cost.",
+      "stars": 8917,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-agent",
+      "owner": "lastmile-ai",
+      "full_name": "lastmile-ai/mcp-agent",
+      "url": "https://github.com/lastmile-ai/mcp-agent",
+      "description": "Build effective agents using Model Context Protocol and simple workflow patterns",
+      "stars": 8459,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "Horizon",
+      "owner": "Thysrael",
+      "full_name": "Thysrael/Horizon",
+      "url": "https://github.com/Thysrael/Horizon",
+      "description": "\ud83d\udce1 Your own AI-powered news radar. Generates daily briefings in English & Chinese. | \u7528 AI \u6784\u5efa\u4f60\u4e13\u5c5e\u7684\u65b0\u95fb\u96f7\u8fbe",
+      "stars": 8336,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "git-mcp",
+      "owner": "idosal",
+      "full_name": "idosal/git-mcp",
+      "url": "https://github.com/idosal/git-mcp",
+      "description": "Put an end to code hallucinations! GitMCP is a free, open-source, remote MCP server for any GitHub project",
+      "stars": 8272,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "Upsonic",
+      "owner": "Upsonic",
+      "full_name": "Upsonic/Upsonic",
+      "url": "https://github.com/Upsonic/Upsonic",
+      "description": "Build autonomous AI agents in Python.",
+      "stars": 7917,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "lamda",
+      "owner": "firerpa",
+      "full_name": "firerpa/lamda",
+      "url": "https://github.com/firerpa/lamda",
+      "description": "Android Full-Stack Device Control Platform: WebRTC/H.264 remote desktop, UI/OCR/image-matching automation, one-click MITM, built-in Frida, proxy/VPN/frp/P2P networking, MCP/Agent, 160+ APIs, designed for multi-device clusters and engineered deployments.",
+      "stars": 7906,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "browser-tools-mcp",
+      "owner": "AgentDeskAI",
+      "full_name": "AgentDeskAI/browser-tools-mcp",
+      "url": "https://github.com/AgentDeskAI/browser-tools-mcp",
+      "description": "Monitor browser logs directly from Cursor and other MCP compatible IDEs.",
+      "stars": 7272,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "superpowers-zh",
+      "owner": "jnMetaCode",
+      "full_name": "jnMetaCode/superpowers-zh",
+      "url": "https://github.com/jnMetaCode/superpowers-zh",
+      "description": "\ud83e\uddb8 AI \u7f16\u7a0b\u8d85\u80fd\u529b \u00b7 \u4e2d\u6587\u589e\u5f3a\u7248 \u2014 superpowers\uff08116k+ \u2b50\uff09\u5b8c\u6574\u6c49\u5316 + 6 \u4e2a\u4e2d\u56fd\u539f\u521b skills\uff0c\u8ba9 Claude Code / Copilot CLI / Hermes Agent / Cursor / Windsurf / Kiro / Gemini CLI \u7b49 16 \u6b3e AI \u7f16\u7a0b\u5de5\u5177\u771f\u6b63\u4f1a\u5e72\u6d3b",
+      "stars": 7093,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "cursor-talk-to-figma-mcp",
+      "owner": "grab",
+      "full_name": "grab/cursor-talk-to-figma-mcp",
+      "url": "https://github.com/grab/cursor-talk-to-figma-mcp",
+      "description": "TalkToFigma: MCP integration between AI Agent (Cursor, Claude Code, Codex) and Figma, allowing Agentic AI to communicate with Figma for reading designs and modifying them programmatically.",
+      "stars": 6919,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp",
+      "owner": "BrowserMCP",
+      "full_name": "BrowserMCP/mcp",
+      "url": "https://github.com/BrowserMCP/mcp",
+      "description": "Browser MCP is a Model Context Provider (MCP) server that allows AI applications to control your browser",
+      "stars": 6850,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "harness-sdk",
+      "owner": "strands-agents",
+      "full_name": "strands-agents/harness-sdk",
+      "url": "https://github.com/strands-agents/harness-sdk",
+      "description": "Build an agent harness and control it end-to-end. Open-source SDK for production AI agents in Python & TypeScript - any model, any cloud.",
+      "stars": 6656,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "open-multi-agent",
+      "owner": "open-multi-agent",
+      "full_name": "open-multi-agent/open-multi-agent",
+      "url": "https://github.com/open-multi-agent/open-multi-agent",
+      "description": "TypeScript AI agent orchestration framework with dynamic workflows. Describe the goal, not the graph: a coordinator plans the task DAG at runtime and runs it on any LLM (Claude, ChatGPT, Gemini, DeepSeek, or local models).",
+      "stars": 6633,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "Windows-MCP",
+      "owner": "CursorTouch",
+      "full_name": "CursorTouch/Windows-MCP",
+      "url": "https://github.com/CursorTouch/Windows-MCP",
+      "description": "MCP Server for Computer Use in Windows",
+      "stars": 6469,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "open-seo",
+      "owner": "every-app",
+      "full_name": "every-app/open-seo",
+      "url": "https://github.com/every-app/open-seo",
+      "description": "Open source alternative to Semrush and Ahrefs",
+      "stars": 6250,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "opensquilla",
+      "owner": "opensquilla",
+      "full_name": "opensquilla/opensquilla",
+      "url": "https://github.com/opensquilla/opensquilla",
+      "description": "OpenSquilla \u2014 Token-Efficient AI Agent with same budget, higher intelligence density",
+      "stars": 6221,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "deepchat",
+      "owner": "ThinkInAIXYZ",
+      "full_name": "ThinkInAIXYZ/deepchat",
+      "url": "https://github.com/ThinkInAIXYZ/deepchat",
+      "description": "\ud83d\udc2cDeepChat - A smart assistant that connects powerful AI to your personal world",
+      "stars": 6133,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "XcodeBuildMCP",
+      "owner": "getsentry",
+      "full_name": "getsentry/XcodeBuildMCP",
+      "url": "https://github.com/getsentry/XcodeBuildMCP",
+      "description": "A Model Context Protocol (MCP) server and CLI that provides tools for agent use when working on iOS and macOS projects.",
+      "stars": 6101,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "jscpd",
+      "owner": "kucherenko",
+      "full_name": "kucherenko/jscpd",
+      "url": "https://github.com/kucherenko/jscpd",
+      "description": "Copy/paste detector for programming source code, supports 223 formats. AI-ready with token-efficient reporter, skill and MCP server.",
+      "stars": 5906,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mission-control",
+      "owner": "builderz-labs",
+      "full_name": "builderz-labs/mission-control",
+      "url": "https://github.com/builderz-labs/mission-control",
+      "description": "Self-hosted control plane for AI agents: dispatch tasks, review runs, track spend, and operate OpenClaw, Claude Code, Codex, and other runtimes.",
+      "stars": 5802,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "klavis",
+      "owner": "Klavis-AI",
+      "full_name": "Klavis-AI/klavis",
+      "url": "https://github.com/Klavis-AI/klavis",
+      "description": "Klavis AI:  MCP integration platforms that let AI agents use tools reliably at any scale",
+      "stars": 5771,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "nexent",
+      "owner": "ModelEngine-Group",
+      "full_name": "ModelEngine-Group/nexent",
+      "url": "https://github.com/ModelEngine-Group/nexent",
+      "description": "Nexent is a zero-code platform for auto-generating production-grade AI agents using Harness Engineering principles \u2014 unified tools, skills, memory, and orchestration with built-in constraints, feedback loops, and control planes.",
+      "stars": 5758,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "semble",
+      "owner": "MinishLab",
+      "full_name": "MinishLab/semble",
+      "url": "https://github.com/MinishLab/semble",
+      "description": "Fast and Accurate Code Search for Agents. Uses ~98% fewer tokens than grep+read",
+      "stars": 5663,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "LobsterAI",
+      "owner": "netease-youdao",
+      "full_name": "netease-youdao/LobsterAI",
+      "url": "https://github.com/netease-youdao/LobsterAI",
+      "description": "Open-source, desktop-grade AI agent that gets real work done \u2014 data analysis, slides, docs, video & web research. Built on OpenClaw; runs tools on your real desktop and takes commands from your phone via WeChat, Feishu, DingTalk & Telegram.",
+      "stars": 5630,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "qiaomu-anything-to-notebooklm",
+      "owner": "joeseesun",
+      "full_name": "joeseesun/qiaomu-anything-to-notebooklm",
+      "url": "https://github.com/joeseesun/qiaomu-anything-to-notebooklm",
+      "description": "Claude Skill: Multi-source content processor for NotebookLM. Supports WeChat articles, web pages, YouTube, PDF, Markdown, search queries \u2192 Podcast/PPT/MindMap/Quiz etc.",
+      "stars": 5605,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "notebooklm-mcp-cli",
+      "owner": "jacob-bd",
+      "full_name": "jacob-bd/notebooklm-mcp-cli",
+      "url": "https://github.com/jacob-bd/notebooklm-mcp-cli",
+      "description": "Programmatic access to Google NotebookLM \u2014 via command-line interface (CLI), Model Context Protocol (MCP) server, and AI agent skills.",
+      "stars": 5527,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mobile-mcp",
+      "owner": "mobile-next",
+      "full_name": "mobile-next/mobile-mcp",
+      "url": "https://github.com/mobile-next/mobile-mcp",
+      "description": "Model Context Protocol Server for Mobile Automation and Scraping (iOS, Android, Emulators, Simulators and Real Devices)",
+      "stars": 5512,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "sandbox",
+      "owner": "agent-infra",
+      "full_name": "agent-infra/sandbox",
+      "url": "https://github.com/agent-infra/sandbox",
+      "description": "All-in-One Sandbox for AI Agents that combines Browser, Shell, File, MCP and VSCode Server in a single Docker container.",
+      "stars": 5450,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "rocketride-server",
+      "owner": "rocketride-org",
+      "full_name": "rocketride-org/rocketride-server",
+      "url": "https://github.com/rocketride-org/rocketride-server",
+      "description": "High-performance AI pipeline engine with a C++ core and 50+ Python-extensible nodes. Build, debug, and scale LLM workflows with 13+ model providers, 8+ vector databases, and agent orchestration, all from your IDE. Includes VS Code extension, TypeScript/Python SDKs, and Docker deployment.",
+      "stars": 5253,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "FinanceToolkit",
+      "owner": "JerBouma",
+      "full_name": "JerBouma/FinanceToolkit",
+      "url": "https://github.com/JerBouma/FinanceToolkit",
+      "description": "Transparent and Efficient Financial Analysis",
+      "stars": 5135,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-ui",
+      "owner": "MCP-UI-Org",
+      "full_name": "MCP-UI-Org/mcp-ui",
+      "url": "https://github.com/MCP-UI-Org/mcp-ui",
+      "description": "UI over MCP. Create next-gen UI experiences with the protocol and SDK!",
+      "stars": 5028,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "solace-agent-mesh",
+      "owner": "SolaceLabs",
+      "full_name": "SolaceLabs/solace-agent-mesh",
+      "url": "https://github.com/SolaceLabs/solace-agent-mesh",
+      "description": "An event-driven framework designed to build and orchestrate multi-agent AI systems. It enables seamless integration of AI agents with real-world data sources and systems, facilitating complex, multi-step workflows.",
+      "stars": 4967,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "drawio-mcp",
+      "owner": "jgraph",
+      "full_name": "jgraph/drawio-mcp",
+      "url": "https://github.com/jgraph/drawio-mcp",
+      "description": "",
+      "stars": 4906,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "PPTAgent",
+      "owner": "icip-cas",
+      "full_name": "icip-cas/PPTAgent",
+      "url": "https://github.com/icip-cas/PPTAgent",
+      "description": "An Agentic Framework for Reflective PowerPoint Generation",
+      "stars": 4839,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "godot-mcp",
+      "owner": "Coding-Solo",
+      "full_name": "Coding-Solo/godot-mcp",
+      "url": "https://github.com/Coding-Solo/godot-mcp",
+      "description": "MCP server for interfacing with Godot game engine. Provides tools for launching the editor, running projects, and capturing debug output.",
+      "stars": 4834,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "aci",
+      "owner": "aipotheosis-labs",
+      "full_name": "aipotheosis-labs/aci",
+      "url": "https://github.com/aipotheosis-labs/aci",
+      "description": "ACI.dev is the open source tool-calling platform that hooks up 600+ tools into any agentic IDE or custom AI agent through direct function calling or a unified MCP server. The birthplace of VibeOps.",
+      "stars": 4819,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "mcporter",
+      "owner": "openclaw",
+      "full_name": "openclaw/mcporter",
+      "url": "https://github.com/openclaw/mcporter",
+      "description": "Call MCPs via TypeScript, masquerading as simple TypeScript API. Or package them as cli.",
+      "stars": 4815,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "ag2",
+      "owner": "ag2ai",
+      "full_name": "ag2ai/ag2",
+      "url": "https://github.com/ag2ai/ag2",
+      "description": "AG2 (formerly AutoGen): The Open-Source AgentOS.Join us at: https://discord.gg/sNGSwQME3x",
+      "stars": 4785,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "claude-scholar",
+      "owner": "Galaxy-Dawn",
+      "full_name": "Galaxy-Dawn/claude-scholar",
+      "url": "https://github.com/Galaxy-Dawn/claude-scholar",
+      "description": "Semi-automated research assistant for academic research and software development. Supports Claude Code, Codex CLI, Kimi Code CLI, and OpenCode across ideation, coding, experiments, writing, and publication.",
+      "stars": 4710,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "deep-research",
+      "owner": "u14app",
+      "full_name": "u14app/deep-research",
+      "url": "https://github.com/u14app/deep-research",
+      "description": "Use any LLMs (Large Language Models) for Deep Research. Support SSE API and MCP server.",
+      "stars": 4639,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "notion-mcp-server",
+      "owner": "makenotion",
+      "full_name": "makenotion/notion-mcp-server",
+      "url": "https://github.com/makenotion/notion-mcp-server",
+      "description": "Official Notion MCP Server",
+      "stars": 4540,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "zotero-mcp",
+      "owner": "54yyyu",
+      "full_name": "54yyyu/zotero-mcp",
+      "url": "https://github.com/54yyyu/zotero-mcp",
+      "description": "Zotero MCP: Connects your Zotero research library with Claude and other AI assistants via the Model Context Protocol to discuss papers, get summaries, analyze citations, and more.",
+      "stars": 4361,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcpo",
+      "owner": "open-webui",
+      "full_name": "open-webui/mcpo",
+      "url": "https://github.com/open-webui/mcpo",
+      "description": "A simple, secure MCP-to-OpenAPI proxy server",
+      "stars": 4314,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-server-chart",
+      "owner": "antvis",
+      "full_name": "antvis/mcp-server-chart",
+      "url": "https://github.com/antvis/mcp-server-chart",
+      "description": "\ud83e\udd16 A visualization mcp & skills contains 25+ visual charts using @antvis. Using for chart generation and data analysis.",
+      "stars": 4249,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "AI-Infra-Guard",
+      "owner": "Tencent",
+      "full_name": "Tencent/AI-Infra-Guard",
+      "url": "https://github.com/Tencent/AI-Infra-Guard",
+      "description": "A full-stack AI Red Teaming platform securing AI ecosystems via OpenClaw Security Scan, Agent Scan, Skills Scan, MCP scan, AI Infra scan and LLM jailbreak evaluation.",
+      "stars": 4164,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-context-forge",
+      "owner": "IBM",
+      "full_name": "IBM/mcp-context-forge",
+      "url": "https://github.com/IBM/mcp-context-forge",
+      "description": "An AI Gateway, registry, and proxy that sits in front of any MCP, A2A, or REST/gRPC APIs, exposing a unified endpoint with centralized discovery, guardrails and management. Optimizes Agent & Tool calling, and supports plugins.",
+      "stars": 4115,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-obsidian",
+      "owner": "MarkusPfundstein",
+      "full_name": "MarkusPfundstein/mcp-obsidian",
+      "url": "https://github.com/MarkusPfundstein/mcp-obsidian",
+      "description": "MCP server that interacts with Obsidian via the Obsidian rest API community plugin",
+      "stars": 4110,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "excel-mcp-server",
+      "owner": "haris-musa",
+      "full_name": "haris-musa/excel-mcp-server",
+      "url": "https://github.com/haris-musa/excel-mcp-server",
+      "description": "A Model Context Protocol server for Excel file manipulation",
+      "stars": 4044,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "Continuous-Claude-v3",
+      "owner": "parcadei",
+      "full_name": "parcadei/Continuous-Claude-v3",
+      "url": "https://github.com/parcadei/Continuous-Claude-v3",
+      "description": "Context management for Claude Code. Hooks maintain state via ledgers and handoffs. MCP execution without context pollution. Agent orchestration with isolated context windows.",
+      "stars": 3871,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "fast-agent",
+      "owner": "evalstate",
+      "full_name": "evalstate/fast-agent",
+      "url": "https://github.com/evalstate/fast-agent",
+      "description": "Code, Build and Evaluate agents - excellent Model and Skills/MCP/ACP/A2A Support",
+      "stars": 3863,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "tabularis",
+      "owner": "TabularisDB",
+      "full_name": "TabularisDB/tabularis",
+      "url": "https://github.com/TabularisDB/tabularis",
+      "description": "Open-source desktop SQL workspace for PostgreSQL, MySQL/MariaDB, SQLite and 13+ more databases like DuckDB, ClickHouse, Redis and Firestore. Built-in MCP server for Claude, Cursor and Devin, SQL notebooks and visual EXPLAIN.",
+      "stars": 3774,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "SimpleMem",
+      "owner": "aiming-lab",
+      "full_name": "aiming-lab/SimpleMem",
+      "url": "https://github.com/aiming-lab/SimpleMem",
+      "description": "SimpleMem: Efficient Lifelong Memory for LLM Agents \u2014 Text & Multimodal",
+      "stars": 3656,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "core",
+      "owner": "opensumi",
+      "full_name": "opensumi/core",
+      "url": "https://github.com/opensumi/core",
+      "description": "A framework helps you quickly build AI Native IDE products. MCP Client, supports Model Context Protocol (MCP) tools via MCP server.",
+      "stars": 3645,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "tradingview-mcp",
+      "owner": "atilaahmettaner",
+      "full_name": "atilaahmettaner/tradingview-mcp",
+      "url": "https://github.com/atilaahmettaner/tradingview-mcp",
+      "description": "TradingView MCP server \u2014 real-time market data, technical analysis, screeners & backtesting for Claude, ChatGPT, Cursor & any MCP client. Stocks, crypto, forex & futures across global exchanges. Hosted or self-host.",
+      "stars": 3601,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "agent-device",
+      "owner": "callstack",
+      "full_name": "callstack/agent-device",
+      "url": "https://github.com/callstack/agent-device",
+      "description": "CLI to control iOS and Android devices for AI agents",
+      "stars": 3544,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "py-xiaozhi",
+      "owner": "huangjunsen0406",
+      "full_name": "huangjunsen0406/py-xiaozhi",
+      "url": "https://github.com/huangjunsen0406/py-xiaozhi",
+      "description": "Open-source AI assistant ecosystem with MCP integrations, multimodal workflows, IoT support, and cross-platform voice interaction.",
+      "stars": 3419,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "neo",
+      "owner": "neomjs",
+      "full_name": "neomjs/neo",
+      "url": "https://github.com/neomjs/neo",
+      "description": "Neo.mjs is a self-evolving software organism: a professional end-to-end AI engineering team whose cross-model swarm inhabits live apps via Neural Link, Active Hybrid GraphRAG, DreamService, and self-healing loops.",
+      "stars": 3240,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "fastmcp",
+      "owner": "punkpeye",
+      "full_name": "punkpeye/fastmcp",
+      "url": "https://github.com/punkpeye/fastmcp",
+      "description": "A TypeScript framework for building MCP servers.",
+      "stars": 3228,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "dbhub",
+      "owner": "bytebase",
+      "full_name": "bytebase/dbhub",
+      "url": "https://github.com/bytebase/dbhub",
+      "description": "Zero-dependency, token-efficient database MCP server for Postgres, MySQL, SQL Server, MariaDB, SQLite.",
+      "stars": 3198,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "buildwithclaude",
+      "owner": "davepoon",
+      "full_name": "davepoon/buildwithclaude",
+      "url": "https://github.com/davepoon/buildwithclaude",
+      "description": "A single hub to find Claude Skills, Agents, Commands, Hooks, Plugins, and Marketplace collections to extend Claude Code, Claude Desktop, Agent SDK and OpenClaw",
+      "stars": 3193,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "NotFair",
+      "owner": "nowork-studio",
+      "full_name": "nowork-studio/NotFair",
+      "url": "https://github.com/nowork-studio/NotFair",
+      "description": "Goal-driven, loop-powered marketing agents that crush your business goals 24/7",
+      "stars": 3169,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "harbor",
+      "owner": "av",
+      "full_name": "av/harbor",
+      "url": "https://github.com/av/harbor",
+      "description": "Stop configuring your AI stack. Start using it. One command brings a complete pre-wired LLM stack with hundreds of services to explore.",
+      "stars": 3145,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "FireRed-OpenStoryline",
+      "owner": "FireRedTeam",
+      "full_name": "FireRedTeam/FireRed-OpenStoryline",
+      "url": "https://github.com/FireRedTeam/FireRed-OpenStoryline",
+      "description": "FireRed-OpenStoryline is an AI video editing agent that transforms manual editing into intention-driven directing through natural language interaction, LLM-powered planning, and precise tool orchestration. It facilitates transparent, human-in-the-loop creation with reusable Style Skills for consistent, professional storytelling.",
+      "stars": 3128,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "TuriX-CUA",
+      "owner": "TurixAI",
+      "full_name": "TurixAI/TuriX-CUA",
+      "url": "https://github.com/TurixAI/TuriX-CUA",
+      "description": "This is the official website for TuriX Computer-use-Agent",
+      "stars": 3119,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "ultracite",
+      "owner": "haydenbleasel",
+      "full_name": "haydenbleasel/ultracite",
+      "url": "https://github.com/haydenbleasel/ultracite",
+      "description": "A highly opinionated, zero-configuration linter and formatter.",
+      "stars": 3092,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "postgres-mcp",
+      "owner": "crystaldba",
+      "full_name": "crystaldba/postgres-mcp",
+      "url": "https://github.com/crystaldba/postgres-mcp",
+      "description": "Postgres MCP Pro provides configurable read/write access and performance analysis for you and your AI agents.",
+      "stars": 3089,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "notebooklm-mcp",
+      "owner": "PleasePrompto",
+      "full_name": "PleasePrompto/notebooklm-mcp",
+      "url": "https://github.com/PleasePrompto/notebooklm-mcp",
+      "description": "MCP server for NotebookLM - Let your AI agents (Claude Code, Codex) research documentation directly with grounded, citation-backed answers from Gemini. Persistent auth, library management, cross-client sharing. Zero hallucinations, just your knowledge base.",
+      "stars": 3058,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "open-connector",
+      "owner": "oomol-lab",
+      "full_name": "oomol-lab/open-connector",
+      "url": "https://github.com/oomol-lab/open-connector",
+      "description": "Open-source auth gateway connecting 1000+ SaaS providers to AI agents through SDK, CLI, MCP, HTTP, and OpenAPI.",
+      "stars": 3044,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "fli",
+      "owner": "punitarani",
+      "full_name": "punitarani/fli",
+      "url": "https://github.com/punitarani/fli",
+      "description": "Google Flights MCP, CLI and Python Library",
+      "stars": 3031,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "arxiv-mcp-server",
+      "owner": "blazickjp",
+      "full_name": "blazickjp/arxiv-mcp-server",
+      "url": "https://github.com/blazickjp/arxiv-mcp-server",
+      "description": "A Model Context Protocol server for searching and analyzing arXiv papers",
+      "stars": 2972,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "ai-agents-from-zero",
+      "owner": "didilili",
+      "full_name": "didilili/ai-agents-from-zero",
+      "url": "https://github.com/didilili/ai-agents-from-zero",
+      "description": "\ud83d\ude80 2026 \u6700\u7cfb\u7edf\u7684 AI Agent \u901f\u6210\u6307\u5357\uff5c\u667a\u80fd\u4f53\u5b9e\u6218\u6559\u7a0b \u00b7 \u5b8c\u6574\u5b66\u4e60\u8def\u5f84  + \u5b9e\u6218\u9879\u76ee + \u9762\u8bd5\u9898\u5e93 \u00b7 \u5bf9\u6807\u5927\u6a21\u578b\u5e94\u7528\u5f00\u53d1\u5de5\u7a0b\u5e08\u5c97\u4f4d \u00b7 \u8986\u76d6LangChain / LangGraph / Coze / Dify / MCP / skills / LLM / RAG / \u63d0\u793a\u8bcd \u00b7 \u4f01\u4e1a\u7ea7\u90e8\u7f72\u4e0e\u5fae\u8c03 \u00b7 \u4ece0\u5230\u4f01\u4e1a\u7ea7\u843d\u5730 + \u4ece\u5b66\u4e60\u5230\u4e0a\u7ebf\u9879\u76ee + \u9762\u8bd5\u51c6\u5907\u4e00\u4f53\u5316",
+      "stars": 2902,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "google_workspace_mcp",
+      "owner": "taylorwilsdon",
+      "full_name": "taylorwilsdon/google_workspace_mcp",
+      "url": "https://github.com/taylorwilsdon/google_workspace_mcp",
+      "description": "Control Gmail, Google Calendar, Docs, Sheets, Slides, Chat, Forms, Tasks, Search & Drive with AI - Comprehensive Google Workspace / G Suite MCP Server & CLI Tool",
+      "stars": 2887,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "shadcn-ui-mcp-server",
+      "owner": "Jpisnice",
+      "full_name": "Jpisnice/shadcn-ui-mcp-server",
+      "url": "https://github.com/Jpisnice/shadcn-ui-mcp-server",
+      "description": "A mcp server to allow LLMS gain context about shadcn ui component structure,usage and installation,compaitable with react,svelte 5,vue & React Native",
+      "stars": 2881,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "linkedin-mcp-server",
+      "owner": "stickerdaniel",
+      "full_name": "stickerdaniel/linkedin-mcp-server",
+      "url": "https://github.com/stickerdaniel/linkedin-mcp-server",
+      "description": "Open-source MCP server for LinkedIn. Give Claude and any MCP-compatible AI agent access to profiles, companies, jobs, and messages.",
+      "stars": 2839,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "ddgs",
+      "owner": "deedy5",
+      "full_name": "deedy5/ddgs",
+      "url": "https://github.com/deedy5/ddgs",
+      "description": "A metasearch library that aggregates results from diverse web search services",
+      "stars": 2826,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "ableton-mcp",
+      "owner": "ahujasid",
+      "full_name": "ahujasid/ableton-mcp",
+      "url": "https://github.com/ahujasid/ableton-mcp",
+      "description": "",
+      "stars": 2811,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "pentestagent",
+      "owner": "GH05TCREW",
+      "full_name": "GH05TCREW/pentestagent",
+      "url": "https://github.com/GH05TCREW/pentestagent",
+      "description": "PentestAgent is an AI agent framework for black-box security testing, supporting bug bounty, red-team, and penetration testing workflows.",
+      "stars": 2806,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "agent-scan",
+      "owner": "snyk",
+      "full_name": "snyk/agent-scan",
+      "url": "https://github.com/snyk/agent-scan",
+      "description": "Security scanner for AI agents, MCP servers and agent skills.",
+      "stars": 2798,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-proxy",
+      "owner": "sparfenyuk",
+      "full_name": "sparfenyuk/mcp-proxy",
+      "url": "https://github.com/sparfenyuk/mcp-proxy",
+      "description": "A bridge between Streamable HTTP and stdio MCP transports",
+      "stars": 2677,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "antigravity-sdk-python",
+      "owner": "google-antigravity",
+      "full_name": "google-antigravity/antigravity-sdk-python",
+      "url": "https://github.com/google-antigravity/antigravity-sdk-python",
+      "description": "A Python library for building AI agents that leverage the full power of Google Antigravity.",
+      "stars": 2546,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "cocoindex-code",
+      "owner": "cocoindex-io",
+      "full_name": "cocoindex-io/cocoindex-code",
+      "url": "https://github.com/cocoindex-io/cocoindex-code",
+      "description": "A super light-weight embedded code search engine CLI (AST based) that just works -  improves speed and efficiency for coding agent  \ud83c\udf1f Star if you like it!",
+      "stars": 2544,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "metamcp",
+      "owner": "metatool-ai",
+      "full_name": "metatool-ai/metamcp",
+      "url": "https://github.com/metatool-ai/metamcp",
+      "description": "MCP Aggregator, Orchestrator, Middleware, Gateway in one docker",
+      "stars": 2539,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "claude-code-plugins-plus-skills",
+      "owner": "jeremylongshore",
+      "full_name": "jeremylongshore/claude-code-plugins-plus-skills",
+      "url": "https://github.com/jeremylongshore/claude-code-plugins-plus-skills",
+      "description": "425 plugins, 2,810 skills, 200 agents for Claude Code. Open-source marketplace at tonsofskills.com with the ccpi CLI package manager.",
+      "stars": 2536,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "onecli",
+      "owner": "onecli",
+      "full_name": "onecli/onecli",
+      "url": "https://github.com/onecli/onecli",
+      "description": "Open-source credential gateway with a built-in vault. give your AI agents access to services without exposing keys.",
+      "stars": 2531,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "MCP-SuperAssistant",
+      "owner": "srbhptl39",
+      "full_name": "srbhptl39/MCP-SuperAssistant",
+      "url": "https://github.com/srbhptl39/MCP-SuperAssistant",
+      "description": "Brings MCP to ChatGPT, DeepSeek, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, DeepSeek, T3 Chat and more...",
+      "stars": 2524,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "brightdata-mcp",
+      "owner": "brightdata",
+      "full_name": "brightdata/brightdata-mcp",
+      "url": "https://github.com/brightdata/brightdata-mcp",
+      "description": "A powerful Model Context Protocol (MCP) server that provides an all-in-one solution for public web access.",
+      "stars": 2523,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "shippie",
+      "owner": "mattzcarey",
+      "full_name": "mattzcarey/shippie",
+      "url": "https://github.com/mattzcarey/shippie",
+      "description": "extendable code review and QA agent \ud83d\udea2",
+      "stars": 2455,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "butterbase",
+      "owner": "butterbase-ai",
+      "full_name": "butterbase-ai/butterbase",
+      "url": "https://github.com/butterbase-ai/butterbase",
+      "description": "Open-source backend-as-a-service. Postgres, auth, storage, functions, AI gateway, MCP.",
+      "stars": 2431,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "jarvis-registry",
+      "owner": "ascending-llc",
+      "full_name": "ascending-llc/jarvis-registry",
+      "url": "https://github.com/ascending-llc/jarvis-registry",
+      "description": "Connect any AI copilot or autonomous agent to your enterprise tools \u2014 through a single, secure MCP/Agent gateway with built-in identity, access control, and full observability.",
+      "stars": 2356,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "code-graph-rag",
+      "owner": "vitali87",
+      "full_name": "vitali87/code-graph-rag",
+      "url": "https://github.com/vitali87/code-graph-rag",
+      "description": "The ultimate RAG for your monorepo. Query, understand, and edit multi-language codebases with the power of AI and knowledge graphs",
+      "stars": 2337,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "portaljs",
+      "owner": "datopian",
+      "full_name": "datopian/portaljs",
+      "url": "https://github.com/datopian/portaljs",
+      "description": "\ud83c\udf00 AI-native framework for building data portals. Scaffold a full portal from a brief and load datasets in minutes with agentic skills \u2014 any backend (CKAN, GitHub, Frictionless).",
+      "stars": 2323,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp2cli",
+      "owner": "knowsuchagency",
+      "full_name": "knowsuchagency/mcp2cli",
+      "url": "https://github.com/knowsuchagency/mcp2cli",
+      "description": "Turn any MCP, OpenAPI, or GraphQL server into a CLI \u2014 at runtime, with zero codegen",
+      "stars": 2307,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "korean-law-mcp",
+      "owner": "chrisryugj",
+      "full_name": "chrisryugj/korean-law-mcp",
+      "url": "https://github.com/chrisryugj/korean-law-mcp",
+      "description": "\ubc95\uc81c\ucc98 \uad6d\uac00\ubc95\ub839\uc815\ubcf4\ub97c LLM\uc5d0\uc11c \ubc14\ub85c \uc870\ud68c\ud558\ub294 MCP \uc11c\ubc84. \ubc95\ub839\u00b7\ud310\ub840\u00b7\uc870\ub840 \uac80\uc0c9\uacfc \uc778\uc6a9 \uac80\uc99d | MCP server for Korean law \u2014 search statutes, precedents, and ordinances, and verify citations",
+      "stars": 2255,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "js-reverse-mcp",
+      "owner": "zhizhuodemao",
+      "full_name": "zhizhuodemao/js-reverse-mcp",
+      "url": "https://github.com/zhizhuodemao/js-reverse-mcp",
+      "description": "AI Agent-first JS \u9006\u5411 MCP Server\uff1a\u6709\u5934 Chrome \u8c03\u8bd5\u3001\u65ad\u70b9\u3001\u7f51\u7edc/WebSocket \u5206\u6790\u3001Patchright \u53cd\u68c0\u6d4b\uff0c\u53ef\u9009 CloakBrowser\u3002",
+      "stars": 2252,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-server",
+      "owner": "financial-datasets",
+      "full_name": "financial-datasets/mcp-server",
+      "url": "https://github.com/financial-datasets/mcp-server",
+      "description": "An MCP server for interacting with the Financial Datasets stock market API.",
+      "stars": 2241,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcphub",
+      "owner": "samanhappy",
+      "full_name": "samanhappy/mcphub",
+      "url": "https://github.com/samanhappy/mcphub",
+      "description": "A unified hub for centrally managing and dynamically orchestrating multiple MCP servers/APIs into separate endpoints with flexible routing strategies.",
+      "stars": 2233,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-crawl4ai-rag",
+      "owner": "coleam00",
+      "full_name": "coleam00/mcp-crawl4ai-rag",
+      "url": "https://github.com/coleam00/mcp-crawl4ai-rag",
+      "description": "Web Crawling and RAG Capabilities for AI Agents and AI Coding Assistants",
+      "stars": 2220,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "paper-search-mcp",
+      "owner": "openags",
+      "full_name": "openags/paper-search-mcp",
+      "url": "https://github.com/openags/paper-search-mcp",
+      "description": "MCP, CLI, Skills for searching and downloading academic papers from multiple sources like arXiv, PubMed, bioRxiv, etc.",
+      "stars": 2216,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "Observal",
+      "owner": "Observal",
+      "full_name": "Observal/Observal",
+      "url": "https://github.com/Observal/Observal",
+      "description": "Observal is a local registry and analytics platform for your AI components.  Setup Observal, define the scope and share your Skills, MCPs and Agents.",
+      "stars": 2194,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp_excalidraw",
+      "owner": "yctimlin",
+      "full_name": "yctimlin/mcp_excalidraw",
+      "url": "https://github.com/yctimlin/mcp_excalidraw",
+      "description": "MCP server and Claude Code skill for Excalidraw \u2014 programmatic canvas toolkit to create, edit, and export diagrams via AI agents with real-time canvas sync.",
+      "stars": 2187,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "Unla",
+      "owner": "AmoyLab",
+      "full_name": "AmoyLab/Unla",
+      "url": "https://github.com/AmoyLab/Unla",
+      "description": "\ud83e\udde9 MCP Gateway - A lightweight gateway service that instantly transforms existing MCP Servers and APIs into MCP servers with zero code changes. Features Docker deployment and management UI, requiring no infrastructure modifications.",
+      "stars": 2178,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "docmd",
+      "owner": "docmd-io",
+      "full_name": "docmd-io/docmd",
+      "url": "https://github.com/docmd-io/docmd",
+      "description": "Build production-ready documentation from Markdown in seconds. No React, no bloat, just content.",
+      "stars": 2178,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "paperbanana",
+      "owner": "llmsresearch",
+      "full_name": "llmsresearch/paperbanana",
+      "url": "https://github.com/llmsresearch/paperbanana",
+      "description": "Open source implementation and extension of Google Research\u2019s PaperBanana for automated academic figures, diagrams, and research visuals, expanded to new domains like slide generation.",
+      "stars": 2168,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "dembrandt",
+      "owner": "dembrandt",
+      "full_name": "dembrandt/dembrandt",
+      "url": "https://github.com/dembrandt/dembrandt",
+      "description": "Extract any website\u2019s design system into tokens in seconds: logo, colors, typography, borders & more. One command.",
+      "stars": 2151,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-shrimp-task-manager",
+      "owner": "cjo4m06",
+      "full_name": "cjo4m06/mcp-shrimp-task-manager",
+      "url": "https://github.com/cjo4m06/mcp-shrimp-task-manager",
+      "description": "Shrimp Task Manager is a task tool built for AI Agents, emphasizing chain-of-thought, reflection, and style consistency. It converts natural language into structured dev tasks with dependency tracking and iterative refinement, enabling agent-like developer behavior in reasoning AI systems.",
+      "stars": 2136,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "DataDesigner",
+      "owner": "NVIDIA-NeMo",
+      "full_name": "NVIDIA-NeMo/DataDesigner",
+      "url": "https://github.com/NVIDIA-NeMo/DataDesigner",
+      "description": "\ud83c\udfa8 NeMo Data Designer: Generate high-quality synthetic data from scratch or from seed data.",
+      "stars": 2114,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "ios-simulator-mcp",
+      "owner": "joshuayoes",
+      "full_name": "joshuayoes/ios-simulator-mcp",
+      "url": "https://github.com/joshuayoes/ios-simulator-mcp",
+      "description": "MCP server for interacting with the iOS simulator",
+      "stars": 2110,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "apify-mcp-server",
+      "owner": "apify",
+      "full_name": "apify/apify-mcp-server",
+      "url": "https://github.com/apify/apify-mcp-server",
+      "description": "The Apify MCP server enables your AI agents to extract data from social media, search engines, maps, e-commerce sites, or any other website using thousands of ready-made scrapers, crawlers, and automation tools available on the Apify Store.",
+      "stars": 2107,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "AssetOpsBench",
+      "owner": "IBM",
+      "full_name": "IBM/AssetOpsBench",
+      "url": "https://github.com/IBM/AssetOpsBench",
+      "description": "AssetOpsBench - Industry 4.0: A unified benchmark and framework for building, orchestrating, and evaluating domain-specific AI agents for Industry 4.0 asset operations and maintenance, with 460+ scenarios, 5 specialist agents (IoT, FMSR, TSFM, Work Order,...), and multi-agent orchestration blueprints (MetaAgent, AgentHive) over MCP.",
+      "stars": 2057,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "figma-console-mcp",
+      "owner": "southleft",
+      "full_name": "southleft/figma-console-mcp",
+      "url": "https://github.com/southleft/figma-console-mcp",
+      "description": "Your design system as an API. Connect AI to Figma for extraction, creation, and debugging.",
+      "stars": 2021,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-cli",
+      "owner": "IBM",
+      "full_name": "IBM/mcp-cli",
+      "url": "https://github.com/IBM/mcp-cli",
+      "description": "",
+      "stars": 2000,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "lanhu-mcp",
+      "owner": "dsphper",
+      "full_name": "dsphper/lanhu-mcp",
+      "url": "https://github.com/dsphper/lanhu-mcp",
+      "description": "\u26a1 \u9700\u6c42\u5206\u6790\u6548\u7387\u63d0\u5347 200%\uff01\u5168\u7403\u9996\u4e2a\u4e3a AI \u7f16\u7a0b\u65f6\u4ee3\u8bbe\u8ba1\u7684\u56e2\u961f\u534f\u4f5c MCP \u670d\u52a1\u5668\uff0c\u81ea\u52a8\u5206\u6790\u9700\u6c42\u81ea\u52a8\u7f16\u5199\u524d\u540e\u7aef\u4ee3\u7801\uff0c\u4e0b\u8f7d\u5207\u56fe",
+      "stars": 1996,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-server-mysql",
+      "owner": "benborla",
+      "full_name": "benborla/mcp-server-mysql",
+      "url": "https://github.com/benborla/mcp-server-mysql",
+      "description": "A Model Context Protocol server that provides read-only access to MySQL databases. This server enables LLMs to inspect database schemas and execute read-only queries.",
+      "stars": 1964,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "contextplus",
+      "owner": "forloopcodes",
+      "full_name": "forloopcodes/contextplus",
+      "url": "https://github.com/forloopcodes/contextplus",
+      "description": "Semantic Intelligence for Large-Scale Engineering. Context+ is an MCP server designed for developers who demand 99% accuracy. By combining RAG, Tree-sitter AST, Spectral Clustering, and Obsidian-style linking, Context+ turns a massive codebase into a searchable, hierarchical feature graph.",
+      "stars": 1960,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "skybridge",
+      "owner": "alpic-ai",
+      "full_name": "alpic-ai/skybridge",
+      "url": "https://github.com/alpic-ai/skybridge",
+      "description": "Skybridge is a full-stack TypeScript framework for MCP Apps and ChatGPT Apps. Type-safe. React-powered. Platform-agnostic.",
+      "stars": 1942,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "open-cowork",
+      "owner": "OpenCoworkAI",
+      "full_name": "OpenCoworkAI/open-cowork",
+      "url": "https://github.com/OpenCoworkAI/open-cowork",
+      "description": "Open-source AI agent desktop app for Windows & macOS. One-click install Claude Code, MCP tools, and Skills \u2014 with sandbox isolation, multi-model support, and Feishu/Slack integration.",
+      "stars": 1877,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "agency-orchestrator",
+      "owner": "jnMetaCode",
+      "full_name": "jnMetaCode/agency-orchestrator",
+      "url": "https://github.com/jnMetaCode/agency-orchestrator",
+      "description": "\ud83d\ude80 One sentence \u2192 your one-person company of AI experts \u2192 complete deliverable in minutes. 267 CN + 184 EN + 5 more languages (ko/ru/pt-BR/id/ar) \u00b7 zero-code YAML \u00b7 auto-verified acceptance \u00b7 Web Studio / Desktop / Docker \u00b7 11 LLM providers (7 key-free). \u4e00\u53e5\u8bdd\u7ec4\u5efa\u4f60\u7684\u300c\u4e00\u4eba\u516c\u53f8\u300dAI \u4e13\u5bb6\u56e2\u961f\uff0c\u51e0\u5206\u949f\u4ea4\u4ed8\u5b8c\u6574\u65b9\u6848\uff1b\u9a8c\u6536\u81ea\u52a8\u6838\u9a8c\uff0c\u7f51\u9875 / \u684c\u9762 / Docker \u5168\u6e20\u9053\u3002",
+      "stars": 1856,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "opendia",
+      "owner": "aeonfun",
+      "full_name": "aeonfun/opendia",
+      "url": "https://github.com/aeonfun/opendia",
+      "description": "Connect your browser to AI models. Just use Dia on Chrome, Arc or Firefox.",
+      "stars": 1849,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "Dive",
+      "owner": "OpenAgentPlatform",
+      "full_name": "OpenAgentPlatform/Dive",
+      "url": "https://github.com/OpenAgentPlatform/Dive",
+      "description": "Dive is an open-source MCP Host Desktop Application that seamlessly integrates with any LLMs supporting function calling capabilities. \u2728",
+      "stars": 1802,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "pg-aiguide",
+      "owner": "timescale",
+      "full_name": "timescale/pg-aiguide",
+      "url": "https://github.com/timescale/pg-aiguide",
+      "description": "MCP server and Claude plugin for Postgres skills and documentation. Helps AI coding tools generate better PostgreSQL code.",
+      "stars": 1790,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "kubb",
+      "owner": "kubb-labs",
+      "full_name": "kubb-labs/kubb",
+      "url": "https://github.com/kubb-labs/kubb",
+      "description": "\ud83e\udde1 The meta framework for code generation. Automate OpenAPI to type-safe TypeScript, Zod, and TanStack Query with a modular, plugin-based engine.",
+      "stars": 1765,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "stock-api",
+      "owner": "zhangxiangliang",
+      "full_name": "zhangxiangliang/stock-api",
+      "url": "https://github.com/zhangxiangliang/stock-api",
+      "description": "\u67e5\u8be2 A \u80a1\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u4e0e\u573a\u5185\u57fa\u91d1\u884c\u60c5\uff0c\u5e76\u901a\u8fc7 Node.js\u3001\u6d4f\u89c8\u5668\u3001CLI \u6216 MCP \u5feb\u901f\u63a5\u5165\u3002",
+      "stars": 1762,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "davinci-resolve-mcp",
+      "owner": "samuelgursky",
+      "full_name": "samuelgursky/davinci-resolve-mcp",
+      "url": "https://github.com/samuelgursky/davinci-resolve-mcp",
+      "description": "MCP server integration for DaVinci Resolve Studio",
+      "stars": 1740,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "stock-sdk",
+      "owner": "chengzuopeng",
+      "full_name": "chengzuopeng/stock-sdk",
+      "url": "https://github.com/chengzuopeng/stock-sdk",
+      "description": "\u4e3a\u524d\u7aef\u8bbe\u8ba1\u7684\u65e0\u9700 Python\u3001\u65e0\u9700\u540e\u7aef\u670d\u52a1\u3001\u96f6\u4f9d\u8d56\u7684\u83b7\u53d6\u80a1\u7968\u6570\u636e JavaScript SDK\u3002",
+      "stars": 1735,
+      "license": "ISC",
+      "type": "mcp"
+    },
+    {
+      "name": "supermemory-mcp",
+      "owner": "supermemoryai",
+      "full_name": "supermemoryai/supermemory-mcp",
+      "url": "https://github.com/supermemoryai/supermemory-mcp",
+      "description": "Your memories are in ChatGPT... But nowhere else. Universal Memory MCP makes your memories available to every single LLM. No logins or paywall. One command to set it up.",
+      "stars": 1710,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "everything-claude-code-zh",
+      "owner": "xu-xiang",
+      "full_name": "xu-xiang/everything-claude-code-zh",
+      "url": "https://github.com/xu-xiang/everything-claude-code-zh",
+      "description": "everything-claude-code \u4e2d\u6587\u7ffb\u8bd1\u9879\u76ee\uff1a\u5b8c\u6574\u7684 Claude Code \u914d\u7f6e\u96c6\u5408\uff08agents, skills, hooks, commands, rules, MCPs\uff09\u3002\u6e90\u81ea Anthropic \u9ed1\u5ba2\u677e\u83b7\u80dc\u8005\u7684\u5b9e\u6218\u914d\u7f6e\uff0c\u52a9\u529b\u4e2d\u6587\u5de5\u7a0b\u5e08\u9ad8\u6548\u7406\u89e3\u4e0e\u4f7f\u7528 Claude Code\u3002",
+      "stars": 1708,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcp-brasil",
+      "owner": "Mcp-Brasil",
+      "full_name": "Mcp-Brasil/mcp-brasil",
+      "url": "https://github.com/Mcp-Brasil/mcp-brasil",
+      "description": "MCP Server para 70 APIs p\u00fablicas brasileiras",
+      "stars": 1682,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "n8n-mcp-server",
+      "owner": "leonardsellem",
+      "full_name": "leonardsellem/n8n-mcp-server",
+      "url": "https://github.com/leonardsellem/n8n-mcp-server",
+      "description": "MCP server that provides tools and resources for interacting with n8n API",
+      "stars": 1629,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "MeiGen-AI-Design-MCP",
+      "owner": "jau123",
+      "full_name": "jau123/MeiGen-AI-Design-MCP",
+      "url": "https://github.com/jau123/MeiGen-AI-Design-MCP",
+      "description": "Supports GPT Image 2, Seedance & ComfyUI, with a 1,400+ prompt library, carefully crafted hooks and a multi-task orchestration system",
+      "stars": 1593,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "KiCAD-MCP-Server",
+      "owner": "mixelpixx",
+      "full_name": "mixelpixx/KiCAD-MCP-Server",
+      "url": "https://github.com/mixelpixx/KiCAD-MCP-Server",
+      "description": "KiCAD MCP is a Model Context Protocol (MCP) implementation that enables Large Language Models (LLMs) like Claude to directly interact with KiCAD for printed circuit board design.",
+      "stars": 1583,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "ToolUniverse",
+      "owner": "mims-harvard",
+      "full_name": "mims-harvard/ToolUniverse",
+      "url": "https://github.com/mims-harvard/ToolUniverse",
+      "description": "Democratizing AI scientists with ToolUniverse",
+      "stars": 1580,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "LangAlpha",
+      "owner": "ginlix-ai",
+      "full_name": "ginlix-ai/LangAlpha",
+      "url": "https://github.com/ginlix-ai/LangAlpha",
+      "description": "Claude Code for Investing",
+      "stars": 1572,
+      "license": "Apache-2.0",
+      "type": "mcp"
+    },
+    {
+      "name": "datagouv-mcp",
+      "owner": "datagouv",
+      "full_name": "datagouv/datagouv-mcp",
+      "url": "https://github.com/datagouv/datagouv-mcp",
+      "description": "Official data.gouv.fr Model Context Protocol (MCP) server that allows AI chatbots to search, explore, and analyze datasets from the French national Open Data platform, directly through conversation.",
+      "stars": 1569,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "docs-mcp-server",
+      "owner": "arabold",
+      "full_name": "arabold/docs-mcp-server",
+      "url": "https://github.com/arabold/docs-mcp-server",
+      "description": "Grounded Docs MCP Server: Open-Source Alternative to Context7, Nia, and Ref.Tools",
+      "stars": 1554,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "mcpvault",
+      "owner": "bitbonsai",
+      "full_name": "bitbonsai/mcpvault",
+      "url": "https://github.com/bitbonsai/mcpvault",
+      "description": "A lightweight Model Context Protocol (MCP) server for safe Obsidian vault access",
+      "stars": 1554,
+      "license": "MIT",
+      "type": "mcp"
+    },
+    {
+      "name": "langchain",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/langchain",
+      "url": "https://github.com/langchain-ai/langchain",
+      "description": "The agent engineering platform.",
+      "stars": 142246,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "browser-use",
+      "owner": "browser-use",
+      "full_name": "browser-use/browser-use",
+      "url": "https://github.com/browser-use/browser-use",
+      "description": "\ud83c\udf10 Make websites accessible for AI agents. Automate tasks online with ease.",
+      "stars": 105865,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "deer-flow",
+      "owner": "bytedance",
+      "full_name": "bytedance/deer-flow",
+      "url": "https://github.com/bytedance/deer-flow",
+      "description": "An open-source long-horizon SuperAgent harness that researches, codes, and creates. With the help of sandboxes, memories, tools, skill, subagents and message gateway, it handles different levels of tasks that could take minutes to hours.",
+      "stars": 77511,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "LlamaFactory",
+      "owner": "hiyouga",
+      "full_name": "hiyouga/LlamaFactory",
+      "url": "https://github.com/hiyouga/LlamaFactory",
+      "description": "Unified Efficient Fine-Tuning of 100+ LLMs & VLMs (ACL 2024)",
+      "stars": 73420,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "MetaGPT",
+      "owner": "FoundationAgents",
+      "full_name": "FoundationAgents/MetaGPT",
+      "url": "https://github.com/FoundationAgents/MetaGPT",
+      "description": "\ud83c\udf1f The Multi-Agent Framework: First AI Software Company, Towards Natural Language Programming",
+      "stars": 69455,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "crewAI",
+      "owner": "crewAIInc",
+      "full_name": "crewAIInc/crewAI",
+      "url": "https://github.com/crewAIInc/crewAI",
+      "description": "Framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks.",
+      "stars": 55888,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "langgraph",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/langgraph",
+      "url": "https://github.com/langchain-ai/langgraph",
+      "description": "Build resilient agents.",
+      "stars": 37746,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "continue",
+      "owner": "continuedev",
+      "full_name": "continuedev/continue",
+      "url": "https://github.com/continuedev/continue",
+      "description": "open-source coding agent",
+      "stars": 35008,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "deepagents",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/deepagents",
+      "url": "https://github.com/langchain-ai/deepagents",
+      "description": "The batteries-included agent harness.",
+      "stars": 26609,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "haystack",
+      "owner": "deepset-ai",
+      "full_name": "deepset-ai/haystack",
+      "url": "https://github.com/deepset-ai/haystack",
+      "description": "Open-source AI orchestration framework for building context-engineered, production-ready LLM applications. Design modular pipelines and agent workflows with explicit control over retrieval, routing, memory, and generation. Built for scalable agents, RAG, multimodal applications, semantic search, and conversational systems.",
+      "stars": 25969,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "adk-python",
+      "owner": "google",
+      "full_name": "google/adk-python",
+      "url": "https://github.com/google/adk-python",
+      "description": "An open-source, code-first Python toolkit for building, evaluating, and deploying sophisticated AI agents with flexibility and control.",
+      "stars": 20822,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "pydantic-ai",
+      "owner": "pydantic",
+      "full_name": "pydantic/pydantic-ai",
+      "url": "https://github.com/pydantic/pydantic-ai",
+      "description": "AI Agent Framework, the Pydantic way",
+      "stars": 18696,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "langchainjs",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/langchainjs",
+      "url": "https://github.com/langchain-ai/langchainjs",
+      "description": "The agent engineering platform",
+      "stars": 17969,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "SuperAGI",
+      "owner": "TransformerOptimus",
+      "full_name": "TransformerOptimus/SuperAGI",
+      "url": "https://github.com/TransformerOptimus/SuperAGI",
+      "description": "<\u26a1\ufe0f> SuperAGI - A dev-first open source autonomous AI agent framework. Enabling developers to build, manage & run useful autonomous agents quickly and reliably.",
+      "stars": 17632,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-lightning",
+      "owner": "microsoft",
+      "full_name": "microsoft/agent-lightning",
+      "url": "https://github.com/microsoft/agent-lightning",
+      "description": "The absolute trainer to light up AI agents.",
+      "stars": 17408,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "web-ui",
+      "owner": "browser-use",
+      "full_name": "browser-use/web-ui",
+      "url": "https://github.com/browser-use/web-ui",
+      "description": "\ud83d\udda5\ufe0f Run AI Agent in your browser.",
+      "stars": 16229,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "browser-harness",
+      "owner": "browser-use",
+      "full_name": "browser-use/browser-harness",
+      "url": "https://github.com/browser-use/browser-harness",
+      "description": "Browser Harness | Self-healing harness that enables LLMs to complete any task.",
+      "stars": 16149,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "RD-Agent",
+      "owner": "microsoft",
+      "full_name": "microsoft/RD-Agent",
+      "url": "https://github.com/microsoft/RD-Agent",
+      "description": "Research and development (R&D) is crucial for the enhancement of industrial productivity, especially in the AI era, where the core aspects of R&D are mainly focused on data and models. We are committed to automating these high-value generic R&D processes through R&D-Agent, which lets AI drive data-driven AI. \ud83d\udd17https://aka.ms/RD-Agent-Tech-Report",
+      "stars": 13969,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "E2B",
+      "owner": "e2b-dev",
+      "full_name": "e2b-dev/E2B",
+      "url": "https://github.com/e2b-dev/E2B",
+      "description": "Open-source, secure environment with real-world tools for enterprise-grade agents.",
+      "stars": 13063,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "openwiki",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/openwiki",
+      "url": "https://github.com/langchain-ai/openwiki",
+      "description": "OpenWiki is a CLI that writes and maintains agent documentation for your codebase.",
+      "stars": 12714,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-framework",
+      "owner": "microsoft",
+      "full_name": "microsoft/agent-framework",
+      "url": "https://github.com/microsoft/agent-framework",
+      "description": "A framework for building, orchestrating and deploying AI agents and multi-agent workflows with support for Python and .NET.",
+      "stars": 12271,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "trae-agent",
+      "owner": "bytedance",
+      "full_name": "bytedance/trae-agent",
+      "url": "https://github.com/bytedance/trae-agent",
+      "description": "Trae Agent is an LLM-based agent for general purpose software engineering tasks.",
+      "stars": 11871,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "open-swe",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/open-swe",
+      "url": "https://github.com/langchain-ai/open-swe",
+      "description": "An Open-Source Asynchronous Coding Agent",
+      "stars": 10376,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "UFO",
+      "owner": "microsoft",
+      "full_name": "microsoft/UFO",
+      "url": "https://github.com/microsoft/UFO",
+      "description": "UFO\u00b3: Weaving the Digital Agent Galaxy",
+      "stars": 9297,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "rags",
+      "owner": "run-llama",
+      "full_name": "run-llama/rags",
+      "url": "https://github.com/run-llama/rags",
+      "description": "Build ChatGPT over your data, all with natural language",
+      "stars": 6546,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "call-center-ai",
+      "owner": "microsoft",
+      "full_name": "microsoft/call-center-ai",
+      "url": "https://github.com/microsoft/call-center-ai",
+      "description": "Send a phone call from AI agent, in an API call. Or, directly call the bot from the configured phone number!",
+      "stars": 6539,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agentic-inbox",
+      "owner": "cloudflare",
+      "full_name": "cloudflare/agentic-inbox",
+      "url": "https://github.com/cloudflare/agentic-inbox",
+      "description": "A self-hosted email client with an AI agent, running entirely on Cloudflare Workers",
+      "stars": 6455,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "fara",
+      "owner": "microsoft",
+      "full_name": "microsoft/fara",
+      "url": "https://github.com/microsoft/fara",
+      "description": "Fara1.5 \u2013 A family of frontier computer use agent models",
+      "stars": 6016,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agents",
+      "owner": "cloudflare",
+      "full_name": "cloudflare/agents",
+      "url": "https://github.com/cloudflare/agents",
+      "description": "Build and deploy AI Agents on Cloudflare",
+      "stars": 5293,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agents-cli",
+      "owner": "google",
+      "full_name": "google/agents-cli",
+      "url": "https://github.com/google/agents-cli",
+      "description": "The CLI and skills that turn any coding assistant into an expert at creating, evaluating, and deploying AI agents on Google Cloud.",
+      "stars": 5254,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "AgentVerse",
+      "owner": "OpenBMB",
+      "full_name": "OpenBMB/AgentVerse",
+      "url": "https://github.com/OpenBMB/AgentVerse",
+      "description": "\ud83e\udd16 AgentVerse \ud83e\ude90 is designed to facilitate the deployment of multiple LLM-based agents in various applications, which primarily provides two frameworks: task-solving and simulation",
+      "stars": 5084,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agent-governance-toolkit",
+      "owner": "microsoft",
+      "full_name": "microsoft/agent-governance-toolkit",
+      "url": "https://github.com/microsoft/agent-governance-toolkit",
+      "description": "AI Agent Governance Toolkit \u2014 Policy enforcement, zero-trust identity, execution sandboxing, and reliability engineering for autonomous AI agents. Covers 10/10 OWASP Agentic Top 10.",
+      "stars": 4874,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "logfire",
+      "owner": "pydantic",
+      "full_name": "pydantic/logfire",
+      "url": "https://github.com/pydantic/logfire",
+      "description": "AI observability platform for production LLM and agent systems.",
+      "stars": 4381,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "eve",
+      "owner": "vercel",
+      "full_name": "vercel/eve",
+      "url": "https://github.com/vercel/eve",
+      "description": "The Framework for Building Agents",
+      "stars": 3928,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "AI-Engineering-Coach",
+      "owner": "microsoft",
+      "full_name": "microsoft/AI-Engineering-Coach",
+      "url": "https://github.com/microsoft/AI-Engineering-Coach",
+      "description": "better agentic engineering",
+      "stars": 3390,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agentcore-samples",
+      "owner": "awslabs",
+      "full_name": "awslabs/agentcore-samples",
+      "url": "https://github.com/awslabs/agentcore-samples",
+      "description": "Amazon Bedrock Agentcore accelerates AI agents into production with the scale, reliability, and security, critical to real-world deployment.",
+      "stars": 3207,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "langgraphjs",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/langgraphjs",
+      "url": "https://github.com/langchain-ai/langgraphjs",
+      "description": "Framework to build resilient language agents as graphs.",
+      "stars": 3126,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-chat-ui",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/agent-chat-ui",
+      "url": "https://github.com/langchain-ai/agent-chat-ui",
+      "description": "\ud83e\udd9c\ud83d\udcac Web app for interacting with any LangGraph agent (PY & TS) via a chat interface.",
+      "stars": 3003,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "social-media-agent",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/social-media-agent",
+      "url": "https://github.com/langchain-ai/social-media-agent",
+      "description": "\ud83d\udcf2 An agent for sourcing, curating, and scheduling social media posts with human-in-the-loop.",
+      "stars": 2687,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-skills",
+      "owner": "supabase",
+      "full_name": "supabase/agent-skills",
+      "url": "https://github.com/supabase/agent-skills",
+      "description": "Agent Skills to help developers using AI agents with Supabase",
+      "stars": 2351,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "workflow",
+      "owner": "vercel",
+      "full_name": "vercel/workflow",
+      "url": "https://github.com/vercel/workflow",
+      "description": "Workflow SDK: Build durable, reliable, and observable apps and AI Agents in TypeScript",
+      "stars": 2229,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "open-computer-use",
+      "owner": "e2b-dev",
+      "full_name": "e2b-dev/open-computer-use",
+      "url": "https://github.com/e2b-dev/open-computer-use",
+      "description": "AI computer use powered by open source LLMs and E2B Desktop Sandbox",
+      "stars": 2157,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "genai-processors",
+      "owner": "google-gemini",
+      "full_name": "google-gemini/genai-processors",
+      "url": "https://github.com/google-gemini/genai-processors",
+      "description": "GenAI Processors is a lightweight Python library that enables efficient, parallel content processing.",
+      "stars": 2115,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "deepagentsjs",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/deepagentsjs",
+      "url": "https://github.com/langchain-ai/deepagentsjs",
+      "description": "The batteries included agent harness.",
+      "stars": 1424,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "tavily-python",
+      "owner": "tavily-ai",
+      "full_name": "tavily-ai/tavily-python",
+      "url": "https://github.com/tavily-ai/tavily-python",
+      "description": "The Tavily Python SDK allows for easy interaction with the Tavily API, offering the full range of our search, extract, crawl, map, and research functionalities directly from your Python programs. Easily integrate smart search, content extraction, and research capabilities into your applications, harnessing Tavily's powerful features.",
+      "stars": 1326,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "adk-js",
+      "owner": "google",
+      "full_name": "google/adk-js",
+      "url": "https://github.com/google/adk-js",
+      "description": "An open-source, code-first Typescript toolkit for building, evaluating, and deploying sophisticated AI agents with flexibility and control.",
+      "stars": 1310,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "ToRA",
+      "owner": "microsoft",
+      "full_name": "microsoft/ToRA",
+      "url": "https://github.com/microsoft/ToRA",
+      "description": "ToRA is a series of Tool-integrated Reasoning LLM Agents designed to solve challenging mathematical reasoning problems by interacting with tools [ICLR'24].",
+      "stars": 1118,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "RepoAgent",
+      "owner": "OpenBMB",
+      "full_name": "OpenBMB/RepoAgent",
+      "url": "https://github.com/OpenBMB/RepoAgent",
+      "description": "An LLM-powered repository agent designed to assist developers and teams in generating documentation and understanding repositories quickly.",
+      "stars": 1013,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "WindowsAgentArena",
+      "owner": "microsoft",
+      "full_name": "microsoft/WindowsAgentArena",
+      "url": "https://github.com/microsoft/WindowsAgentArena",
+      "description": "Windows Agent Arena (WAA) \ud83e\ude9f is a scalable OS platform for testing and benchmarking of multi-modal AI agents.",
+      "stars": 881,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "bux",
+      "owner": "browser-use",
+      "full_name": "browser-use/bux",
+      "url": "https://github.com/browser-use/bux",
+      "description": "Browser Use Box: a 24/7 Claude Code agent for Playwright-style browser automation with Browser Use Cloud, Telegram, and a real browser on any box you own.",
+      "stars": 408,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "OpenRCA",
+      "owner": "microsoft",
+      "full_name": "microsoft/OpenRCA",
+      "url": "https://github.com/microsoft/OpenRCA",
+      "description": "[ICLR'25] OpenRCA: Can Large Language Models Locate the Root Cause of Software Failures?",
+      "stars": 381,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "skills-for-copilot-studio",
+      "owner": "microsoft",
+      "full_name": "microsoft/skills-for-copilot-studio",
+      "url": "https://github.com/microsoft/skills-for-copilot-studio",
+      "description": "A skill for AI-coding tools to build and edit Microsoft Copilot Studio agents as YAML \u2014 with schema validation, templates, and AI-powered skills. Suited for Claude Code, GitHub Copilot CLI, and more.",
+      "stars": 368,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-auth-payments",
+      "owner": "langchain-ai",
+      "full_name": "langchain-ai/agent-auth-payments",
+      "url": "https://github.com/langchain-ai/agent-auth-payments",
+      "description": "fullstack chat agent with authentication, request credits and payments built in",
+      "stars": 197,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "TradingAgents",
+      "owner": "TauricResearch",
+      "full_name": "TauricResearch/TradingAgents",
+      "url": "https://github.com/TauricResearch/TradingAgents",
+      "description": "TradingAgents: Multi-Agents LLM Financial Trading Framework",
+      "stars": 93921,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agent-skills",
+      "owner": "addyosmani",
+      "full_name": "addyosmani/agent-skills",
+      "url": "https://github.com/addyosmani/agent-skills",
+      "description": "Production-grade engineering skills for AI coding agents.",
+      "stars": 79608,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "scientific-agent-skills",
+      "owner": "K-Dense-AI",
+      "full_name": "K-Dense-AI/scientific-agent-skills",
+      "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "description": "Turn any AI agent into an AI Scientist. The #1 Agent Skills library for science, used by 160,000+ scientists worldwide. 148 ready-to-use skills plus 100+ scientific databases covering biology, chemistry, medicine, and drug discovery. Compatible with Cursor, Claude Code, Codex, Pi, Antigravity, and the open Agent Skills standard.",
+      "stars": 31360,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agentmemory",
+      "owner": "rohitg00",
+      "full_name": "rohitg00/agentmemory",
+      "url": "https://github.com/rohitg00/agentmemory",
+      "description": "#1 Persistent memory for AI coding agents based on real-world benchmarks",
+      "stars": 25485,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "SWE-agent",
+      "owner": "SWE-agent",
+      "full_name": "SWE-agent/SWE-agent",
+      "url": "https://github.com/SWE-agent/SWE-agent",
+      "description": "SWE-agent takes a GitHub issue and tries to automatically fix it, using your LM of choice. It can also be employed for offensive cybersecurity or competitive coding challenges. [NeurIPS 2024]",
+      "stars": 19875,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "GenericAgent",
+      "owner": "lsdefine",
+      "full_name": "lsdefine/GenericAgent",
+      "url": "https://github.com/lsdefine/GenericAgent",
+      "description": "Self-evolving agent: grows skill tree from 3.3K-line seed, achieving full system control with 6x less token consumption",
+      "stars": 13519,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "Agent-S",
+      "owner": "simular-ai",
+      "full_name": "simular-ai/Agent-S",
+      "url": "https://github.com/simular-ai/Agent-S",
+      "description": "Agent S: an open agentic framework that uses computers like a human",
+      "stars": 12042,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agents",
+      "owner": "livekit",
+      "full_name": "livekit/agents",
+      "url": "https://github.com/livekit/agents",
+      "description": "A framework for building realtime voice AI agents \ud83e\udd16\ud83c\udf99\ufe0f\ud83d\udcf9",
+      "stars": 11455,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "AutoAgent",
+      "owner": "HKUDS",
+      "full_name": "HKUDS/AutoAgent",
+      "url": "https://github.com/HKUDS/AutoAgent",
+      "description": "\"AutoAgent: Fully-Automated and Zero-Code LLM Agent Framework\"",
+      "stars": 9513,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "MobileAgent",
+      "owner": "X-PLUG",
+      "full_name": "X-PLUG/MobileAgent",
+      "url": "https://github.com/X-PLUG/MobileAgent",
+      "description": "Mobile-Agent: The Powerful GUI Agent Family",
+      "stars": 8962,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "AppAgent",
+      "owner": "TencentQQGYLab",
+      "full_name": "TencentQQGYLab/AppAgent",
+      "url": "https://github.com/TencentQQGYLab/AppAgent",
+      "description": "AppAgent: Multimodal Agents as Smartphone Users, an LLM-based multimodal agent framework designed to operate smartphone apps.",
+      "stars": 6818,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agents",
+      "owner": "aiwaves-cn",
+      "full_name": "aiwaves-cn/agents",
+      "url": "https://github.com/aiwaves-cn/agents",
+      "description": "An Open-source Framework for Data-centric, Self-evolving Autonomous Language Agents",
+      "stars": 5950,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "mini-swe-agent",
+      "owner": "SWE-agent",
+      "full_name": "SWE-agent/mini-swe-agent",
+      "url": "https://github.com/SWE-agent/mini-swe-agent",
+      "description": "The 100 line AI agent that solves GitHub issues or helps you in your command line. Radically simple, no huge configs, no giant monorepo\u2014but scores >74% on SWE-bench verified!",
+      "stars": 5939,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agentops",
+      "owner": "AgentOps-AI",
+      "full_name": "AgentOps-AI/agentops",
+      "url": "https://github.com/AgentOps-AI/agentops",
+      "description": "Python SDK for AI agent monitoring, LLM cost tracking, benchmarking, and more. Integrates with most LLMs and agent frameworks including CrewAI, Agno, OpenAI Agents SDK, Langchain, Autogen, AG2, and CamelAI",
+      "stars": 5719,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "OpenAgents",
+      "owner": "xlang-ai",
+      "full_name": "xlang-ai/OpenAgents",
+      "url": "https://github.com/xlang-ai/OpenAgents",
+      "description": "[COLM 2024] OpenAgents: An Open Platform for Language Agents in the Wild",
+      "stars": 4849,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "OpenAgentsControl",
+      "owner": "darrenhinde",
+      "full_name": "darrenhinde/OpenAgentsControl",
+      "url": "https://github.com/darrenhinde/OpenAgentsControl",
+      "description": "AI agent framework for plan-first development workflows with approval-based execution. Multi-language support (TypeScript, Python, Go, Rust) with automatic testing, code review, and validation built for OpenCode",
+      "stars": 4608,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "ai-agents-from-scratch",
+      "owner": "pguso",
+      "full_name": "pguso/ai-agents-from-scratch",
+      "url": "https://github.com/pguso/ai-agents-from-scratch",
+      "description": "Demystify AI agents by building them yourself. Local LLMs, no black boxes, real understanding of function calling, memory, and ReAct patterns.",
+      "stars": 4411,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-service-toolkit",
+      "owner": "JoshuaC215",
+      "full_name": "JoshuaC215/agent-service-toolkit",
+      "url": "https://github.com/JoshuaC215/agent-service-toolkit",
+      "description": "Full toolkit for running an AI agent service built with LangGraph, FastAPI and Streamlit",
+      "stars": 4382,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "ms-agent",
+      "owner": "modelscope",
+      "full_name": "modelscope/ms-agent",
+      "url": "https://github.com/modelscope/ms-agent",
+      "description": "MS-Agent: a lightweight framework to empower agentic execution of complex tasks",
+      "stars": 4336,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "micro-agent",
+      "owner": "BuilderIO",
+      "full_name": "BuilderIO/micro-agent",
+      "url": "https://github.com/BuilderIO/micro-agent",
+      "description": "An AI agent that writes (actually useful) code for you",
+      "stars": 4316,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "openagents",
+      "owner": "openagents-org",
+      "full_name": "openagents-org/openagents",
+      "url": "https://github.com/openagents-org/openagents",
+      "description": "OpenAgents - AI Agent Networks for Open Collaboration",
+      "stars": 3905,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "AgentBench",
+      "owner": "THUDM",
+      "full_name": "THUDM/AgentBench",
+      "url": "https://github.com/THUDM/AgentBench",
+      "description": "A Comprehensive Benchmark to Evaluate LLMs as Agents (ICLR'24)",
+      "stars": 3586,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "ii-agent",
+      "owner": "Intelligent-Internet",
+      "full_name": "Intelligent-Internet/ii-agent",
+      "url": "https://github.com/Intelligent-Internet/ii-agent",
+      "description": "II-Agent: a new open-source framework to build and deploy intelligent agents",
+      "stars": 3367,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "llm-wiki-agent",
+      "owner": "SamurAIGPT",
+      "full_name": "SamurAIGPT/llm-wiki-agent",
+      "url": "https://github.com/SamurAIGPT/llm-wiki-agent",
+      "description": "A personal knowledge base that builds and maintains itself. Drop in sources \u2014 Claude (or Codex/Gemini) reads them, extracts knowledge, and maintains a persistent interlinked wiki. Works with Claude Code, Codex, OpenCode, Gemini CLI. No API key needed.",
+      "stars": 3235,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "mercury-agent",
+      "owner": "cosmicstack-labs",
+      "full_name": "cosmicstack-labs/mercury-agent",
+      "url": "https://github.com/cosmicstack-labs/mercury-agent",
+      "description": "Soul-driven AI agent with permission-hardened tools, token budgets, and multi-channel access. Runs 24/7 from CLI or Telegram.",
+      "stars": 2952,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "teaql-agent-kit",
+      "owner": "teaql",
+      "full_name": "teaql/teaql-agent-kit",
+      "url": "https://github.com/teaql/teaql-agent-kit",
+      "description": "Deterministic execution for non-deterministic AI.",
+      "stars": 2800,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "open-agent-sdk-typescript",
+      "owner": "codeany-ai",
+      "full_name": "codeany-ai/open-agent-sdk-typescript",
+      "url": "https://github.com/codeany-ai/open-agent-sdk-typescript",
+      "description": "Agent-SDK without CLI dependencies, as an alternative to claude-agent-sdk, completely open source",
+      "stars": 2729,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "OmAgent",
+      "owner": "om-ai-lab",
+      "full_name": "om-ai-lab/OmAgent",
+      "url": "https://github.com/om-ai-lab/OmAgent",
+      "description": "[EMNLP-2024] Build multimodal language agents for fast prototype and production",
+      "stars": 2663,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agentic-context-engine",
+      "owner": "kayba-ai",
+      "full_name": "kayba-ai/agentic-context-engine",
+      "url": "https://github.com/kayba-ai/agentic-context-engine",
+      "description": "\ud83e\udde0 Make your agents learn from experience. Now available as a hosted solution at kayba.ai",
+      "stars": 2534,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "magentic",
+      "owner": "jackmpcollins",
+      "full_name": "jackmpcollins/magentic",
+      "url": "https://github.com/jackmpcollins/magentic",
+      "description": "Seamlessly integrate LLMs as Python functions",
+      "stars": 2413,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agentUniverse",
+      "owner": "agentuniverse-ai",
+      "full_name": "agentuniverse-ai/agentUniverse",
+      "url": "https://github.com/agentuniverse-ai/agentUniverse",
+      "description": "agentUniverse is a LLM multi-agent framework that allows developers to easily build multi-agent applications.",
+      "stars": 2309,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "obsidian-agent-client",
+      "owner": "RAIT-09",
+      "full_name": "RAIT-09/obsidian-agent-client",
+      "url": "https://github.com/RAIT-09/obsidian-agent-client",
+      "description": "Bring AI agents into Obsidian via Agent Client Protocol (ACP), such as Claude Code, Codex and Gemini CLI.",
+      "stars": 2291,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "lagent",
+      "owner": "InternLM",
+      "full_name": "InternLM/lagent",
+      "url": "https://github.com/InternLM/lagent",
+      "description": "A lightweight framework for building LLM-based agents",
+      "stars": 2270,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "Agentless",
+      "owner": "OpenAutoCoder",
+      "full_name": "OpenAutoCoder/Agentless",
+      "url": "https://github.com/OpenAutoCoder/Agentless",
+      "description": "Agentless\ud83d\udc31:  an agentless approach to automatically solve software development problems",
+      "stars": 2084,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-ui",
+      "owner": "agno-agi",
+      "full_name": "agno-agi/agent-ui",
+      "url": "https://github.com/agno-agi/agent-ui",
+      "description": "A modern chat interface for AI agents built with Next.js, Tailwind CSS, and TypeScript.",
+      "stars": 1806,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "react-agent",
+      "owner": "eylonmiz",
+      "full_name": "eylonmiz/react-agent",
+      "url": "https://github.com/eylonmiz/react-agent",
+      "description": "The open-source React.js Autonomous LLM Agent",
+      "stars": 1653,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "youtube-automation-agent",
+      "owner": "darkzOGx",
+      "full_name": "darkzOGx/youtube-automation-agent",
+      "url": "https://github.com/darkzOGx/youtube-automation-agent",
+      "description": "\ud83c\udfac Fully automated YouTube channel management with AI agents. Creates, optimizes & publishes videos 24/7. Works with FREE Gemini API or OpenAI. No coding required!",
+      "stars": 1646,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "Agently",
+      "owner": "AgentEra",
+      "full_name": "AgentEra/Agently",
+      "url": "https://github.com/AgentEra/Agently",
+      "description": "[GenAI Application Development Framework]  \ud83d\ude80 Build GenAI application quick and easy \ud83d\udcac Easy to interact with GenAI agent in code using structure data and chained-calls syntax \ud83e\udde9 Use Event-Driven Flow *TriggerFlow* to manage complex GenAI working logic \ud83d\udd00 Switch to any model without rewrite application code",
+      "stars": 1628,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "MLE-agent",
+      "owner": "MLSysOps",
+      "full_name": "MLSysOps/MLE-agent",
+      "url": "https://github.com/MLSysOps/MLE-agent",
+      "description": "\ud83e\udd16 MLE-Agent: Your intelligent companion for seamless AI engineering and research. \ud83d\udd0d Integrate with arxiv and paper with code to provide better code/research plans \ud83e\uddf0 OpenAI, Anthropic, Gemini, Ollama, etc supported. :fireworks: Code RAG",
+      "stars": 1565,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "AgentEvolver",
+      "owner": "modelscope",
+      "full_name": "modelscope/AgentEvolver",
+      "url": "https://github.com/modelscope/AgentEvolver",
+      "description": "AgentEvolver: Towards Efficient Self-Evolving Agent System",
+      "stars": 1499,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "sandbox-agent",
+      "owner": "rivet-dev",
+      "full_name": "rivet-dev/sandbox-agent",
+      "url": "https://github.com/rivet-dev/sandbox-agent",
+      "description": "Run Coding Agents in Sandboxes. Control Them Over HTTP. Supports Claude Code, Codex, OpenCode, and Amp.",
+      "stars": 1495,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agent-protocol",
+      "owner": "agi-inc",
+      "full_name": "agi-inc/agent-protocol",
+      "url": "https://github.com/agi-inc/agent-protocol",
+      "description": "Common interface for interacting with AI agents. The protocol is tech stack agnostic - you can use it with any framework for building agents.",
+      "stars": 1462,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agentql",
+      "owner": "tinyfish-io",
+      "full_name": "tinyfish-io/agentql",
+      "url": "https://github.com/tinyfish-io/agentql",
+      "description": "AgentQL is a suite of tools for connecting your AI to the web. Featuring a query language and Playwright integrations for interacting with elements and extracting data quickly, precisely, and at scale. Includes REST API, Python and JavaScript SDKs, browser debugger.",
+      "stars": 1429,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-apprenticeship",
+      "owner": "ray-r-ren",
+      "full_name": "ray-r-ren/agent-apprenticeship",
+      "url": "https://github.com/ray-r-ren/agent-apprenticeship",
+      "description": "The living ecosystem where AI agents complete tasks through workflow loops, improve through iterative execution, are evaluated by mentor agents or humans in the loop, and turn completed work into reusable work experience and data to improve future agents.",
+      "stars": 1322,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "intellagent",
+      "owner": "plurai-ai",
+      "full_name": "plurai-ai/intellagent",
+      "url": "https://github.com/plurai-ai/intellagent",
+      "description": "A framework for comprehensive diagnosis and optimization of agents using simulated, realistic synthetic interactions",
+      "stars": 1254,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "world2agent",
+      "owner": "machinepulse-ai",
+      "full_name": "machinepulse-ai/world2agent",
+      "url": "https://github.com/machinepulse-ai/world2agent",
+      "description": "World2Agent(W2A) is an open protocol that standardizes how Al agents perceive the real world.",
+      "stars": 1244,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "CogAgent",
+      "owner": "zai-org",
+      "full_name": "zai-org/CogAgent",
+      "url": "https://github.com/zai-org/CogAgent",
+      "description": "An open-sourced end-to-end VLM-based GUI Agent",
+      "stars": 1189,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "Xcode-Build-Optimization-Agent-Skill",
+      "owner": "AvdLee",
+      "full_name": "AvdLee/Xcode-Build-Optimization-Agent-Skill",
+      "url": "https://github.com/AvdLee/Xcode-Build-Optimization-Agent-Skill",
+      "description": "An Agent Skill helping you to optimize Xcode incremental and clean builds by running benchmarks and optimizing build settings.",
+      "stars": 1179,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "AgentSociety",
+      "owner": "tsinghua-fib-lab",
+      "full_name": "tsinghua-fib-lab/AgentSociety",
+      "url": "https://github.com/tsinghua-fib-lab/AgentSociety",
+      "description": "AgentSociety 2 is a modern, LLM-native agent simulation platform designed for social science research and experimental design. It provides a flexible framework for creating and managing intelligent agents in simulated environments.",
+      "stars": 1149,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "wuying-agentbay-sdk",
+      "owner": "agentbay-ai",
+      "full_name": "agentbay-ai/wuying-agentbay-sdk",
+      "url": "https://github.com/agentbay-ai/wuying-agentbay-sdk",
+      "description": "The Cloud Sandbox Built for AI Agents",
+      "stars": 1142,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "auto-re-agent",
+      "owner": "Dryxio",
+      "full_name": "Dryxio/auto-re-agent",
+      "url": "https://github.com/Dryxio/auto-re-agent",
+      "description": "Open-source AI reverse-engineering agent using Ghidra and LLMs to reconstruct and validate C/C++ functions from binaries.",
+      "stars": 1139,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "sgr-agent-core",
+      "owner": "vamplabAI",
+      "full_name": "vamplabAI/sgr-agent-core",
+      "url": "https://github.com/vamplabAI/sgr-agent-core",
+      "description": "Schema-Guided Reasoning (SGR) has agentic system design created by neuraldeep community",
+      "stars": 1112,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "LuaN1aoAgent",
+      "owner": "SanMuzZzZz",
+      "full_name": "SanMuzZzZz/LuaN1aoAgent",
+      "url": "https://github.com/SanMuzZzZz/LuaN1aoAgent",
+      "description": "LuaN1aoAgent is a cognitive-driven, fully autonomous AI penetration testing agent powered by dual-graph reasoning. It is developed by the Intelligent Offensive and Defensive Security Team led by Professor Lu Hui, Dean of the Institute of Cyberspace Security at Guangzhou University.",
+      "stars": 1110,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agent-sop",
+      "owner": "strands-agents",
+      "full_name": "strands-agents/agent-sop",
+      "url": "https://github.com/strands-agents/agent-sop",
+      "description": "Natural language workflows that enable AI agents to perform complex, multi-step tasks with consistency and reliability.",
+      "stars": 1107,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agentica",
+      "owner": "wrtnlabs",
+      "full_name": "wrtnlabs/agentica",
+      "url": "https://github.com/wrtnlabs/agentica",
+      "description": "TypeScript AI AI Function Calling Framework enhanced by compiler skills.",
+      "stars": 1040,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agentsys",
+      "owner": "agent-sh",
+      "full_name": "agent-sh/agentsys",
+      "url": "https://github.com/agent-sh/agentsys",
+      "description": "AI writes code. This automates everything else \u00b7 24 plugins \u00b7 49 agents \u00b7 44 skills \u00b7 for Claude Code, OpenCode, Codex, Cursor, Kiro.",
+      "stars": 896,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "Photo-agents",
+      "owner": "jmerelnyc",
+      "full_name": "jmerelnyc/Photo-agents",
+      "url": "https://github.com/jmerelnyc/Photo-agents",
+      "description": "Autonomous self-evolving agents. Vision-grounded layered memory and self-written skills for LLM agents that operate your computer.",
+      "stars": 832,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "sleepless-agent",
+      "owner": "context-machine-lab",
+      "full_name": "context-machine-lab/sleepless-agent",
+      "url": "https://github.com/context-machine-lab/sleepless-agent",
+      "description": "\ud83e\udd16 24/7 AI agent that maximizes Claude Code Pro usage via Slack. Auto-processes tasks, manages isolated workspaces, creates Git commits/PRs, and optimizes day/night usage thresholds.",
+      "stars": 826,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "atomic-agent",
+      "owner": "AtomicBot-ai",
+      "full_name": "AtomicBot-ai/atomic-agent",
+      "url": "https://github.com/AtomicBot-ai/atomic-agent",
+      "description": "Local First Ai Agent. Optimized for Local Ai models. Long context window. Proper tools callings. Runs privately on your device.",
+      "stars": 750,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "Jumping-Agent-platform",
+      "owner": "answeryt",
+      "full_name": "answeryt/Jumping-Agent-platform",
+      "url": "https://github.com/answeryt/Jumping-Agent-platform",
+      "description": "Build your own AI agent through gameplay.",
+      "stars": 684,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "ash-agents",
+      "owner": "EthanXiang777",
+      "full_name": "EthanXiang777/ash-agents",
+      "url": "https://github.com/EthanXiang777/ash-agents",
+      "description": "A swarm of disposable agents for unattributable web interaction",
+      "stars": 644,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "Agently-Daily-News-Collector",
+      "owner": "AgentEra",
+      "full_name": "AgentEra/Agently-Daily-News-Collector",
+      "url": "https://github.com/AgentEra/Agently-Daily-News-Collector",
+      "description": "An open-source LLM based automatically daily news collecting workflow showcase powered by Agently AI application development framework.",
+      "stars": 632,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agentscope-studio",
+      "owner": "agentscope-ai",
+      "full_name": "agentscope-ai/agentscope-studio",
+      "url": "https://github.com/agentscope-ai/agentscope-studio",
+      "description": "A development-oriented visualization toolkit",
+      "stars": 606,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agentos",
+      "owner": "framerslab",
+      "full_name": "framerslab/agentos",
+      "url": "https://github.com/framerslab/agentos",
+      "description": "TypeScript AI agent framework: cognitive memory, runtime tool forging, multi-agent orchestration, 11 LLM providers.",
+      "stars": 601,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "Open-AgentRL",
+      "owner": "Gen-Verse",
+      "full_name": "Gen-Verse/Open-AgentRL",
+      "url": "https://github.com/Gen-Verse/Open-AgentRL",
+      "description": "RLAnything (ICML 2026) & AutoTool (ICML 2026), DemyAgent: Open-Source RL for LLMs and Agentic Scenarios",
+      "stars": 588,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "Agent-HTML",
+      "owner": "Sayhi-bzb",
+      "full_name": "Sayhi-bzb/Agent-HTML",
+      "url": "https://github.com/Sayhi-bzb/Agent-HTML",
+      "description": "You don't need a chat ui but a canvas with ai.",
+      "stars": 542,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "meta-agents-research-environments",
+      "owner": "facebookresearch",
+      "full_name": "facebookresearch/meta-agents-research-environments",
+      "url": "https://github.com/facebookresearch/meta-agents-research-environments",
+      "description": "Meta Agents Research Environments is a comprehensive platform designed to evaluate AI agents in dynamic, realistic scenarios. Unlike static benchmarks, this platform introduces evolving environments where agents must adapt their strategies as new information becomes available, mirroring real-world challenges.",
+      "stars": 528,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "Yunjue-Agent",
+      "owner": "YunjueTech",
+      "full_name": "YunjueTech/Yunjue-Agent",
+      "url": "https://github.com/YunjueTech/Yunjue-Agent",
+      "description": "Yunjue Agent: A Fully Reproducible, Zero-Start In-Situ Self-Evolving Agent System for Open-Ended Tasks",
+      "stars": 520,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "marvis-risk-agent",
+      "owner": "eddyzzl",
+      "full_name": "eddyzzl/marvis-risk-agent",
+      "url": "https://github.com/eddyzzl/marvis-risk-agent",
+      "description": "MARVIS-Agent: all-purpose credit risk agent for model development, validation, data processing, feature engineering, and strategy workflows.",
+      "stars": 511,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-slack",
+      "owner": "stablyai",
+      "full_name": "stablyai/agent-slack",
+      "url": "https://github.com/stablyai/agent-slack",
+      "description": "Slack automation CLI for AI agents",
+      "stars": 459,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agentsilex",
+      "owner": "howl-anderson",
+      "full_name": "howl-anderson/agentsilex",
+      "url": "https://github.com/howl-anderson/agentsilex",
+      "description": "A transparent, minimal, and hackable agent framework. ~300 lines of readable code. Full control, no magic.",
+      "stars": 452,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "better-agent-terminal",
+      "owner": "tony1223",
+      "full_name": "tony1223/better-agent-terminal",
+      "url": "https://github.com/tony1223/better-agent-terminal",
+      "description": "Multi-workspace terminal aggregator with Claude Code AI integration",
+      "stars": 446,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "GeoAgent",
+      "owner": "opengeos",
+      "full_name": "opengeos/GeoAgent",
+      "url": "https://github.com/opengeos/GeoAgent",
+      "description": "A multimodal AI agent for geospatial data analysis and interactive visualization",
+      "stars": 434,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "accessibility-agents",
+      "owner": "Community-Access",
+      "full_name": "Community-Access/accessibility-agents",
+      "url": "https://github.com/Community-Access/accessibility-agents",
+      "description": "Accessibility review agents for Claude Code, GitHub Copilot, and Claude Desktop. Eleven specialists that enforce WCAG 2.2 AA compliance so AI coding tools stop generating inaccessible code.",
+      "stars": 363,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-vibes",
+      "owner": "funny-vibes",
+      "full_name": "funny-vibes/agent-vibes",
+      "url": "https://github.com/funny-vibes/agent-vibes",
+      "description": "Unified Agent Gateway \u2014 Enables Claude Code CLI and Cursor IDE to use free AI backends (Antigravity, Codex) through protocol translation",
+      "stars": 343,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "lang-agent",
+      "owner": "cqzyys",
+      "full_name": "cqzyys/lang-agent",
+      "url": "https://github.com/cqzyys/lang-agent",
+      "description": "\u57fa\u4e8eLangChain\u548cLangGraph\u5b9e\u73b0\u7684AI Agent\u914d\u7f6e\u5e73\u53f0",
+      "stars": 332,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "writing-agent",
+      "owner": "dongbeixiaohuo",
+      "full_name": "dongbeixiaohuo/writing-agent",
+      "url": "https://github.com/dongbeixiaohuo/writing-agent",
+      "description": "\ud83d\ude80 \u4e00\u4e2a\u57fa\u4e8e Claude Code (Skills + Subagents) \u7684\u201c\u53bbAI\u5473\u201d\u5168\u6808\u5199\u4f5c\u7cfb\u7edf\u3002\u4e0d\u4ec5\u9632\u5957\u8def\uff0c\u66f4\u901a\u8fc7\u4e13\u5c5e\u89c4\u5219\u5f3a\u5236\u6ce8\u5165\u4eba\u7c7b\u89c2\u70b9\u4e0e\u7ec6\u8282\uff0c\u642d\u914d\u8bfb\u8005\u6d4b\u8bd5\u8bc4\u4f30\u4e0e\u81ea\u52a8\u56fe\u6587\u6392\u7248\u3002\u5168\u9762\u652f\u6301 DeepSeek / \u667a\u8c31GLM / MiniMax \u7b49\u56fd\u4ea7\u4f4e\u6210\u672c\u5927\u6a21\u578b\uff0c\u63d0\u4f9b\u4ece\u9009\u9898\u3001\u98ce\u683c\u5efa\u6a21\u5230\u5ba1\u7a3f\u53d1\u5e03\u7684\u9ad8\u7ef4\u5168\u81ea\u52a8\u5199\u4f5c\u5de5\u4f5c\u6d41\u3002",
+      "stars": 328,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "TapeAgents",
+      "owner": "ServiceNow",
+      "full_name": "ServiceNow/TapeAgents",
+      "url": "https://github.com/ServiceNow/TapeAgents",
+      "description": "TapeAgents is a framework that facilitates all stages of the LLM Agent development lifecycle",
+      "stars": 318,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "AgentVerse",
+      "owner": "Peiiii",
+      "full_name": "Peiiii/AgentVerse",
+      "url": "https://github.com/Peiiii/AgentVerse",
+      "description": "Multi-Agent Collaboration  Platform\u2728",
+      "stars": 315,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agentrove",
+      "owner": "Mng-dev-ai",
+      "full_name": "Mng-dev-ai/agentrove",
+      "url": "https://github.com/Mng-dev-ai/agentrove",
+      "description": "Self-hosted AI coding workspace for Claude Code, Codex, Copilot, Cursor, Grok and OpenCode, with ACP-powered sandboxes",
+      "stars": 296,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "debug-agent",
+      "owner": "millionco",
+      "full_name": "millionco/debug-agent",
+      "url": "https://github.com/millionco/debug-agent",
+      "description": "Debugging skill for AI agents",
+      "stars": 291,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "Open-AI-Design-Agent",
+      "owner": "Anil-matcha",
+      "full_name": "Anil-matcha/Open-AI-Design-Agent",
+      "url": "https://github.com/Anil-matcha/Open-AI-Design-Agent",
+      "description": "Open-source AI design agent \u2014 alternative to Lovart AI, Runway Agent, Luma Labs Agent, Krea Agent, Pika Agent, Galileo AI, Magic Patterns. Autonomous multi-step creative for posters, social, brand kits, ad creatives, and video. Free, MIT-licensed, self-hosted.",
+      "stars": 286,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "LangChain-ReAct-Agent",
+      "owner": "lhh737",
+      "full_name": "lhh737/LangChain-ReAct-Agent",
+      "url": "https://github.com/lhh737/LangChain-ReAct-Agent",
+      "description": "\u57fa\u4e8e LangChain/LangGraph \u7684 ReAct Agent \uff0c\u7ed3\u5408 RAG\u3001\u5de5\u5177\u8c03\u7528\u4e0e Streamlit \u754c\u9762\uff0c\u9762\u5411\u667a\u80fd\u5ba2\u670d\u4e0e\u62a5\u544a\u751f\u6210\u573a\u666f\u3002",
+      "stars": 275,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "VisualAgentBench",
+      "owner": "THUDM",
+      "full_name": "THUDM/VisualAgentBench",
+      "url": "https://github.com/THUDM/VisualAgentBench",
+      "description": "Towards Large Multimodal Models as Visual Foundation Agents",
+      "stars": 271,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "self-improving-agents",
+      "owner": "BetterForAll",
+      "full_name": "BetterForAll/self-improving-agents",
+      "url": "https://github.com/BetterForAll/self-improving-agents",
+      "description": "Self-Improving Agents -- A Progression Four levels of self-improving code agents, from the simplest loop to a full adversarial arena with self-modifying agents. Each level adds one key idea.",
+      "stars": 267,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "claude-007-agents",
+      "owner": "avivl",
+      "full_name": "avivl/claude-007-agents",
+      "url": "https://github.com/avivl/claude-007-agents",
+      "description": "\ud83e\udd16 A unified AI agent orchestration system featuring 10's of specialized agents across 14 categories for modern software development. Built with advanced coordination intelligence, resilience engineering, and structured logging   capabilities.",
+      "stars": 264,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "FindJobs-Agent",
+      "owner": "he-yufeng",
+      "full_name": "he-yufeng/FindJobs-Agent",
+      "url": "https://github.com/he-yufeng/FindJobs-Agent",
+      "description": "LLM-powered toolkit for skill analysis, AI interviews, resume scoring, and job structuring. Automates professional skill taxonomy and interview processes with adaptive difficulty.",
+      "stars": 254,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-inspect",
+      "owner": "rajudandigam",
+      "full_name": "rajudandigam/agent-inspect",
+      "url": "https://github.com/rajudandigam/agent-inspect",
+      "description": "Local execution trees for TypeScript AI agents.  agent-inspect helps you understand what happened inside an AI agent run \u2014 locally. It turns manual steps, tool calls, LLM calls, structured logs, failures, durations, and run metadata into readable execution trees you can inspect from the terminal.  It is built for TypeScript/Node.js developers..",
+      "stars": 243,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "Cyrene-Agent",
+      "owner": "Playa-0v0",
+      "full_name": "Playa-0v0/Cyrene-Agent",
+      "url": "https://github.com/Playa-0v0/Cyrene-Agent",
+      "description": "Live2D \u684c\u9762Agent (Electron + TS) \u2014 Cyrene from Honkai: Star Rail. Chat, emotional interaction, personalized memory.",
+      "stars": 241,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agents-aea",
+      "owner": "fetchai",
+      "full_name": "fetchai/agents-aea",
+      "url": "https://github.com/fetchai/agents-aea",
+      "description": "A framework for autonomous economic agent (AEA) development",
+      "stars": 239,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "AgentPoison",
+      "owner": "AI-secure",
+      "full_name": "AI-secure/AgentPoison",
+      "url": "https://github.com/AI-secure/AgentPoison",
+      "description": "[NeurIPS 2024] Official implementation for \"AgentPoison: Red-teaming LLM Agents via Memory or Knowledge Base Backdoor Poisoning\"",
+      "stars": 230,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "sematext-agent-docker",
+      "owner": "sematext",
+      "full_name": "sematext/sematext-agent-docker",
+      "url": "https://github.com/sematext/sematext-agent-docker",
+      "description": "Sematext Docker Agent - host + container metrics, logs & event collector",
+      "stars": 208,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "shopkeeper-agent",
+      "owner": "didilili",
+      "full_name": "didilili/shopkeeper-agent",
+      "url": "https://github.com/didilili/shopkeeper-agent",
+      "description": "\ud83d\udcca \u7535\u5546\u6570\u4ed3\u667a\u80fd\u95ee\u6570 AI Agent\uff0c\u6700\u9002\u5408\u7528\u4e8e\u7cfb\u7edf\u5b66\u4e60 LangGraph \u7684\u5b9e\u6218\u9879\u76ee\uff1a\u57fa\u4e8e LangGraph\u3001FastAPI\u3001Qdrant\u3001Elasticsearch\u3001MySQL \u4e0e React\uff0c\u5b8c\u6574\u5b9e\u73b0\u5143\u6570\u636e\u77e5\u8bc6\u5e93\u3001\u6df7\u5408\u68c0\u7d22\u3001\u81ea\u7136\u8bed\u8a00\u751f\u6210 NL2SQL \u751f\u6210\u6821\u9a8c\u3001SQL \u6267\u884c\u4e0e\u6d41\u5f0f\u67e5\u8be2\u5c55\u793a\u3002\u524d\u540e\u7aef\u5b8c\u6574\u4ee3\u7801\u5168\u6808\u53ef\u8dd1\uff0cDocker \u73af\u5883\u4e00\u952e\u90e8\u7f72\uff0c\u914d\u5957 ai-agents-from-zero \u514d\u8d39\u6559\u7a0b\u4e0e\u7ae0\u8282\u4ee3\u7801\u5206\u652f\u3002\u9002\u5408\u7cfb\u7edf\u5b66\u4e60\u5927\u6a21\u578b\u5e94\u7528\u3001\u6570\u636e\u5206\u6790 Agent \u548c\u4f01\u4e1a\u7ea7 AI \u5de5\u7a0b\u843d\u5730\u3002",
+      "stars": 202,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "legal-ai-agent",
+      "owner": "Paparusi",
+      "full_name": "Paparusi/legal-ai-agent",
+      "url": "https://github.com/Paparusi/legal-ai-agent",
+      "description": "",
+      "stars": 196,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "hpagent",
+      "owner": "delvedor",
+      "full_name": "delvedor/hpagent",
+      "url": "https://github.com/delvedor/hpagent",
+      "description": "A ready to use http and https agent for working with proxies that keeps connections alive!",
+      "stars": 191,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "AI-Voice-Agent",
+      "owner": "Anil-matcha",
+      "full_name": "Anil-matcha/AI-Voice-Agent",
+      "url": "https://github.com/Anil-matcha/AI-Voice-Agent",
+      "description": "Self-hosted AI voice agent",
+      "stars": 163,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "CivAgent",
+      "owner": "fuxiAIlab",
+      "full_name": "fuxiAIlab/CivAgent",
+      "url": "https://github.com/fuxiAIlab/CivAgent",
+      "description": "CivAgent is an LLM-based Human-like Agent acting as a Digital Player within the Strategy Game Unciv.",
+      "stars": 163,
+      "license": "MPL-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "hh-ai-agent",
+      "owner": "fikstt2",
+      "full_name": "fikstt2/hh-ai-agent",
+      "url": "https://github.com/fikstt2/hh-ai-agent",
+      "description": "hh.ru \u0430\u0438 \u0431\u043e\u0442 \u0434\u043b\u044f \u043e\u0442\u043a\u043b\u0438\u043a\u043e\u0432",
+      "stars": 160,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "ai-agent-skills",
+      "owner": "wednesday-solutions",
+      "full_name": "wednesday-solutions/ai-agent-skills",
+      "url": "https://github.com/wednesday-solutions/ai-agent-skills",
+      "description": "Pre-configured agent skills for Vibe Coded projects. These skills provide AI coding assistants (Claude Code, Cursor, etc.) with specific guidelines for code quality and design standards.",
+      "stars": 160,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "learn-agent",
+      "owner": "7-e1even",
+      "full_name": "7-e1even/learn-agent",
+      "url": "https://github.com/7-e1even/learn-agent",
+      "description": "\u5b66\u4e60Agent\u5f00\u53d1\u7684\u7b14\u8bb0\uff0c\u5c1d\u8bd5\u8ba9Agent\u4ece\u53ef\u7528\u5230\u53ef\u9760",
+      "stars": 155,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "emperor-agent",
+      "owner": "TheSyart",
+      "full_name": "TheSyart/emperor-agent",
+      "url": "https://github.com/TheSyart/emperor-agent",
+      "description": "Local Emperor-style AI agent with Vue WebUI, multi-provider LLMs, streaming chat, tools, skills, memory, and token telemetry.",
+      "stars": 150,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "ai-agent-video-editor",
+      "owner": "pifferologo",
+      "full_name": "pifferologo/ai-agent-video-editor",
+      "url": "https://github.com/pifferologo/ai-agent-video-editor",
+      "description": "ai agent video editor use with ElevenLabs Scribe, pack phrase-level transcripts, reason over an EDL, render with ffmpeg, video editor ai agent",
+      "stars": 138,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "ai-healthcare-agent-app",
+      "owner": "Don-Uwe",
+      "full_name": "Don-Uwe/ai-healthcare-agent-app",
+      "url": "https://github.com/Don-Uwe/ai-healthcare-agent-app",
+      "description": "ai agent healthcare app with centralized testing and build workflows for reliable health-content delivery",
+      "stars": 134,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "solana-agent-kit",
+      "owner": "davidpc007",
+      "full_name": "davidpc007/solana-agent-kit",
+      "url": "https://github.com/davidpc007/solana-agent-kit",
+      "description": "solana ai agent toolkit for modular monorepo with plugin architecture, first-class support for langchain, vercel ai sdk, openai agents and claude",
+      "stars": 133,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agentfm-core",
+      "owner": "Agent-FM",
+      "full_name": "Agent-FM/agentfm-core",
+      "url": "https://github.com/Agent-FM/agentfm-core",
+      "description": "AgentFM is a peer-to-peer network that turns everyday computers into a decentralized AI supercomputer. AgentFM lets you run massive AI workloads directly across a global mesh of idle CPUs and GPUs.",
+      "stars": 127,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "agentcall",
+      "owner": "pattern-ai-labs",
+      "full_name": "pattern-ai-labs/agentcall",
+      "url": "https://github.com/pattern-ai-labs/agentcall",
+      "description": "AgentCall lets AI Agents join meetings with voice, video & screen-share to build together. Supports Google Meet, Teams, Zoom (Beta)",
+      "stars": 123,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "ProAgent",
+      "owner": "PKU-Alignment",
+      "full_name": "PKU-Alignment/ProAgent",
+      "url": "https://github.com/PKU-Alignment/ProAgent",
+      "description": "AAAI24(Oral) ProAgent: Building Proactive Cooperative Agents with Large Language Models",
+      "stars": 104,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agentic-os",
+      "owner": "modimihir07",
+      "full_name": "modimihir07/agentic-os",
+      "url": "https://github.com/modimihir07/agentic-os",
+      "description": "Agentic OS: Multi-agent orchestration platform for opencode, Hermes & Gemini CLI. Skills hub, scheduler, cost analytics, memory & backup.",
+      "stars": 99,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "AgentHER",
+      "owner": "alphadl",
+      "full_name": "alphadl/AgentHER",
+      "url": "https://github.com/alphadl/AgentHER",
+      "description": "AgentHER: Hindsight Experience Replay for LLM Agents",
+      "stars": 93,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "cloudbase-agent-ui",
+      "owner": "TencentCloudBase",
+      "full_name": "TencentCloudBase/cloudbase-agent-ui",
+      "url": "https://github.com/TencentCloudBase/cloudbase-agent-ui",
+      "description": "\u817e\u8baf\u4e91\u5f00\u53d1 Agent UI \uff0c\u5fae\u4fe1\u5c0f\u7a0b\u5e8f/React AI \u5bf9\u8bdd\u7ec4\u4ef6",
+      "stars": 92,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "data-analysis-llm-agent",
+      "owner": "crazycloud",
+      "full_name": "crazycloud/data-analysis-llm-agent",
+      "url": "https://github.com/crazycloud/data-analysis-llm-agent",
+      "description": "A Data analysis agent powered by llm for querying database and visualizing results",
+      "stars": 84,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "ContextAgent",
+      "owner": "context-machine-lab",
+      "full_name": "context-machine-lab/ContextAgent",
+      "url": "https://github.com/context-machine-lab/ContextAgent",
+      "description": "Context-central multi-agent framework with PyTorch-like API. Build intelligent agent systems with minimal code.",
+      "stars": 77,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "AgentArk",
+      "owner": "AIFrontierLab",
+      "full_name": "AIFrontierLab/AgentArk",
+      "url": "https://github.com/AIFrontierLab/AgentArk",
+      "description": "Official Implementation for the Paper [AgentArk: Distilling Multi-Agent Intelligence into a Single LLM Agent](https://arxiv.org/abs/2602.03955)",
+      "stars": 75,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "Cerno-Agentic-Local-Deep-Research",
+      "owner": "Cerno-AI",
+      "full_name": "Cerno-AI/Cerno-Agentic-Local-Deep-Research",
+      "url": "https://github.com/Cerno-AI/Cerno-Agentic-Local-Deep-Research",
+      "description": "Cerno is a local-first research platform that leverages agentic AI to break down complex queries into verifiable, multi-step workflows. Switch seamlessly between cloud LLMs and self-hosted models, track every reasoning step, and optimize cost and tokens\u2014all while keeping your data on your machine.",
+      "stars": 68,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "Agent_View_Controller-AVC",
+      "owner": "study8677",
+      "full_name": "study8677/Agent_View_Controller-AVC",
+      "url": "https://github.com/study8677/Agent_View_Controller-AVC",
+      "description": "\ud83d\udc41\ufe0f The visual layer for CLI coding agents. Pipe JSON \u2192 interactive native UI \u2192 modified JSON back. Like fzf, but for visual decisions.",
+      "stars": 65,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "AgentWard",
+      "owner": "FIND-Lab",
+      "full_name": "FIND-Lab/AgentWard",
+      "url": "https://github.com/FIND-Lab/AgentWard",
+      "description": "AgentWard \u2013 Built for all, hardened for OpenClaw.",
+      "stars": 63,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "ai-agents-reality-check",
+      "owner": "Cre4T3Tiv3",
+      "full_name": "Cre4T3Tiv3/ai-agents-reality-check",
+      "url": "https://github.com/Cre4T3Tiv3/ai-agents-reality-check",
+      "description": "Benchmarking the gap between AI agent hype and architecture. Three agent archetypes, 73-point performance spread, stress testing, network resilience, and ensemble coordination analysis with statistical validation.",
+      "stars": 62,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "pinpoint-node-agent",
+      "owner": "pinpoint-apm",
+      "full_name": "pinpoint-apm/pinpoint-node-agent",
+      "url": "https://github.com/pinpoint-apm/pinpoint-node-agent",
+      "description": "Pinpoint Node.js agent",
+      "stars": 62,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "spm-agent-nodejs",
+      "owner": "sematext",
+      "full_name": "sematext/spm-agent-nodejs",
+      "url": "https://github.com/sematext/spm-agent-nodejs",
+      "description": "NodeJS Monitoring Agent",
+      "stars": 60,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "Multi-Agent-AI-Travel-Advisor",
+      "owner": "kbhujbal",
+      "full_name": "kbhujbal/Multi-Agent-AI-Travel-Advisor",
+      "url": "https://github.com/kbhujbal/Multi-Agent-AI-Travel-Advisor",
+      "description": "AI travel planner with 7 specialized agents, RAG, and tool-calling. Built with CrewAI & LangChain. Generates personalized itineraries with flights, hotels, activities, and cultural tips. Production-ready Python codebase.",
+      "stars": 55,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "OmniAgent",
+      "owner": "HarryHsing",
+      "full_name": "HarryHsing/OmniAgent",
+      "url": "https://github.com/HarryHsing/OmniAgent",
+      "description": "OmniAgent (ICML 2026): the first native omni-modal agent for active video perception \u2014 a 7B agent that beats Qwen2.5-VL-72B with 73% fewer frames on LVBench.",
+      "stars": 53,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "SDYJ_Multi_Agents",
+      "owner": "hwfengcs",
+      "full_name": "hwfengcs/SDYJ_Multi_Agents",
+      "url": "https://github.com/hwfengcs/SDYJ_Multi_Agents",
+      "description": "A LangGraph-powered multi-agent deep research system featuring task planning, human-in-the-loop review, multi-source retrieval, evidence-grounded report generation, full tracing and reproducible evaluation.",
+      "stars": 50,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "ProactiveAgent",
+      "owner": "leomariga",
+      "full_name": "leomariga/ProactiveAgent",
+      "url": "https://github.com/leomariga/ProactiveAgent",
+      "description": "Transform your AI from reactive to proactive with intelligent timing and context-aware wake-up patterns.",
+      "stars": 42,
+      "license": "BSD-3-Clause",
+      "type": "agent"
+    },
+    {
+      "name": "termo-agent",
+      "owner": "taco-devs",
+      "full_name": "taco-devs/termo-agent",
+      "url": "https://github.com/taco-devs/termo-agent",
+      "description": "Open-source serverless runtime for AI agents. Bring any framework, get a production HTTP server with SSE streaming, sessions, auth, and memory.",
+      "stars": 40,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "TradingSpy-TradingAgentService",
+      "owner": "mrhustlex",
+      "full_name": "mrhustlex/TradingSpy-TradingAgentService",
+      "url": "https://github.com/mrhustlex/TradingSpy-TradingAgentService",
+      "description": "Fully local trading agent with loop engineering doing research, trading strategy generation and backtesting",
+      "stars": 40,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "find-cve-agent",
+      "owner": "ByamB4",
+      "full_name": "ByamB4/find-cve-agent",
+      "url": "https://github.com/ByamB4/find-cve-agent",
+      "description": "CVE hunting harness for Claude Code - 20 skills, 5-agent team, systematic vulnerability research with false positive elimination",
+      "stars": 39,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "ToolAgents",
+      "owner": "Maximilian-Winter",
+      "full_name": "Maximilian-Winter/ToolAgents",
+      "url": "https://github.com/Maximilian-Winter/ToolAgents",
+      "description": "ToolAgents is a lightweight and flexible framework for creating function-calling agents with various language models and APIs.",
+      "stars": 38,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "pie-ai-agent",
+      "owner": "WiseriaAI",
+      "full_name": "WiseriaAI/pie-ai-agent",
+      "url": "https://github.com/WiseriaAI/pie-ai-agent",
+      "description": "Browser-automation agent for Chrome \u2014 natural-language tasks executed through native tool calling, scoped Skills, CDP keyboard control, and a confirm-before-act security model. BYOK across 8 LLM providers (Claude, GPT, Gemini, DeepSeek + 4 China-region).",
+      "stars": 38,
+      "license": "Apache-2.0",
+      "type": "agent"
+    },
+    {
+      "name": "multiagent-debugger",
+      "owner": "VishApp",
+      "full_name": "VishApp/multiagent-debugger",
+      "url": "https://github.com/VishApp/multiagent-debugger",
+      "description": "Multi-Agent Debugger: An AI-powered debugging system using CrewAI to orchestrate specialized agents that analyze logs, trace code, and uncover root causes across your stack \u2014 powered by LLM providers.",
+      "stars": 36,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "ai-job-agent",
+      "owner": "AkbarDevop",
+      "full_name": "AkbarDevop/ai-job-agent",
+      "url": "https://github.com/AkbarDevop/ai-job-agent",
+      "description": "AI-powered job application automation toolkit \u2014 LinkedIn Easy Apply, Greenhouse, Lever, Jobvite, Ashby, Outlook triage, tracking. Built with Claude Code.",
+      "stars": 35,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-xiaohongshu-workbench",
+      "owner": "EthanYoQ",
+      "full_name": "EthanYoQ/agent-xiaohongshu-workbench",
+      "url": "https://github.com/EthanYoQ/agent-xiaohongshu-workbench",
+      "description": "\u5c0f\u7ea2\u4e66\u56fe\u6587\u5185\u5bb9\u5de5\u4f5c\u53f0\uff1a\u7528 Codex Agent \u5b8c\u6210\u70ed\u70b9\u7814\u7a76\u3001\u5185\u5bb9\u62c6\u89e3\u3001\u539f\u521b\u6587\u7a3f\u3001\u53bb AI \u5473\u3001\u54c1\u724c\u914d\u56fe\u4e0e\u4eba\u5de5\u786e\u8ba4\u53d1\u5e03\u3002",
+      "stars": 35,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "viruagent-cli",
+      "owner": "greekr4",
+      "full_name": "greekr4/viruagent-cli",
+      "url": "https://github.com/greekr4/viruagent-cli",
+      "description": "AI agent-powered CLI for blog publishing, Naver Cafe, Instagram, X (Twitter) & Reddit automation",
+      "stars": 33,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-script",
+      "owner": "runparse",
+      "full_name": "runparse/agent-script",
+      "url": "https://github.com/runparse/agent-script",
+      "description": "A simple, observable code-writing agent builder in TypeScript.",
+      "stars": 33,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "toragent",
+      "owner": "danielstjules",
+      "full_name": "danielstjules/toragent",
+      "url": "https://github.com/danielstjules/toragent",
+      "description": "HTTP(S) requests through Tor for Node",
+      "stars": 32,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "multi-agent-system",
+      "owner": "versionHQ",
+      "full_name": "versionHQ/multi-agent-system",
+      "url": "https://github.com/versionHQ/multi-agent-system",
+      "description": "Autonomous agent networks for task automation that requires multi-step reasoning",
+      "stars": 30,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "agent-canvas",
+      "owner": "WHQ25",
+      "full_name": "WHQ25/agent-canvas",
+      "url": "https://github.com/WHQ25/agent-canvas",
+      "description": "Excalidraw for AI agents \u2014 draw diagrams via CLI.",
+      "stars": 28,
+      "license": "MIT",
+      "type": "agent"
+    },
+    {
+      "name": "simple-proxy-agent",
+      "owner": "zjael",
+      "full_name": "zjael/simple-proxy-agent",
+      "url": "https://github.com/zjael/simple-proxy-agent",
+      "description": "Simple agent for sending HTTP and HTTPS traffic through HTTP and SOCKS proxies",
+      "stars": 25,
+      "license": "MIT",
+      "type": "agent"
+    }
+  ]
+}

@@ -750,7 +750,7 @@
 > and verified on the local registry (run + gateway). Re-run the publish
 > script against the production registry once H-225 is deployed.
 
-- [~] **H-240 — Seed the registry (15–20 real packages)**
+- [~] **H-240 — Seed the registry (index of 400+ real packages)**
   - Difficulty: L · Duration: 3d · Deps: H-225
   - Acceptance: an official namespace publishes the most-wanted MCP servers
     (filesystem, fetch, github, slack, postgres, memory, …) plus 3–5 genuinely
@@ -764,7 +764,15 @@
     and 404s verified. Content-tamper of a downloaded archive is rejected
     before extraction (checksum §9.4). Remaining for full close: publish to the
     *deployed* registry (H-225) with READMEs rendered on package pages.
-  - Testing note: the registry pytest suite truncates tables in its fixtures,
+  - Catalog (2026-07-21): `scripts/harvest_catalog.py` harvests permissively
+    licensed MCP servers + agents from GitHub (license/metadata inline from the
+    search API — no per-repo calls). Produced `registry/catalog.json`: 410
+    curated entries (220 servers + 190 agents), all MIT/Apache-2.0/BSD/ISC/
+    MPL-2.0. Star-farm spam filtered by trusted-source + plausible star bounds.
+    Sample verified runnable via `xelian add`. This is the *index* seed (link +
+    run under each project's own license), not republished archives — the
+    legally-safe, scalable model. Expand with a GITHUB_TOKEN.
+    - Testing note: the registry pytest suite truncates tables in its fixtures,
     so it MUST run against a throwaway DB, never the seeded one — running it
     mid-seed wiped the data once. Consider a dedicated `DATABASE_URL` for tests.
 
