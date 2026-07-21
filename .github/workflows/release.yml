@@ -61,7 +61,10 @@ jobs:
         # change. When the variable is unset the binary falls back to
         # http://localhost:8000, exactly as a local build does.
         env:
-          XELIAN_DEFAULT_REGISTRY_URL: ${{ vars.XELIAN_DEFAULT_REGISTRY_URL }}
+          # The deployed registry URL (public, not a secret). The repository
+          # variable overrides it if set; otherwise this default is baked in so
+          # every released binary talks to production out of the box.
+          XELIAN_DEFAULT_REGISTRY_URL: ${{ vars.XELIAN_DEFAULT_REGISTRY_URL || 'https://xelian-registry.onrender.com' }}
         run: cargo build --release --locked --target ${{ matrix.target }} -p xelian-cli
 
       # One archive per platform, named so install.sh can find it by
