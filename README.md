@@ -195,6 +195,13 @@ interface. The full specification lives in [SPEC.md](SPEC.md).
 See [CONTRIBUTING.md](CONTRIBUTING.md) for build and test instructions, and
 [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
+## Credits
+
+Xelian runs open-source agents and MCP servers built by other people — it
+imports and launches their work unmodified, under each project's own license,
+and never relicenses it. See [ATTRIBUTIONS.md](ATTRIBUTIONS.md) for the
+projects Xelian works with and the license each one grants.
+
 ## License
 
 [MIT](LICENSE)
