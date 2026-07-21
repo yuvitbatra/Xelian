@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { CatalogEntry } from "@/lib/api";
 import TypeBadge from "./type-badge";
 
@@ -16,14 +17,12 @@ export default function CatalogCard({ entry }: { entry: CatalogEntry }) {
   return (
     <div className="flex flex-col rounded-lg border border-gray-200 bg-white p-4 transition-colors hover:border-gray-300">
       <div className="flex items-start justify-between gap-2">
-        <a
-          href={entry.url}
-          target="_blank"
-          rel="noreferrer"
+        <Link
+          href={`/c/${entry.full_name}`}
           className="truncate font-mono text-sm font-medium text-gray-900 hover:underline"
         >
           {entry.full_name}
-        </a>
+        </Link>
         <TypeBadge type={entry.type} />
       </div>
 
