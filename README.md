@@ -213,6 +213,11 @@ interface. The full specification lives in [SPEC.md](SPEC.md).
 See [CONTRIBUTING.md](CONTRIBUTING.md) for build and test instructions, and
 [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
+## Deploying & handoff
+
+Running the public registry: **[DEPLOY_RENDER.md](DEPLOY_RENDER.md)** (click-by-click).
+Project status and next steps: **[HANDOFF.md](HANDOFF.md)**.
+
 ## Credits
 
 Xelian runs open-source agents and MCP servers built by other people — it
