@@ -701,13 +701,24 @@
 
 ## Phase 23 — Distribution (binaries, install, PyPI)
 
-- [ ] **H-230 — Release workflow + install script**
+- [x] **H-230 — Release workflow + install script** (2026-07-21)
   - Difficulty: L · Duration: 8h · Deps: H-210, H-200
   - Acceptance: tagging a release cross-compiles macOS (arm64 + x86_64) and
     Linux (x86_64, arm64) binaries, attaches them to GitHub Releases with
     checksums; `curl -fsSL https://get.<domain>/install.sh | sh` detects
     OS/arch, installs to PATH, and prints a success next-step; the script is
     treated as product-quality UX (clear errors, no sudo surprises).
+  - Done: `.github/workflows/release.yml` builds all four target triples on a
+    `v*` tag (or manual dispatch), packages a stripped binary per platform with
+    a SHA-256, verifies every checksum, and publishes a GitHub Release.
+    `scripts/install.sh` (POSIX sh) detects OS/arch, downloads the matching
+    asset from the latest release, verifies its checksum (refusing a tampered
+    download), installs to `~/.local/bin`, and warns if that is not on PATH.
+    Verified locally: the package→checksum→extract→install→`xelian --version`
+    path works against a locally built binary; both workflow files are valid
+    YAML; both scripts pass `sh -n`/`bash -n`. Remaining before a real tag:
+    push a `v0.1.0` tag on GitHub to produce the first published assets, which
+    then unblocks H-213 (clean-machine quickstart) and H-231 (Homebrew tap).
 
 - [ ] **H-231 — Homebrew tap**
   - Difficulty: S · Duration: 2h · Deps: H-230

@@ -1,0 +1,115 @@
+name: Release
+
+# Builds the single static `xelian` binary for every supported platform and
+# attaches them to a GitHub Release. Triggered by pushing a `v*` tag
+# (e.g. `git tag v0.1.0 && git push origin v0.1.0`), or manually.
+#
+# The install script (`scripts/install.sh`) downloads the asset matching the
+# user's OS/arch from the latest release — this workflow is what produces those
+# assets, so a one-line install becomes possible without a Rust toolchain.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to build (for a manual run, e.g. v0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-apple-darwin
+            os: macos-13 # last Intel macOS runner
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build release binary
+        run: cargo build --release --locked --target ${{ matrix.target }} -p xelian-cli
+
+      # One archive per platform, named so install.sh can find it by
+      # `<os>-<arch>`. The release profile already strips symbols (see
+      # Cargo.toml), so this is the final shippable artifact.
+      - name: Package
+        shell: bash
+        run: |
+          bin="target/${{ matrix.target }}/release/xelian"
+          test -f "$bin" || { echo "missing $bin"; exit 1; }
+          name="xelian-${{ matrix.target }}"
+          mkdir -p dist
+          tar -C "$(dirname "$bin")" -czf "dist/${name}.tar.gz" xelian
+          ( cd dist && shasum -a 256 "${name}.tar.gz" > "${name}.tar.gz.sha256" )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xelian-${{ matrix.target }}
+          path: dist/*
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Verify every checksum
+        run: |
+          cd dist
+          for f in *.sha256; do shasum -a 256 -c "$f"; done
+
+      # For a tag push the tag is the ref; for a manual run it's the input.
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: dist/*
+          generate_release_notes: true
+          body: |
+            Prebuilt `xelian` binaries. Install with:
+
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/scripts/install.sh | sh
+            ```
+
+            Or download the archive for your platform below, extract, and put
+            `xelian` on your `PATH`.

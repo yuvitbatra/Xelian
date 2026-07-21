@@ -32,7 +32,15 @@ every capability.
 
 ## Quickstart
 
-Until binary releases ship, build from source (Rust toolchain required):
+Install the prebuilt binary — no Rust toolchain needed (once a release is
+tagged; the [release workflow](.github/workflows/release.yml) produces the
+assets and [`scripts/install.sh`](scripts/install.sh) fetches them):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yuvitbatra/Xelian/main/scripts/install.sh | sh
+```
+
+Or build from source (Rust toolchain required):
 
 ```bash
 cargo install --path crates/xelian-cli   # 1. install the CLI
