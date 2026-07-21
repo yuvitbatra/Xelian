@@ -780,7 +780,14 @@
     MPL-2.0. Star-farm spam filtered by trusted-source + plausible star bounds.
     Sample verified runnable via `xelian add`. This is the *index* seed (link +
     run under each project's own license), not republished archives — the
-    legally-safe, scalable model. Expand with a GITHUB_TOKEN.
+    legally-safe, scalable model.
+  - Scaled (2026-07-21, authenticated): full harvest with a GITHUB_TOKEN
+    surfaced 3,718 permissively-licensed repos; curated to 847 (500 servers +
+    347 agents), all MIT/Apache-2.0/BSD/ISC/MPL. Registry `/catalog` tests pass
+    over the scaled set (incl. a permissive-license assertion on every entry).
+  - R2 storage (2026-07-21): production archive storage verified against the
+    real Cloudflare R2 credentials — save/exists/stream roundtrip passes. The
+    deploy's storage backend is de-risked.
     - Testing note: the registry pytest suite truncates tables in its fixtures,
     so it MUST run against a throwaway DB, never the seeded one — running it
     mid-seed wiped the data once. Consider a dedicated `DATABASE_URL` for tests.

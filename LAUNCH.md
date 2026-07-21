@@ -18,9 +18,10 @@ on more code.
   wipe a non-test DB.
 - **Binaries**: `.github/workflows/release.yml` cross-compiles macOS + Linux
   (arm64/x86_64) on a `v*` tag; `scripts/install.sh` gives a `curl | sh` install.
-- **Catalog**: `registry/catalog.json` — 410 curated, permissively-licensed
-  entries (220 MCP servers + 190 agents), spam-filtered, each runnable via
-  `xelian add`. Regenerate/expand with `scripts/harvest_catalog.py`.
+- **Catalog**: `registry/catalog.json` — 847 curated, permissively-licensed
+  entries (500 MCP servers + 347 agents), spam-filtered, each runnable via
+  `xelian add`. Harvested authenticated from GitHub; regenerate with
+  `GITHUB_TOKEN=… scripts/harvest_catalog.py`.
 - **Attribution**: `ATTRIBUTIONS.md` credits every referenced project + license.
 
 ## The upload, step by step

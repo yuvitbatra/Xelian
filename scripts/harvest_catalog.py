@@ -46,17 +46,27 @@ PERMISSIVE = {
 # GitHub ANDs the qualifiers; we run the cross-product of intent × language.
 SERVER_INTENTS = [
     "mcp-server in:name,description",
+    "mcp in:name",
     "topic:mcp",
     "topic:mcp-server",
+    "topic:mcp-servers",
     '"model context protocol" in:name,description,readme',
     "topic:model-context-protocol",
+    "topic:modelcontextprotocol",
+    "mcp server in:name,description",
 ]
 AGENT_INTENTS = [
     "topic:ai-agent",
+    "topic:ai-agents",
     "topic:llm-agent",
+    "topic:llm-agents",
     "topic:autonomous-agents",
+    "topic:agents",
     "topic:agent in:name,description",
     "ai agent in:name,description",
+    "topic:agentic",
+    "topic:multi-agent",
+    "topic:autonomous-ai",
 ]
 LANGUAGES = ["python", "typescript", "javascript"]
 
