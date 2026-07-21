@@ -1,5 +1,10 @@
 # Launch checklist — from here to "on the internet, people love it"
 
+> **v0.1.0 is LIVE** — https://github.com/yuvitbatra/Xelian/releases/tag/v0.1.0
+> `curl -fsSL https://raw.githubusercontent.com/yuvitbatra/Xelian/main/scripts/install.sh | sh`
+> verified end-to-end: install-from-internet → `xelian add` → MCP handshake.
+> Remaining: deploy the registry (your host) so `xelian push/run` work publicly.
+
 Everything below is either **done** (verified in-repo) or a **you-step** that
 needs an account, a domain, or a secret only you have. Nothing here is blocked
 on more code.
