@@ -60,8 +60,9 @@ A local-first registry + runtime for AI agents and MCP servers — "Hugging Face
 3. **Homebrew tap** (`Formula/xelian.rb` is ready): create a public repo
    `homebrew-xelian`, put the formula in it, then `brew tap yuvitbatra/xelian &&
    brew install xelian`.
-4. **SDK on PyPI**: `cd sdk && python -m build && twine upload dist/*` (needs a
-   PyPI account/token).
+4. **SDK on PyPI** (verified build-ready — wheel + sdist pass `twine check`,
+   and `xelian.mcp()` works against the live registry): `cd sdk &&
+   python -m build && twine upload dist/*` (needs a PyPI account/token).
 
 ## After deploy — the remaining polish (optional, in priority order)
 
