@@ -17,8 +17,12 @@ use crate::cache::XelianHome;
 /// builds bake the production URL in via the `XELIAN_DEFAULT_REGISTRY_URL`
 /// build-time env var; dev builds default to a local registry.
 pub const DEFAULT_REGISTRY_URL: &str = match option_env!("XELIAN_DEFAULT_REGISTRY_URL") {
-    Some(url) => url,
-    None => "http://localhost:8000",
+    // An *empty* value counts as unset: CI passes `${{ vars.X }}`, which
+    // expands to "" when the repository variable isn't set, so without this a
+    // release built with the variable unset would bake in an empty URL and
+    // every `xelian run` would fail. Fall back to localhost in that case.
+    Some(url) if !url.is_empty() => url,
+    _ => "http://localhost:8000",
 };
 
 /// The stored credential: a token, the username it belongs to, and the
@@ -315,5 +319,14 @@ mod tests {
         std::env::remove_var("XELIAN_REGISTRY_URL");
         let url = resolve_registry_url(&home);
         assert_eq!(url, DEFAULT_REGISTRY_URL);
+    }
+
+    #[test]
+    fn default_registry_url_is_never_empty() {
+        // A release built with the CI variable unset passes an empty
+        // XELIAN_DEFAULT_REGISTRY_URL; the const MUST fall back to a usable URL
+        // rather than baking in "" (which would break every `xelian run`).
+        assert!(!DEFAULT_REGISTRY_URL.is_empty());
+        assert!(DEFAULT_REGISTRY_URL.starts_with("http"));
     }
 }

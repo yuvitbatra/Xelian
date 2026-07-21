@@ -53,6 +53,15 @@ jobs:
           key: ${{ matrix.target }}
 
       - name: Build release binary
+        # The CLI bakes in the default registry URL at compile time
+        # (`option_env!("XELIAN_DEFAULT_REGISTRY_URL")` in auth.rs). Set it once
+        # as a GitHub *repository variable* named XELIAN_DEFAULT_REGISTRY_URL
+        # (Settings → Secrets and variables → Actions → Variables) and every
+        # future release binary points at your registry automatically — no code
+        # change. When the variable is unset the binary falls back to
+        # http://localhost:8000, exactly as a local build does.
+        env:
+          XELIAN_DEFAULT_REGISTRY_URL: ${{ vars.XELIAN_DEFAULT_REGISTRY_URL }}
         run: cargo build --release --locked --target ${{ matrix.target }} -p xelian-cli
 
       # One archive per platform, named so install.sh can find it by
