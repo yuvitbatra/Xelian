@@ -1,6 +1,6 @@
 spec-version = 1
 xelian-version = "0.1.0"
 package-version = "0.1.0"
-generated-at = "2026-07-21T11:03:55Z"
+generated-at = "2026-07-21T11:52:10Z"
 native-manifest = "pyproject.toml"
 package-checksum = "sha256:d2a435cdcfc06841728ac14525f2d2d6f7a966b3211c4d225fbe7433f948e9b0"

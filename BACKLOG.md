@@ -739,13 +739,23 @@
 > and verified on the local registry (run + gateway). Re-run the publish
 > script against the production registry once H-225 is deployed.
 
-- [ ] **H-240 — Seed the registry (15–20 real packages)**
+- [~] **H-240 — Seed the registry (15–20 real packages)**
   - Difficulty: L · Duration: 3d · Deps: H-225
   - Acceptance: an official namespace publishes the most-wanted MCP servers
     (filesystem, fetch, github, slack, postgres, memory, …) plus 3–5 genuinely
     fun/useful agents; each verified end-to-end on a clean machine; each has a
     README rendered on its package page. An empty registry is a dead registry
     — this outranks any remaining code polish.
+  - Progress (2026-07-21): the full loop is proven against a real
+    Postgres-backed registry running locally — all 16 `seed/` packages
+    signed-up → pushed → pulled + run from a clean `$HOME`; 8 MCP servers
+    complete JSON-RPC handshakes, 8 agents launch. Immutability, search, list,
+    and 404s verified. Content-tamper of a downloaded archive is rejected
+    before extraction (checksum §9.4). Remaining for full close: publish to the
+    *deployed* registry (H-225) with READMEs rendered on package pages.
+  - Testing note: the registry pytest suite truncates tables in its fixtures,
+    so it MUST run against a throwaway DB, never the seeded one — running it
+    mid-seed wiped the data once. Consider a dedicated `DATABASE_URL` for tests.
 
 - [ ] **H-241 — Private beta: 5–10 clean-machine users**
   - Difficulty: M · Duration: ongoing 1w · Deps: H-240, H-230
