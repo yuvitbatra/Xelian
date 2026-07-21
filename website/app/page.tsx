@@ -8,6 +8,7 @@ import {
 } from "@/lib/api";
 import PackageCard from "@/components/package-card";
 import CopyCommand from "@/components/copy-command";
+import CatalogTeaser from "@/components/catalog-teaser";
 
 type Filter = "all" | "agent" | "mcp";
 
@@ -63,6 +64,7 @@ export default function Home() {
         <div className="mx-auto mt-6 max-w-md">
           <CopyCommand command="xelian run username/my-agent" />
         </div>
+        <CatalogTeaser />
       </section>
 
       <section className="py-8">
