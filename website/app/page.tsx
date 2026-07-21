@@ -1,40 +1,43 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  listPackages,
-  searchPackages,
-  type PackageSummary,
-} from "@/lib/api";
-import PackageCard from "@/components/package-card";
+import { browseCatalog, type CatalogEntry } from "@/lib/api";
+import CatalogCard from "@/components/catalog-card";
 import CopyCommand from "@/components/copy-command";
-import CatalogTeaser from "@/components/catalog-teaser";
 
 type Filter = "all" | "agent" | "mcp";
 
+const PAGE = 60;
+
 export default function Home() {
-  const [packages, setPackages] = useState<PackageSummary[] | null>(null);
+  const [entries, setEntries] = useState<CatalogEntry[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState<{ mcp: number; agents: number } | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [shown, setShown] = useState(PAGE);
 
-  // Search goes through the registry's /search endpoint (H-224) — the same
-  // surface `xelian search` uses — debounced; empty query lists everything.
+  // Reset how many are shown whenever the query/filter changes.
+  useEffect(() => setShown(PAGE), [query, filter]);
+
   useEffect(() => {
     const q = query.trim();
     let cancelled = false;
     const timer = setTimeout(
       () => {
-        (q ? searchPackages(q) : listPackages())
-          .then((rows) => {
+        browseCatalog({ q, type: filter, limit: 300 })
+          .then((p) => {
             if (!cancelled) {
-              setPackages(rows);
+              setEntries(p.packages);
+              setTotal(p.total);
+              setCounts(p.counts);
               setError(null);
             }
           })
-          .catch((e: Error) => {
-            if (!cancelled) setError(e.message);
-          });
+          .catch((e: Error) => !cancelled && setError(e.message));
       },
       q ? 200 : 0,
     );
@@ -42,89 +45,94 @@ export default function Home() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, filter]);
 
-  const visible = useMemo(() => {
-    if (!packages) return [];
-    return packages.filter(
-      (p) => filter === "all" || p.package_type === filter,
-    );
-  }, [packages, filter]);
+  const visible = useMemo(() => (entries ?? []).slice(0, shown), [entries, shown]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6">
-      <section className="border-b border-gray-200 py-14 text-center">
+      <section className="border-b border-gray-200 py-12 text-center">
         <h1 className="mx-auto max-w-2xl text-4xl font-semibold tracking-tight text-gray-900">
           Run AI agents like you run models
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-base text-gray-600">
-          Xelian is a local-first registry and runtime for AI agents and MCP
-          servers. One command downloads, installs, and launches any package.
+          A registry of runnable AI agents and MCP servers. Install once, then
+          run any of them locally with a single command.
         </p>
         <div className="mx-auto mt-6 max-w-md">
-          <CopyCommand command="xelian run username/my-agent" />
+          <CopyCommand command="xelian run owner/name" />
         </div>
-        <CatalogTeaser />
+        {counts ? (
+          <p className="mt-4 text-sm text-gray-500">
+            {(counts.mcp + counts.agents).toLocaleString()} packages ·{" "}
+            {counts.mcp} MCP servers · {counts.agents} agents
+          </p>
+        ) : null}
       </section>
 
-      <section className="py-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-gray-900">Packages</h2>
-            {packages ? (
-              <span className="text-sm text-gray-500">{visible.length}</span>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-md border border-gray-300 p-0.5">
-              {(["all", "agent", "mcp"] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`rounded px-2.5 py-1 text-xs font-medium ${
-                    filter === f
-                      ? "bg-gray-900 text-white"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  {f === "all" ? "All" : f === "agent" ? "Agents" : "MCP servers"}
-                </button>
-              ))}
-            </div>
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search packages"
-              className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none sm:w-64"
-            />
-          </div>
-        </div>
+      {/* One-line disclaimer for the catalog (third-party, under their licenses). */}
+      <p className="mt-6 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-center text-sm text-gray-600">
+        These are third-party open-source projects, each run under its own
+        license — Xelian links to the source and runs it, it doesn&apos;t host
+        the code.
+      </p>
 
-        <div className="mt-6">
-          {error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              Could not reach the registry: {error}
+      <div className="sticky top-0 z-10 mt-4 flex flex-col gap-3 bg-white/90 py-4 backdrop-blur sm:flex-row sm:items-center">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search agents and MCP servers…"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-gray-400 focus:outline-none"
+        />
+        <div className="flex shrink-0 gap-1 rounded-lg border border-gray-200 p-1">
+          {(["all", "mcp", "agent"] as Filter[]).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`rounded-md px-3 py-1.5 text-sm ${
+                filter === f
+                  ? "bg-gray-900 text-white"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              {f === "mcp" ? "MCP servers" : f === "agent" ? "Agents" : "All"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Couldn&apos;t reach the registry ({error}).
+        </div>
+      ) : !entries ? (
+        <p className="py-12 text-center text-sm text-gray-500">Loading…</p>
+      ) : visible.length === 0 ? (
+        <p className="py-12 text-center text-sm text-gray-500">No matches.</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-3">
+            {visible.map((entry) => (
+              <CatalogCard key={entry.full_name} entry={entry} />
+            ))}
+          </div>
+          {shown < (entries?.length ?? 0) ? (
+            <div className="pb-12 text-center">
+              <button
+                onClick={() => setShown((s) => s + PAGE)}
+                className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Show more ({total - shown} more)
+              </button>
             </div>
-          ) : packages === null ? (
-            <p className="py-12 text-center text-sm text-gray-500">
-              Loading packages…
-            </p>
-          ) : visible.length === 0 ? (
-            <p className="py-12 text-center text-sm text-gray-500">
-              {query.trim() || packages.length > 0
-                ? "No packages match your search."
-                : "No packages published yet. Publish one from the CLI with xelian push, or on this site."}
-            </p>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {visible.map((p) => (
-                <PackageCard key={`${p.owner}/${p.name}`} pkg={p} />
-              ))}
-            </div>
+            <p className="pb-12 text-center text-xs text-gray-400">
+              Showing all {visible.length} matches.
+            </p>
           )}
-        </div>
-      </section>
+        </>
+      )}
     </div>
   );
 }
