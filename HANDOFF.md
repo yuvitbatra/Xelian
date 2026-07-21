@@ -18,13 +18,13 @@ A local-first registry + runtime for AI agents and MCP servers — "Hugging Face
 
 | Piece | State |
 |-------|-------|
-| CLI (`xelian`) | ✅ Released — v0.1.0 binaries for macOS + Linux (arm64/x86_64) |
+| CLI (`xelian`) | ✅ Released — v0.1.1 binaries (macOS + Linux, arm64/x86_64), baked to the live registry |
 | One-line install (`curl \| sh`) | ✅ Live & verified from the internet |
 | `xelian add` (GitHub importer) | ✅ Live — ~30 real repos verified, incl. MCP handshakes |
-| `xelian push`/`run` (local) | ✅ Verified against real Postgres + R2 |
-| Registry service (public) | ⏳ Ready to deploy — needs your Render account (`DEPLOY_RENDER.md`) |
+| `xelian run owner/name` (public) | ✅ **LIVE** — resolves published archives AND the 847-package catalog |
+| Registry service (public) | ✅ **LIVE** — https://xelian-registry.onrender.com |
 | Discovery catalog | ✅ 847 curated entries (500 servers + 347 agents), all permissive licenses |
-| Website (`/explore`) | ✅ Builds; deploy to Vercel when ready |
+| Website (`/explore` + catalog on home) | ✅ Builds; deploy to Vercel when ready |
 | R2 storage | ✅ Verified against real credentials |
 | Tests | ✅ 288 Rust + 55 registry, clippy clean |
 
@@ -41,14 +41,27 @@ A local-first registry + runtime for AI agents and MCP servers — "Hugging Face
   xelian add https://github.com/modelcontextprotocol/servers/tree/main/src/git
   ```
 
-## The ONE thing left: deploy the registry
+## The registry is LIVE
 
-Everything is ready and verified; it needs your accounts (Neon + Render, both
-free). **Follow `DEPLOY_RENDER.md`** — it's written click-by-click. ~30 min.
-After that, `xelian push` and `xelian run you/pkg` work publicly.
+- **URL:** https://xelian-registry.onrender.com (`/health`, `/catalog`, `/packages`)
+- **847 packages** are browsable (`/catalog`) and **runnable by name**:
+  `xelian run owner/repo` resolves via the catalog to the GitHub source and runs
+  it under its own license (Xelian hosts no third-party code).
+- v0.1.1 binaries are baked to this URL, so `curl | sh` install → `xelian run`
+  "just works".
 
-Storage (Cloudflare R2) and the DB driver are already proven working, so the
-deploy is low-risk.
+### What still needs YOU (each is one action)
+1. **Publish the 16 example packages** so `xelian run xelian/calc` works: I need
+   the `xelian` account password you set (or your OK to reset it — its old
+   archives were lost to Render's first ephemeral disk). Then:
+   `XELIAN_SEED_PASSWORD=… scripts/publish_seed.sh`
+2. **Deploy the website** (Vercel, free) so the 847 are browsable in a UI. Set
+   `NEXT_PUBLIC_REGISTRY_URL=https://xelian-registry.onrender.com`.
+3. **Homebrew tap** (`Formula/xelian.rb` is ready): create a public repo
+   `homebrew-xelian`, put the formula in it, then `brew tap yuvitbatra/xelian &&
+   brew install xelian`.
+4. **SDK on PyPI**: `cd sdk && python -m build && twine upload dist/*` (needs a
+   PyPI account/token).
 
 ## After deploy — the remaining polish (optional, in priority order)
 
