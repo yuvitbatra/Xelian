@@ -277,6 +277,15 @@
     without lifecycle scripts when a package's own `prepare` build fails, since
     Xelian builds it separately. Verified: `mcp-playwright`.
 
+- [x] **H-119 — Monorepo-root auto-discovery** (2026-07-21)
+  - `xelian add` on a monorepo *root* (context7, supabase, crewAI) no longer
+    dead-ends. It scans workspace globs and conventional package dirs for
+    runnable members: a single one (or a single MCP server among several) is
+    descended into automatically; a genuinely ambiguous root fails with the
+    exact `xelian add .../tree/<ref>/<subdir>` command per member. Verified:
+    `upstash/context7` root auto-descends to `packages/mcp` and completes an
+    MCP handshake; `supabase/mcp` lists its three servers.
+
 ### Known gaps (deliberately not done — would change architecture or scope)
 
 - [x] **H-115 — npm-workspace TypeScript monorepos** (2026-07-21)

@@ -1,0 +1,5 @@
+spec-version = 1
+xelian-version = "0.1.0"
+package-version = "0.1.0"
+generated-at = "2026-07-21T10:33:01Z"
+native-manifest = "pyproject.toml"

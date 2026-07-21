@@ -17,6 +17,7 @@
 
 pub mod build;
 pub mod detect;
+pub mod discover;
 pub mod entrypoint;
 pub mod pkgtype;
 pub mod url;
@@ -120,6 +121,14 @@ pub enum GithubError {
          those cannot be run by Xelian.)"
     )]
     NoEntrypoint { path: String },
+
+    /// The URL named a monorepo root holding several runnable packages, so
+    /// there is no single right answer. Lists the exact subdirectory commands.
+    #[error(
+        "{repo} is a monorepo containing several runnable packages — \
+         pick the one you want:\n{choices}"
+    )]
+    AmbiguousMonorepo { repo: String, choices: String },
 
     /// The declared entrypoint is a build output and the build did not produce it.
     #[error(
@@ -800,13 +809,13 @@ pub struct ImportOutcome {
 /// Does not publish (§12.3) and does not run the package — running it is the
 /// caller's responsibility.
 pub fn import_github(url_str: &str, home: &XelianHome) -> Result<ImportOutcome, GithubError> {
-    let repo = parse_github_url(url_str)?;
+    let mut repo = parse_github_url(url_str)?;
 
     eprintln!("Resolving {}...", repo.label());
     let sha = resolve_head_sha(&repo)?;
     eprintln!("Resolved to commit {sha}");
 
-    let (checkout, was_cached) = fetch_repo(&repo, &sha, home)?;
+    let (mut checkout, was_cached) = fetch_repo(&repo, &sha, home)?;
 
     if was_cached {
         // A complete cached import: manifest and lock already exist. The
@@ -824,6 +833,12 @@ pub fn import_github(url_str: &str, home: &XelianHome) -> Result<ImportOutcome, 
         });
     }
 
+    // Monorepo root: no runnable package here, but member packages inside.
+    // Descend into the single obvious one, or list the choices (§12.2).
+    if repo.subdir.is_none() && !checkout.join("xelian.toml").is_file() {
+        maybe_descend_into_subpackage(&mut repo, &mut checkout, &sha, home)?;
+    }
+
     let inferred = infer_manifest(&checkout, &repo, &sha)?;
     build_import(&checkout)?;
     eprintln!("Cached at {}", checkout.display());
@@ -834,6 +849,63 @@ pub fn import_github(url_str: &str, home: &XelianHome) -> Result<ImportOutcome, 
         package_dir: checkout,
         from_cache: false,
         needs_build: inferred.needs_build,
+    })
+}
+
+/// When a repository root has no runnable package of its own, look for member
+/// packages inside it (a monorepo). Descend into the single unambiguous one by
+/// re-pointing `repo`/`checkout` at its subdirectory; if the choice is
+/// genuinely ambiguous, fail with the exact `xelian add` commands to pick
+/// from. A root that is simply not a monorepo is left untouched, so normal
+/// inference (and its own clear error) proceeds.
+fn maybe_descend_into_subpackage(
+    repo: &mut RepoRef,
+    checkout: &mut PathBuf,
+    sha: &str,
+    home: &XelianHome,
+) -> Result<(), GithubError> {
+    // Only bother when the root itself yields no entrypoint — a runnable root
+    // is never overridden by something nested.
+    if let Ok(lang) = detect_language(checkout) {
+        if entrypoint::infer(checkout, lang, repo.package_basis()).is_some() {
+            return Ok(());
+        }
+    }
+
+    let subpackages = discover::find_subpackages(checkout);
+    if subpackages.is_empty() {
+        return Ok(());
+    }
+
+    if let Some(chosen) = discover::pick_unambiguous(&subpackages) {
+        eprintln!(
+            "{} is a monorepo; using its {} package: {}",
+            repo.label(),
+            chosen.package_type,
+            chosen.subdir
+        );
+        repo.subdir = Some(chosen.subdir.clone());
+        *checkout = home
+            .github_package_dir(&repo.owner, &repo.repo, sha)
+            .join(&chosen.subdir);
+        return Ok(());
+    }
+
+    // Ambiguous: hand the user the exact commands rather than guessing.
+    let mut lines = String::new();
+    for s in &subpackages {
+        lines.push_str(&format!(
+            "\n  xelian add https://github.com/{}/{}/tree/{}/{}   # {}",
+            repo.owner,
+            repo.repo,
+            repo.git_ref.as_deref().unwrap_or("HEAD"),
+            s.subdir,
+            s.package_type
+        ));
+    }
+    Err(GithubError::AmbiguousMonorepo {
+        repo: repo.label(),
+        choices: lines,
     })
 }
 

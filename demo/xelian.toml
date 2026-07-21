@@ -1,0 +1,20 @@
+spec-version = 1
+name = "demo"
+version = "0.1.0"
+# TODO: describe your package
+description = "TODO: describe your package"
+package-type = "agent"
+language = "python"
+runtime = ">=3.11,<4"
+entrypoint = "src/main.py"
+license = "MIT"
+permissions = []
+features = []
+
+[author]
+# TODO: fill in your name and contact email
+name = "TODO: Your Name"
+email = "you@example.com"
+
+[dependencies]
+manifest = "pyproject.toml"
