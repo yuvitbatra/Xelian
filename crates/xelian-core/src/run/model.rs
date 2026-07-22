@@ -26,6 +26,62 @@ pub enum ModelError {
     InstallFailed(String),
 }
 
+/// Download a Hugging Face model into the models cache (SPEC.md §9.9, extended).
+///
+/// Uses `uvx --from huggingface_hub huggingface-cli download <repo>` — `uv` is
+/// already provisioned for Python packages, so no extra global install. The
+/// weights land in `~/.xelian/models/hf/<repo>` and `HF_HOME` is exported so
+/// the agent's own `transformers`/`huggingface_hub` resolve them from cache.
+fn ensure_hf_model(repo: &str, home: &XelianHome) -> Result<(), ModelError> {
+    // Download into the shared HF cache under our models dir, and export
+    // `HF_HOME` so the launched agent's own `transformers`/`huggingface_hub`
+    // resolve the same cache (a cache hit needs no re-download).
+    let hf_home = home.models().join("hf");
+    std::fs::create_dir_all(&hf_home)?;
+    std::env::set_var("HF_HOME", &hf_home);
+
+    let uv = find_in_path("uv").or_else(|| {
+        let local = home.runtimes().join("bin").join("uv");
+        local.is_file().then_some(local)
+    });
+    let Some(uv) = uv else {
+        return Err(ModelError::Process(
+            "downloading a Hugging Face model needs `uv` (installed automatically for Python \
+             packages). Set `primary-model` to an Ollama model, or install uv."
+                .to_string(),
+        ));
+    };
+
+    eprintln!("Fetching Hugging Face model {repo}... (cached after the first run)");
+    // Prefer the modern `hf download`; fall back to the older
+    // `huggingface-cli download`. Both cache under HF_HOME. `--quiet` keeps the
+    // MCP stdout clean.
+    let run = |subcmd: &str, first_arg: &str| {
+        let mut cmd = Command::new(&uv);
+        cmd.arg("tool")
+            .arg("run")
+            .arg("--from")
+            .arg("huggingface_hub[cli]")
+            .arg(subcmd)
+            .arg(first_arg)
+            .arg(repo)
+            .env("HF_HOME", &hf_home);
+        cmd.stdout(std::process::Stdio::inherit());
+        cmd.stderr(std::process::Stdio::inherit());
+        cmd.status()
+    };
+
+    let ok = matches!(run("hf", "download"), Ok(s) if s.success())
+        || matches!(run("huggingface-cli", "download"), Ok(s) if s.success());
+    if !ok {
+        return Err(ModelError::Process(format!(
+            "downloading Hugging Face model {repo} failed — check the repo id is correct and \
+             public (set HF_TOKEN for gated/private models)"
+        )));
+    }
+    Ok(())
+}
+
 /// Find the `ollama` binary in PATH or at common locations.
 fn find_ollama() -> Option<std::path::PathBuf> {
     find_in_path("ollama").or_else(|| {
@@ -157,6 +213,16 @@ pub fn ensure_model(primary_model: Option<&str>, home: &XelianHome) -> Result<()
         Some(m) if !m.is_empty() => m,
         _ => return Ok(()),
     };
+
+    // A Hugging Face model reference (`hf:org/model`) is downloaded from the
+    // Hub into the models cache, for agents that use fine-tuned / open weights
+    // rather than an Ollama model. Everything else is treated as Ollama.
+    if let Some(repo) = model
+        .strip_prefix("hf:")
+        .or_else(|| model.strip_prefix("huggingface:"))
+    {
+        return ensure_hf_model(repo, home);
+    }
 
     // Step 1: find or install Ollama.
     let ollama = match find_ollama() {
