@@ -81,6 +81,15 @@ pub fn detect_language(checkout: &Path) -> Result<Language, GithubError> {
         }
     }
 
+    // A Dockerfile-only project (no Python/Node manifest) is a distinct, common
+    // case (OpenHands, many self-hosted agents). Tell the user exactly how to
+    // run it via Docker instead of the generic "couldn't detect language".
+    if checkout.join("Dockerfile").is_file() || checkout.join("docker-compose.yml").is_file() {
+        return Err(GithubError::DockerOnly {
+            path: checkout.display().to_string(),
+        });
+    }
+
     Err(GithubError::UndetectedLanguage {
         path: checkout.display().to_string(),
     })

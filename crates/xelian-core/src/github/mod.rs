@@ -108,6 +108,18 @@ pub enum GithubError {
     )]
     UndetectedLanguage { path: String },
 
+    /// The repository ships only a Dockerfile / docker-compose (no Python or
+    /// Node manifest). Xelian's Python/Node runtimes can't run it, but Docker
+    /// can — so point the user at that rather than a generic "can't detect".
+    #[error(
+        "this project runs via Docker (it ships a Dockerfile, no Python/Node package).\n\
+         It's cached at {path}\n\
+         Run it with Docker directly:\n  \
+         docker build -t my-agent {path} && docker run -it my-agent\n\
+         (A built-in Docker runtime for `xelian run` is on the roadmap.)"
+    )]
+    DockerOnly { path: String },
+
     /// No runnable entrypoint could be inferred. Reported *before* dependency
     /// installation so the user is not made to wait several minutes for a
     /// failure that was already knowable (§12.2 step 3).
@@ -658,8 +670,17 @@ pub fn infer_manifest(
     eprintln!("Detected language: {}", detect::language_label(language));
 
     let found = entrypoint::infer(checkout, language, repo.package_basis()).ok_or_else(|| {
-        GithubError::NoEntrypoint {
-            path: checkout.display().to_string(),
+        // No runnable Python/Node entrypoint. If the repo ships a Dockerfile
+        // (e.g. OpenHands: a Python project that actually runs via Docker),
+        // point the user at Docker rather than a generic "set entrypoint".
+        if checkout.join("Dockerfile").is_file() || checkout.join("docker-compose.yml").is_file() {
+            GithubError::DockerOnly {
+                path: checkout.display().to_string(),
+            }
+        } else {
+            GithubError::NoEntrypoint {
+                path: checkout.display().to_string(),
+            }
         }
     })?;
 
