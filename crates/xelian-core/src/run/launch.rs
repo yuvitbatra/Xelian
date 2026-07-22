@@ -53,6 +53,12 @@ pub fn launch(
     cmd.args(&args);
     cmd.current_dir(&work_dir);
 
+    // Put the provisioned runtime's bin dir (and the env's node_modules/.bin)
+    // on the child's PATH, so a package that shells out to a sibling tool at
+    // run time — `npx`, `uvx`, a CLI from its own deps — finds it instead of
+    // relying on whatever happens to be installed globally.
+    prepend_runtime_path(&mut cmd, env_dir, bin_dir);
+
     // Inherit the parent's stdio: interactive REPL for agents (§9.10.1),
     // transparent JSON-RPC stdio transport for MCP servers (§9.10.2).
     cmd.stdin(std::process::Stdio::inherit());
@@ -120,6 +126,21 @@ fn announce_ready(manifest: &Manifest) {
             // server is up, even though the child now owns the terminal.
             let _ = io::stderr().flush();
         }
+    }
+}
+
+/// Prepend the runtime's bin directory (and the environment's local
+/// `node_modules/.bin`) to the child's PATH.
+fn prepend_runtime_path(cmd: &mut Command, env_dir: &Path, bin_dir: &Path) {
+    let mut paths = vec![
+        bin_dir.to_path_buf(),
+        env_dir.join("node_modules").join(".bin"),
+    ];
+    if let Some(existing) = std::env::var_os("PATH") {
+        paths.extend(std::env::split_paths(&existing));
+    }
+    if let Ok(joined) = std::env::join_paths(paths) {
+        cmd.env("PATH", joined);
     }
 }
 
