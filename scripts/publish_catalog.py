@@ -41,7 +41,20 @@ def fill_manifest(pkg_dir: Path, license_id: str, author: str) -> bool:
     return True
 
 
+def already_published(name: str) -> bool:
+    """Cheap check: is `xelian/<name>` already hosted? Avoids a full rebuild
+    just to hit a 409, so the batch is resumable and fast over what's done."""
+    r = sh(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
+            f"{URL}/packages/xelian/{name}"])
+    return r.stdout.strip() == "200"
+
+
 def publish_one(entry: dict, home: str) -> str:
+    # The published package name is the derived slug of the repo/subdir basis;
+    # approximate it from the catalog name for the pre-check.
+    slug = re.sub(r"[^a-z0-9_-]+", "-", entry["name"].lower()).strip("-")
+    if slug and already_published(slug):
+        return "exists"
     env = dict(os.environ, HOME=home, XELIAN_REGISTRY_URL=URL)
     # Import (build the archive). Time-boxed; add launches at the end, so a
     # timeout after the build is expected and fine.
