@@ -35,6 +35,12 @@ export default function CatalogCard({ entry }: { entry: CatalogEntry }) {
       <div className="mt-3 flex items-center gap-3 text-xs text-gray-500">
         <span>★ {entry.stars.toLocaleString()}</span>
         {entry.license ? <span>{entry.license}</span> : null}
+        <span
+          title="Verified by Xelian: imported, built, and launched before listing."
+          className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-1.5 py-0.5 font-medium text-green-700"
+        >
+          ✓ runs
+        </span>
       </div>
 
       <button

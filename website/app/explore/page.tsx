@@ -50,14 +50,15 @@ export default function Explore() {
           Explore the catalog
         </h1>
         <p className="mt-3 max-w-2xl text-base text-gray-600">
-          Hundreds of open-source MCP servers and AI agents from GitHub, each
-          runnable locally with one command. Xelian imports and runs them under
-          their own license — it doesn&apos;t host the code.
+          Open-source MCP servers and AI agents from GitHub — and every one is{" "}
+          <span className="font-medium text-green-700">verified to actually run</span>:
+          imported, built, and launched by Xelian before it&apos;s listed. Run any
+          locally with one command; if it needs an API key, Xelian just asks once.
         </p>
         {counts ? (
           <p className="mt-2 text-sm text-gray-500">
-            {counts.total.toLocaleString()} packages · {counts.mcp} servers ·{" "}
-            {counts.agents} agents
+            {counts.total.toLocaleString()} verified packages · {counts.mcp}{" "}
+            servers · {counts.agents} agents
           </p>
         ) : null}
         <p className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">

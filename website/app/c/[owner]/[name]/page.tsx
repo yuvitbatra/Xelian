@@ -70,6 +70,14 @@ export default function CatalogCardPage() {
           {owner}/{name}
         </h1>
         {entry ? <TypeBadge type={entry.type} /> : null}
+        {entry ? (
+          <span
+            title="Imported, built, and launched by Xelian before listing — it actually runs."
+            className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700"
+          >
+            ✓ verified&nbsp;runs
+          </span>
+        ) : null}
       </div>
 
       {entry ? (
