@@ -54,12 +54,26 @@ export default function PublishPage() {
     <div className="mx-auto max-w-lg px-4 py-12">
       <h1 className="text-xl font-semibold text-gray-900">Publish a package</h1>
       <p className="mt-1 text-sm text-gray-600">
-        Upload the archive and lockfile produced by{" "}
+        The easiest way to publish is one command from your project folder — no
+        files to upload by hand:
+      </p>
+      <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <pre className="overflow-x-auto font-mono text-xs text-gray-800">
+          {`xelian init      # scaffold xelian.toml (first time only)\nxelian login\nxelian push      # builds + publishes in one step`}
+        </pre>
+      </div>
+      <p className="mt-6 text-sm text-gray-600">
+        Prefer the browser? Upload the{" "}
         <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-xs">
-          xelian build
-        </code>
-        . The registry verifies the checksum before accepting. Publishing to{" "}
-        <span className="font-mono">{username ?? "…"}/</span> only.
+          .xelian
+        </code>{" "}
+        archive and{" "}
+        <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-xs">
+          xelian.lock
+        </code>{" "}
+        that <span className="font-mono">xelian push</span> writes into your
+        project folder. The registry verifies the checksum before accepting.
+        Publishing to <span className="font-mono">{username ?? "…"}/</span> only.
       </p>
 
       <form onSubmit={submit} className="mt-6 flex flex-col gap-5">
@@ -118,15 +132,6 @@ export default function PublishPage() {
           {busy ? "Publishing…" : "Publish"}
         </button>
       </form>
-
-      <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-4">
-        <h2 className="text-sm font-semibold text-gray-900">
-          Prefer the CLI?
-        </h2>
-        <pre className="mt-2 overflow-x-auto font-mono text-xs text-gray-700">
-          {`xelian login\nxelian push`}
-        </pre>
-      </div>
     </div>
   );
 }

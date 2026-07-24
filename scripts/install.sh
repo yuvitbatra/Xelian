@@ -26,7 +26,9 @@ os="$(uname -s)"
 arch="$(uname -m)"
 case "$os" in
   Darwin) os_part="apple-darwin" ;;
-  Linux)  os_part="unknown-linux-gnu" ;;
+  # Linux assets are static musl builds (glibc-independent — they run on any
+  # Linux, including Ubuntu 22.04/Debian/RHEL/Amazon Linux/Alpine).
+  Linux)  os_part="unknown-linux-musl" ;;
   *) die "unsupported OS '$os' — Xelian ships macOS and Linux binaries; build from source instead" ;;
 esac
 case "$arch" in

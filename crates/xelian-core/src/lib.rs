@@ -14,6 +14,7 @@ pub mod package;
 pub mod permissions;
 pub mod registry_client;
 pub mod run;
+pub mod secrets;
 pub mod validate;
 
 /// Version of the xelian binary, recorded in `xelian.lock` (`xelian-version`).

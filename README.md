@@ -5,12 +5,13 @@ runtime for AI agents and MCP servers — package once, publish with one
 command, and anyone can run it locally with zero setup.
 
 ```bash
-xelian run QuantGeekDev/docker-mcp     # any of 847 catalog packages, by name
+xelian run QuantGeekDev/docker-mcp     # any of 330 verified agents & MCP servers, by name
 ```
 
-<!-- TODO(owner): record the 30s install→run→chat GIF with asciinema:
-     `asciinema rec demo.cast`, run the quickstart, then convert with agg:
-     `agg demo.cast demo.gif` and embed it here. -->
+Every package in the catalog is **verified to actually run** — imported,
+built, and launched (MCP servers answer the protocol handshake; agents boot
+their REPL) before it's listed. If an agent needs an API key, `xelian run`
+just asks for it once and remembers it.
 
 ## Why
 
@@ -32,9 +33,10 @@ every capability.
 
 ## Quickstart
 
-Install the prebuilt binary — no Rust toolchain needed (once a release is
-tagged; the [release workflow](.github/workflows/release.yml) produces the
-assets and [`scripts/install.sh`](scripts/install.sh) fetches them):
+Install the prebuilt binary — no Rust toolchain needed. Linux binaries are
+statically linked (musl), so they run on any distro (Ubuntu, Debian, RHEL,
+Amazon Linux, Alpine). The [release workflow](.github/workflows/release.yml)
+produces the assets and [`scripts/install.sh`](scripts/install.sh) fetches them:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/yuvitbatra/Xelian/main/scripts/install.sh | sh
@@ -44,7 +46,7 @@ Or build from source (Rust toolchain required):
 
 ```bash
 cargo install --path crates/xelian-cli       # 1. install the CLI
-xelian run QuantGeekDev/docker-mcp           # 2. run any of 847 catalog packages by name
+xelian run QuantGeekDev/docker-mcp           # 2. run any of 330 verified packages by name
 xelian add https://github.com/zcaceres/fetch-mcp   # or import any GitHub repo directly
 ```
 

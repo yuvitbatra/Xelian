@@ -721,9 +721,14 @@ fn prepare_env_and_launch_inner(
     }
 
     // --- Phase 8 / H-080: Resolve required/default environment variables,
-    // immediately before launch per §9.10. ---
-    let env_pairs = xelian_core::run::env_vars::resolve_env_vars(&manifest.environment)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    // immediately before launch per §9.10. Missing required values (e.g. API
+    // keys) are asked for interactively and saved for reuse — setup should be
+    // ridiculously easy, not a wall of "cannot launch". ---
+    let env_pairs = xelian_core::run::env_vars::resolve_env_vars_interactive(
+        &manifest.environment,
+        &home.secrets_path(),
+    )
+    .map_err(|e| anyhow::anyhow!(e))?;
 
     // --- Phase 8 / H-081, H-082: Launch (agent REPL or MCP server). ---
     let status =

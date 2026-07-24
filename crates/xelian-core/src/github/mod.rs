@@ -66,6 +66,17 @@ pub enum GithubError {
     #[error("`git ls-remote` for {repo} returned no commit for {reference:?}")]
     UnexpectedHeadFormat { repo: String, reference: String },
 
+    /// The repository could not be reached — it does not exist, is private, or
+    /// the name was mistyped. This is the friendly mapping of `git ls-remote`
+    /// asking for credentials on a non-existent/private public URL (M2), rather
+    /// than leaking the raw `could not read Username … ExitStatus(32768)`.
+    #[error(
+        "repository not found: {repo}\n\
+         It may be private, or the owner/name may be mistyped.\n\
+         Check the URL opens on github.com; private repos aren't supported by `xelian add` in V1."
+    )]
+    RepoNotFound { repo: String },
+
     /// Downloading the repository tarball failed.
     #[error("failed to download {repo} at {sha}: {reason}")]
     DownloadFailed {
@@ -255,10 +266,33 @@ pub fn resolve_head_sha(repo: &RepoRef) -> Result<String, GithubError> {
 
     let mut cmd = Command::new("git");
     cmd.arg("ls-remote").arg(&remote).arg(reference);
-    let output = run_command_checked(&mut cmd).map_err(|e| GithubError::ResolveHead {
-        repo: repo.label(),
-        reference: reference.to_string(),
-        source: Box::new(e),
+    // Never let git block on an interactive credential prompt: for a
+    // nonexistent/private repo `ls-remote` otherwise tries to read a username
+    // from the terminal and fails with a cryptic "could not read Username …".
+    // Disabling the prompt makes it fail fast and lets us map it to a clear
+    // "repository not found" (M2).
+    cmd.env("GIT_TERMINAL_PROMPT", "0");
+    cmd.env("GCM_INTERACTIVE", "never");
+    let output = run_command_checked(&mut cmd).map_err(|e| {
+        // The overwhelmingly common cause of an `ls-remote` failure on a
+        // well-formed public URL is that the repo doesn't exist or is private
+        // (git then asks for auth). Surface the actionable message; keep the
+        // raw error only for genuinely unexpected transports.
+        let raw = e.to_string();
+        if raw.contains("could not read Username")
+            || raw.contains("Authentication failed")
+            || raw.contains("repository")
+            || raw.contains("not found")
+            || raw.contains("terminal prompts disabled")
+        {
+            GithubError::RepoNotFound { repo: repo.label() }
+        } else {
+            GithubError::ResolveHead {
+                repo: repo.label(),
+                reference: reference.to_string(),
+                source: Box::new(e),
+            }
+        }
     })?;
 
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -579,6 +613,97 @@ fn toml_escape(s: &str) -> String {
 }
 
 #[allow(clippy::too_many_arguments)]
+/// Well-known API keys agents commonly require. If an imported repo's source
+/// reads one of these, the agent almost certainly needs it to run — so we
+/// declare it `required` in the generated manifest, which makes `xelian run`
+/// ask for it once and store it (the "ridiculously easy setup" path). Kept to a
+/// high-precision allowlist so we never prompt for incidental/optional vars.
+const KNOWN_REQUIRED_KEYS: &[&str] = &[
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GEMINI_API_KEY",
+    "GOOGLE_API_KEY",
+    "GOOGLE_GENERATIVE_AI_API_KEY",
+    "GROQ_API_KEY",
+    "MISTRAL_API_KEY",
+    "COHERE_API_KEY",
+    "HF_TOKEN",
+    "HUGGINGFACE_API_KEY",
+    "HUGGINGFACEHUB_API_TOKEN",
+    "REPLICATE_API_TOKEN",
+    "TOGETHER_API_KEY",
+    "PERPLEXITY_API_KEY",
+    "OPENROUTER_API_KEY",
+    "DEEPSEEK_API_KEY",
+    "XAI_API_KEY",
+    "FIREWORKS_API_KEY",
+    "AZURE_OPENAI_API_KEY",
+    "TAVILY_API_KEY",
+    "SERPER_API_KEY",
+    "SERPAPI_API_KEY",
+    "BRAVE_API_KEY",
+    "EXA_API_KEY",
+];
+
+/// Scan the checkout's source for reads of well-known API keys and return the
+/// ones present (sorted, deduped). Best-effort and bounded: only obvious source
+/// files, skipping vendored/hidden dirs, capping bytes so a huge repo can't
+/// slow the import.
+fn detect_required_env(checkout: &Path, language: Language) -> Vec<String> {
+    let exts: &[&str] = match language {
+        Language::Python => &["py"],
+        Language::Node => &["js", "mjs", "cjs", "ts", "tsx", "jsx"],
+    };
+    let mut haystack = String::new();
+    let mut budget: usize = 3_000_000; // ~3 MB of source is plenty to scan.
+    let mut stack = vec![checkout.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        let Ok(entries) = fs::read_dir(&dir) else { continue };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            if name.starts_with('.')
+                || matches!(
+                    name.as_ref(),
+                    "node_modules" | "venv" | ".venv" | "dist" | "build" | "__pycache__"
+                        | "site-packages" | "target" | "vendor"
+                )
+            {
+                continue;
+            }
+            if path.is_dir() {
+                stack.push(path);
+            } else if path
+                .extension()
+                .and_then(|e| e.to_str())
+                .is_some_and(|e| exts.contains(&e))
+            {
+                if let Ok(text) = fs::read_to_string(&path) {
+                    budget = budget.saturating_sub(text.len());
+                    haystack.push_str(&text);
+                    haystack.push('\n');
+                }
+                if budget == 0 {
+                    break;
+                }
+            }
+        }
+        if budget == 0 {
+            break;
+        }
+    }
+
+    let mut found: Vec<String> = KNOWN_REQUIRED_KEYS
+        .iter()
+        .filter(|k| haystack.contains(**k))
+        .map(|k| k.to_string())
+        .collect();
+    found.sort();
+    found.dedup();
+    found
+}
+
 fn render_manifest_toml(
     name: &str,
     description: &str,
@@ -588,6 +713,8 @@ fn render_manifest_toml(
     entrypoint: &str,
     dep_manifest: &str,
     dep_lockfile: Option<&str>,
+    detected_env: &[String],
+    env_required: bool,
 ) -> String {
     use std::fmt::Write as _;
 
@@ -618,6 +745,15 @@ fn render_manifest_toml(
     let _ = writeln!(s, "manifest = \"{dep_manifest}\"");
     if let Some(lockfile) = dep_lockfile {
         let _ = writeln!(s, "lockfile = \"{lockfile}\"");
+    }
+    // Auto-detected API keys the agent reads (SPEC §6.2.1). A single provider
+    // key is `required` (so `run` prompts once); multiple are disclose-only.
+    if !detected_env.is_empty() {
+        let _ = writeln!(s);
+        let _ = writeln!(s, "[environment]");
+        for key in detected_env {
+            let _ = writeln!(s, "{key} = {{ required = {env_required} }}");
+        }
     }
     s
 }
@@ -732,6 +868,28 @@ pub fn infer_manifest(
         repo.owner, repo.repo
     );
 
+    // Detect well-known API keys the code reads. If the agent reads exactly one
+    // provider key, it needs *that* key — declare it required so `run` asks for
+    // it once. If it reads several (multi-provider support), forcing all of them
+    // would be worse than the crash it prevents, so declare them disclose-only
+    // (`required = false`): the agent uses whichever key is in the environment,
+    // and the ambient environment is passed through to it regardless.
+    let detected_env = detect_required_env(checkout, language);
+    let env_required = detected_env.len() == 1;
+    if !detected_env.is_empty() {
+        if env_required {
+            eprintln!(
+                "Detected required API key: {} — you'll be asked for it on first run",
+                detected_env[0]
+            );
+        } else {
+            eprintln!(
+                "This agent can use any of: {} — set whichever provider key you have",
+                detected_env.join(", ")
+            );
+        }
+    }
+
     let manifest_toml = render_manifest_toml(
         &name,
         &description,
@@ -741,6 +899,8 @@ pub fn infer_manifest(
         &found.path,
         dep_manifest,
         dep_lockfile,
+        &detected_env,
+        env_required,
     );
 
     // The generated manifest MUST parse before it is written — a failure here
@@ -821,6 +981,8 @@ fn generate_docker_manifest(
         "xelian_launcher.py",
         "xelian-docker.requirements.txt",
         None,
+        &[],
+        false,
     );
     let manifest = Manifest::from_toml_str(&toml)?;
     eprintln!("Inferred Docker entrypoint: {}", manifest.entrypoint);
@@ -1005,6 +1167,43 @@ fn maybe_descend_into_subpackage(
 mod tests {
     use super::*;
     use tempfile::tempdir;
+
+    #[test]
+    fn detect_required_env_finds_known_keys_only() {
+        let d = tempdir().unwrap();
+        std::fs::write(
+            d.path().join("agent.py"),
+            "import os\nk = os.environ[\"OPENAI_API_KEY\"]\nt = os.getenv(\"TAVILY_API_KEY\")\np = os.getenv(\"PORT\", \"8000\")\nx = os.environ[\"MY_RANDOM_FLAG\"]\n",
+        )
+        .unwrap();
+        let found = detect_required_env(d.path(), Language::Python);
+        assert_eq!(found, vec!["OPENAI_API_KEY".to_string(), "TAVILY_API_KEY".to_string()]);
+    }
+
+    #[test]
+    fn detect_required_env_reads_node_process_env() {
+        let d = tempdir().unwrap();
+        std::fs::write(
+            d.path().join("index.js"),
+            "const k = process.env.ANTHROPIC_API_KEY;\nconst p = process.env.PORT || 3000;\n",
+        )
+        .unwrap();
+        let found = detect_required_env(d.path(), Language::Node);
+        assert_eq!(found, vec!["ANTHROPIC_API_KEY".to_string()]);
+    }
+
+    #[test]
+    fn detect_required_env_skips_vendored_dirs() {
+        let d = tempdir().unwrap();
+        std::fs::create_dir_all(d.path().join("node_modules")).unwrap();
+        std::fs::write(
+            d.path().join("node_modules").join("dep.js"),
+            "process.env.OPENAI_API_KEY",
+        )
+        .unwrap();
+        let found = detect_required_env(d.path(), Language::Node);
+        assert!(found.is_empty(), "must not scan node_modules");
+    }
 
     fn sample_repo() -> RepoRef {
         RepoRef {

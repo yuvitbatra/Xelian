@@ -14,10 +14,47 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://xelian.vercel.app";
+const TITLE = "Xelian — run AI agents like you run models";
+const DESCRIPTION =
+  "Xelian is a local-first registry and runtime for AI agents and MCP servers. Package once, publish, and anyone can run it with a single command — the Ollama feel for agents.";
+
 export const metadata: Metadata = {
-  title: "Xelian — run AI agents like models",
-  description:
-    "Xelian is a local-first registry and runtime for AI agents and MCP servers. Package once, publish, and anyone can run it with a single command.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: TITLE,
+    template: "%s · Xelian",
+  },
+  description: DESCRIPTION,
+  keywords: [
+    "AI agents",
+    "MCP server",
+    "Model Context Protocol",
+    "agent registry",
+    "run AI agents",
+    "local-first",
+    "Ollama for agents",
+    "xelian",
+  ],
+  applicationName: "Xelian",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "Xelian",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
 };
 
 export default function RootLayout({

@@ -182,6 +182,18 @@ impl XelianHome {
             .join(format!("{version}.toml"))
     }
 
+    /// Path to the global secrets store: `~/.xelian/secrets.toml`.
+    ///
+    /// Stores environment values the user has entered once (e.g. API keys),
+    /// keyed by variable name, so they are reused across every package that
+    /// declares the same variable instead of being re-asked each run. Written
+    /// with `0600`. Lives under `~/.xelian/`, never inside a package cache.
+    ///
+    /// Does not create anything on disk.
+    pub fn secrets_path(&self) -> PathBuf {
+        self.root.join("secrets.toml")
+    }
+
     /// The on-disk directory for a package imported from GitHub at a
     /// specific commit SHA: `packages/github/<owner>/<repo>/<sha>` (SPEC.md
     /// §12.2 step 1).

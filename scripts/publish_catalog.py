@@ -98,6 +98,8 @@ def publish_one(entry: dict, home: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--in", dest="inp", default=str(ROOT / "registry" / "catalog.json"),
+                    help="catalog to publish from (default: registry/catalog.json)")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--type", choices=["mcp", "agent"])
     args = ap.parse_args()
@@ -118,7 +120,7 @@ def main() -> int:
         print("login failed:", login.stdout, login.stderr, file=sys.stderr)
         return 1
 
-    entries = json.load(open(ROOT / "registry" / "catalog.json"))["packages"]
+    entries = json.load(open(args.inp))["packages"]
     if args.type:
         entries = [e for e in entries if e["type"] == args.type]
     if args.limit:
