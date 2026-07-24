@@ -87,13 +87,54 @@ def publish_one(entry: dict, home: str) -> str:
     pkg_dir = Path(cached)
     if not fill_manifest(pkg_dir, entry.get("license"), entry["owner"]):
         return "no-manifest"
-    r = sh([str(BIN), "push"], cwd=str(pkg_dir), env=env)
-    out = r.stdout + r.stderr
-    if "successfully" in out:
-        return "published"
-    if "already published" in out or "409" in out:
-        return "exists"
-    return "push-failed:" + (out.strip().splitlines()[-1][:60] if out.strip() else "?")
+    ensure_readme(pkg_dir, entry)
+    if not ensure_license(pkg_dir):
+        return "no-license"
+
+    # Push with backoff on the registry's publish rate limit (429). The limit is
+    # transient, so retrying after a pause hosts the package rather than losing it.
+    for attempt in range(6):
+        r = sh([str(BIN), "push"], cwd=str(pkg_dir), env=env)
+        out = r.stdout + r.stderr
+        if "successfully" in out:
+            return "published"
+        if "already published" in out or "409" in out:
+            return "exists"
+        if "429" in out or "rate limit" in out.lower():
+            time.sleep(20 * (attempt + 1))  # 20s, 40s, 60s, … back off
+            continue
+        return "push-failed:" + (out.strip().splitlines()[-1][:60] if out.strip() else "?")
+    return "push-failed:rate-limited"
+
+
+def ensure_license(pkg_dir: Path) -> bool:
+    """`xelian push` requires a LICENSE at the package root. Never fabricate one
+    — but if the repo ships the license under a common alias, copy the real text
+    to LICENSE so redistribution preserves it. Returns False if none is found."""
+    if (pkg_dir / "LICENSE").is_file():
+        return True
+    for alias in ("LICENSE.md", "LICENSE.txt", "LICENSE-MIT", "LICENSE-APACHE",
+                  "LICENSE.rst", "COPYING", "COPYING.txt", "license", "license.md",
+                  "License", "License.md", "License.txt"):
+        src = pkg_dir / alias
+        if src.is_file():
+            (pkg_dir / "LICENSE").write_text(src.read_text(errors="replace"))
+            return True
+    return False
+
+
+def ensure_readme(pkg_dir: Path, entry: dict) -> None:
+    """`xelian push` requires a README at the package root. Third-party imports
+    may not have one there — write a small attribution stub so it can be hosted."""
+    readme = pkg_dir / "README.md"
+    if readme.is_file():
+        return
+    readme.write_text(
+        f"# {entry['name']}\n\n{(entry.get('description') or '').strip()}\n\n"
+        f"Imported from [{entry['full_name']}]({entry['url']}) and run under its "
+        f"own license ({entry.get('license') or 'see repository'}).\n\n"
+        f"```bash\nxelian run {entry['full_name']}\n```\n"
+    )
 
 
 def main() -> int:
@@ -132,6 +173,10 @@ def main() -> int:
         key = status.split(":")[0]
         tally[key] = tally.get(key, 0) + 1
         print(f"[{i}/{len(entries)}] {status:<12} {e['full_name']}", flush=True)
+        # Gentle pacing under the registry's publish rate limit (only after an
+        # actual publish — skips/exists cost nothing).
+        if key == "published":
+            time.sleep(3)
     print("summary:", tally)
     return 0
 
