@@ -278,14 +278,24 @@ fn cmd_push() -> anyhow::Result<()> {
         );
     }
 
+    // Placeholders from `xelian init` are a hard error, not a warning: the
+    // registry is public and permanent (versions are immutable), so a package
+    // described "TODO: describe your package" by "you@example.com" would be junk
+    // forever. Blocking here — with an exact instruction — keeps the registry
+    // credible without making publishing hard (it's a one-line edit).
+    let mut placeholder_fields = Vec::new();
     if init_placeholder(&manifest.description) {
-        println!(
-            "warning: `description` is still the init placeholder — edit it before publishing."
-        );
+        placeholder_fields.push("`description` (edit it to describe your package)");
     }
     if init_placeholder(&manifest.author.name) || init_placeholder(&manifest.author.email) {
-        println!(
-            "warning: `[author]` is still the init placeholder — fill in your name and email."
+        placeholder_fields.push("`[author]` name/email (fill in your contact)");
+    }
+    if !placeholder_fields.is_empty() {
+        anyhow::bail!(
+            "cannot publish: xelian.toml still has the placeholder value(s) from `xelian init`:\n  \
+             - {}\n\
+             Edit them in xelian.toml, then run `xelian push` again.",
+            placeholder_fields.join("\n  - ")
         );
     }
 
