@@ -101,6 +101,9 @@ pub fn resolve_env_vars_interactive(
     Ok(result)
 }
 
+/// Resolved `(name, value)` environment pairs.
+type EnvPairs = Vec<(String, String)>;
+
 /// Pure resolution with injectable sources (testable without a TTY or disk).
 /// Returns the resolved pairs and any values newly obtained from `prompt`
 /// (which the caller persists).
@@ -109,7 +112,7 @@ fn resolve_with_sources<E, S, P>(
     env_get: E,
     stored_get: S,
     mut prompt: P,
-) -> Result<(Vec<(String, String)>, Vec<(String, String)>), EnvVarError>
+) -> Result<(EnvPairs, EnvPairs), EnvVarError>
 where
     E: Fn(&str) -> Option<String>,
     S: Fn(&str) -> Option<String>,

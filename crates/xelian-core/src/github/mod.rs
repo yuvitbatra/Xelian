@@ -612,7 +612,6 @@ fn toml_escape(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
-#[allow(clippy::too_many_arguments)]
 /// Well-known API keys agents commonly require. If an imported repo's source
 /// reads one of these, the agent almost certainly needs it to run — so we
 /// declare it `required` in the generated manifest, which makes `xelian run`
@@ -713,6 +712,7 @@ fn detect_required_env(checkout: &Path, language: Language) -> Vec<String> {
     found
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_manifest_toml(
     name: &str,
     description: &str,
