@@ -834,6 +834,28 @@ fn prepare_env_and_launch_inner(
         }
     }
 
+    // --- Warm interactive session for CLI-style agents (design 2026-07-25).
+    // When the user isn't driving the entrypoint with their own args and the
+    // package behaves like a command-line tool, keep the environment warm and
+    // loop on input instead of exiting after one command. ---
+    let user_driven = !invocation.args.is_empty();
+    if launch
+        && !user_driven
+        && manifest.package_type == xelian_core::manifest::PackageType::Agent
+        && insights.run_style == xelian_core::run::inspect::RunStyle::OneShot
+    {
+        xelian_core::run::launch::launch_repl(
+            manifest,
+            package_dir,
+            env_dir,
+            bin_dir,
+            &env_pairs,
+            &insights,
+        )
+        .map_err(|e| anyhow::anyhow!("launch error: {e}"))?;
+        return Ok(());
+    }
+
     // --- Phase 8 / H-081, H-082: Launch (agent REPL or MCP server). ---
     let status = xelian_core::run::launch::launch(
         manifest,

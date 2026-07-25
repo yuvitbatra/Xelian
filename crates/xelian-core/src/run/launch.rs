@@ -136,6 +136,151 @@ pub fn launch(
     }
 }
 
+/// Run a CLI-style agent as a warm interactive session (design
+/// `2026-07-25-smart-run-and-local-ui`).
+///
+/// For a package whose entrypoint behaves like a command-line tool — it parses
+/// argv, does one thing, and exits — re-typing the whole `xelian run pkg -- …`
+/// pipeline per command is the friction users hit. This keeps the prepared
+/// environment warm and loops: read a line, splice it onto the entrypoint argv,
+/// run it, repeat. The tool needs no changes; the banner and `:help` are drawn
+/// from inferred insights so the user knows what to type.
+///
+/// `:help` prints usage; `:exit`/`:quit`/EOF (Ctrl-D) ends the session.
+pub fn launch_repl(
+    manifest: &Manifest,
+    package_dir: &Path,
+    env_dir: &Path,
+    bin_dir: &Path,
+    env_pairs: &[(String, String)],
+    insights: &crate::run::inspect::PackageInsights,
+) -> Result<(), LaunchError> {
+    let entrypoint = package_dir.join(&manifest.entrypoint);
+    if !entrypoint.is_file() {
+        return Err(LaunchError::EntrypointMissing { path: entrypoint });
+    }
+
+    print_repl_banner(manifest, insights);
+
+    let stdin = io::stdin();
+    loop {
+        eprint!("\n{}> ", manifest.name);
+        let _ = io::stderr().flush();
+
+        let mut line = String::new();
+        if stdin.read_line(&mut line)? == 0 {
+            eprintln!("\nbye");
+            break; // EOF (Ctrl-D)
+        }
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        match line {
+            ":exit" | ":quit" | ":q" => break,
+            ":help" | ":h" => {
+                print_repl_help(manifest, insights);
+                continue;
+            }
+            _ => {}
+        }
+
+        let args = split_args(line);
+        let (program, cmd_args, work_dir) =
+            build_launch_command(manifest, package_dir, env_dir, bin_dir, &args)?;
+
+        let mut cmd = Command::new(&program);
+        cmd.args(&cmd_args).current_dir(&work_dir);
+        prepend_runtime_path(&mut cmd, env_dir, bin_dir);
+        cmd.stdin(std::process::Stdio::inherit());
+        cmd.stdout(std::process::Stdio::inherit());
+        cmd.stderr(std::process::Stdio::inherit());
+        for (key, val) in env_pairs {
+            cmd.env(key, val);
+        }
+
+        match cmd.spawn() {
+            Ok(mut child) => {
+                let status = child.wait()?;
+                if !status.success() {
+                    eprintln!(
+                        "  (command exited with code {})",
+                        status.code().unwrap_or(-1)
+                    );
+                }
+            }
+            Err(e) => eprintln!("  failed to run: {e}"),
+        }
+    }
+    Ok(())
+}
+
+/// The one-time banner shown when a warm session starts.
+fn print_repl_banner(manifest: &Manifest, insights: &crate::run::inspect::PackageInsights) {
+    eprintln!(
+        "\n  \x1b[1;32m✓\x1b[0m {} {} ready — interactive session",
+        manifest.name, manifest.version
+    );
+    if !insights.subcommands.is_empty() {
+        eprintln!("  commands: {}", insights.subcommands.join(", "));
+    }
+    eprintln!("  Type a command and press enter. \x1b[1m:help\x1b[0m for usage, \x1b[1m:exit\x1b[0m to quit.");
+}
+
+/// Response to `:help` — the README usage excerpt, else the inferred commands.
+fn print_repl_help(manifest: &Manifest, insights: &crate::run::inspect::PackageInsights) {
+    if let Some(usage) = &insights.usage {
+        eprintln!("\n{usage}\n");
+    } else if !insights.subcommands.is_empty() {
+        eprintln!(
+            "\nAvailable commands: {}\n",
+            insights.subcommands.join(", ")
+        );
+    } else {
+        eprintln!(
+            "\nType the arguments you'd pass to {} (e.g. `--help`).\n",
+            manifest.name
+        );
+    }
+}
+
+/// Split a REPL line into argv tokens, honoring simple single/double quotes so
+/// an argument with spaces (`greet "the world"`) stays one token.
+fn split_args(line: &str) -> Vec<String> {
+    let mut args = Vec::new();
+    let mut cur = String::new();
+    let mut quote: Option<char> = None;
+    let mut in_token = false;
+    for c in line.chars() {
+        if let Some(q) = quote {
+            if c == q {
+                quote = None;
+            } else {
+                cur.push(c);
+            }
+            continue;
+        }
+        if c == '"' || c == '\'' {
+            quote = Some(c);
+            in_token = true;
+            continue;
+        }
+        if c.is_whitespace() {
+            if in_token {
+                args.push(std::mem::take(&mut cur));
+                in_token = false;
+            }
+            continue;
+        }
+        cur.push(c);
+        in_token = true;
+    }
+    if in_token {
+        args.push(cur);
+    }
+    args
+}
+
 /// How long a child must stay alive before it counts as started.
 ///
 /// Long enough that a process which exits on its own immediately (usage text,
@@ -392,6 +537,18 @@ fn resolve_port(requested: u16) -> Result<u16, LaunchError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn split_args_handles_quotes_and_whitespace() {
+        assert_eq!(split_args("encode foo"), vec!["encode", "foo"]);
+        assert_eq!(
+            split_args("greet \"the world\""),
+            vec!["greet", "the world"]
+        );
+        assert_eq!(split_args("  spaced   out  "), vec!["spaced", "out"]);
+        assert_eq!(split_args("'single quoted arg'"), vec!["single quoted arg"]);
+        assert!(split_args("   ").is_empty());
+    }
 
     #[test]
     fn package_dunder_main_becomes_a_module_invocation() {

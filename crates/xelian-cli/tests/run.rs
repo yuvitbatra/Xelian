@@ -55,6 +55,28 @@ manifest = "pyproject.toml"
     );
 }
 
+/// Scaffold an agent whose entrypoint behaves like a command-line tool
+/// (argparse subcommands, parses argv and exits) rather than a chat loop.
+/// Inference classifies this as `OneShot`, which routes `xelian run` into the
+/// warm interactive session.
+fn scaffold_cli_agent(dir: &Path, name: &str, version: &str) {
+    scaffold_valid_package(dir, name, version);
+    write_file(
+        dir,
+        "src/main.py",
+        r#"import argparse
+
+parser = argparse.ArgumentParser()
+sub = parser.add_subparsers(dest="cmd")
+echo = sub.add_parser("echo")
+echo.add_argument("text")
+args = parser.parse_args()
+if args.cmd == "echo":
+    print(f"echoed: {args.text}", flush=True)
+"#,
+    );
+}
+
 /// Spawn `xelian run <archive>` with `HOME` pointed at `home_dir` on the
 /// spawned process only (never mutating this test process's own env).
 fn run_xelian_with_home(archive: &Path, home_dir: &Path) -> Output {
@@ -188,6 +210,59 @@ fn second_identical_run_reuses_the_cache() {
         .path()
         .join(".xelian/packages/local/cache-agent/1.0.0");
     assert!(extracted.join("xelian.toml").is_file());
+}
+
+#[test]
+fn cli_style_agent_enters_a_warm_repl_and_loops() {
+    use std::io::Write;
+    use std::process::Stdio;
+
+    let fixture = tempfile::tempdir().expect("fixture dir");
+    scaffold_cli_agent(fixture.path(), "repl-agent", "1.0.0");
+
+    let outcome = xelian_core::validate::validate_and_build(fixture.path(), None)
+        .expect("fixture package should build");
+    let home_dir = tempfile::tempdir().expect("home dir");
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_xelian"))
+        .arg("run")
+        .arg(&outcome.archive_path)
+        .env("HOME", home_dir.path())
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("spawn xelian run");
+
+    // Two commands, then quit — proving the prepared environment stays warm and
+    // the user doesn't re-run the whole `xelian run` pipeline per command.
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(b"echo hello\necho again\n:exit\n")
+        .unwrap();
+
+    let output = child.wait_with_output().expect("wait for warm repl");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    assert!(
+        output.status.success(),
+        "warm repl should exit cleanly; stderr:\n{stderr}"
+    );
+    assert!(
+        stderr.contains("interactive session"),
+        "should show the warm-session banner:\n{stderr}"
+    );
+    assert!(
+        stdout.contains("echoed: hello"),
+        "first command should run:\n{stdout}"
+    );
+    assert!(
+        stdout.contains("echoed: again"),
+        "second command should run against the same warm env:\n{stdout}"
+    );
 }
 
 #[test]
