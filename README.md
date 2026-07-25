@@ -56,16 +56,43 @@ archive against its lockfile checksum, provisions the language runtime
 dependencies, asks consent for the package's declared permissions, and
 launches it. Subsequent runs start from cache in seconds.
 
-Some packages are command-line tools rather than chat agents. Xelian manages
-their environment the way Homebrew manages an installed binary — you still
-decide what to run. Put the tool's own arguments after `--`:
+Some packages are command-line tools rather than chat agents. Run one with no
+arguments and Xelian keeps the prepared environment warm and drops you into an
+interactive session — type commands at the `pkg>` prompt without re-running
+anything; `:help` shows usage inferred from the README, `:exit` quits. Or drive
+it one-shot by putting the tool's own arguments after `--`:
 
 ```bash
-xelian run Panniantong/Agent-Reach            # no args: prints the tool's usage
-xelian run Panniantong/Agent-Reach -- doctor  # runs it, exit code passed through
+xelian run Panniantong/Agent-Reach            # no args: warm interactive session
+xelian run Panniantong/Agent-Reach -- doctor  # one-shot, exit code passed through
 ```
 
 Nothing is installed onto your `PATH`, and nothing leaks out of `~/.xelian`.
+
+## API keys & providers
+
+When an agent needs a model, Xelian reads its README and code to figure out
+which provider it uses, then offers a one-line choice at launch — run it free on
+a local **Ollama** (type nothing), or paste an **OpenAI**/**Anthropic** key
+(stored once, reused everywhere). Manage or switch that anytime:
+
+```bash
+xelian key use ollama          # free, local — no key needed
+xelian key use openai          # prompts once, stores it
+xelian key set OPENAI_API_KEY  # set a specific variable
+xelian key list                # names only (values are never printed)
+xelian key rm  OPENAI_API_KEY
+```
+
+## Control panel
+
+```bash
+xelian ui                      # opens http://127.0.0.1:2106 in your browser
+```
+
+A small local page (served from the binary, no account, no network) to see your
+cached packages, launch one in a terminal with a click, and set or switch API
+keys — all from the browser.
 
 ## Package your own agent in 5 minutes
 

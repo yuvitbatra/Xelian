@@ -878,6 +878,49 @@
 
 ---
 
+## Added post-plan — Smart run, provider setup & local UI (owner request, 2026-07-25)
+
+Design: `docs/superpowers/specs/2026-07-25-smart-run-and-local-ui-design.md`.
+
+- [x] **H-270 — Package Intelligence inference layer**
+  - Difficulty: M · Deps: H-052
+  - What: `run/inspect.rs` reads an extracted package's README + source
+    (deterministic, offline) to infer providers, required env vars,
+    free/local runnability, run style (repl/one-shot/server), CLI subcommands,
+    and a usage excerpt. Works for registry and `xelian add` repos alike.
+  - Verified: unit tests over Python/Node/argparse/README fixtures.
+
+- [x] **H-271 — Smart provider menu + `xelian key`**
+  - Difficulty: M · Deps: H-270
+  - What: `run/provider.rs` Provider model + running-Ollama detection; when an
+    agent needs a model and nothing is configured, a launch-time menu offers
+    free-local (Ollama, no key) or paste-key (stored). `xelian key
+    set/list/rm/use` manages/switches credentials without editing TOML.
+  - Verified: provider/secrets unit tests; `xelian key` round-trip end-to-end.
+
+- [x] **H-272 — Warm interactive session for CLI-style agents**
+  - Difficulty: M · Deps: H-270
+  - What: a no-args run of an inferred one-shot agent drops into a warm
+    `pkg>` loop that keeps the environment prepared and runs the entrypoint per
+    line; `:help` from insights, `:exit` quits; `-- args` one-shot unchanged.
+  - Verified: end-to-end test pipes two commands + `:exit` to the real binary.
+
+- [x] **H-273 — `xelian ui` local control panel**
+  - Difficulty: M · Deps: H-120, H-271
+  - What: serves a self-contained page (embedded via `tiny_http`, no Next.js)
+    on `127.0.0.1:2106` with a localhost JSON API — list cached packages,
+    launch one in a terminal, set/switch keys from the browser.
+  - Verified: every endpoint curled (packages/keys/set/remove/404); key
+    round-trip persists to `secrets.toml`.
+
+- [x] **H-274 — Website: render agent-page README correctly**
+  - Difficulty: S · Deps: none
+  - What: the `/c/[owner]/[name]` page used Tailwind `prose` with no typography
+    plugin installed; switched it to the existing styled `.readme` class so
+    markdown renders. `next build` clean.
+
+---
+
 ## Notes on ordering and parallelism
 
 - The strict critical path is
