@@ -56,6 +56,17 @@ archive against its lockfile checksum, provisions the language runtime
 dependencies, asks consent for the package's declared permissions, and
 launches it. Subsequent runs start from cache in seconds.
 
+Some packages are command-line tools rather than chat agents. Xelian manages
+their environment the way Homebrew manages an installed binary — you still
+decide what to run. Put the tool's own arguments after `--`:
+
+```bash
+xelian run Panniantong/Agent-Reach            # no args: prints the tool's usage
+xelian run Panniantong/Agent-Reach -- doctor  # runs it, exit code passed through
+```
+
+Nothing is installed onto your `PATH`, and nothing leaks out of `~/.xelian`.
+
 ## Package your own agent in 5 minutes
 
 ```bash

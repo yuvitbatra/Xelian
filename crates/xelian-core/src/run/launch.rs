@@ -28,6 +28,28 @@ pub enum LaunchError {
     PortBind(io::Error),
 }
 
+/// How the user invoked this run.
+///
+/// Xelian manages the environment; the package is still the user's tool to
+/// drive (the Homebrew model — the binary is installed for you, you decide what
+/// to run it with). `args` is the argv tail handed straight to the entrypoint,
+/// and `command` is what the user typed, echoed verbatim in hints so anything
+/// Xelian suggests is copy-pasteable.
+pub struct Invocation<'a> {
+    pub args: &'a [String],
+    pub command: &'a str,
+}
+
+impl Invocation<'_> {
+    /// Whether the user is driving the entrypoint directly with their own
+    /// arguments. When they are, Xelian keeps quiet: no readiness banner, no
+    /// diagnostics — the tool's own output is the whole point, exactly as if
+    /// they had run the installed binary themselves.
+    fn user_driven(&self) -> bool {
+        !self.args.is_empty()
+    }
+}
+
 /// Launch an agent or MCP server (SPEC.md §9.10) and block until it exits.
 ///
 /// Accepts the resolved `bin_dir` (from [`crate::run::prepare_environment`])
@@ -39,15 +61,15 @@ pub fn launch(
     env_dir: &Path,
     bin_dir: &Path,
     env_pairs: &[(String, String)],
+    invocation: &Invocation,
 ) -> Result<ExitStatus, LaunchError> {
     let entrypoint = package_dir.join(&manifest.entrypoint);
     if !entrypoint.is_file() {
         return Err(LaunchError::EntrypointMissing { path: entrypoint });
     }
 
-    let (program, args, work_dir) = build_launch_command(manifest, package_dir, env_dir, bin_dir)?;
-
-    announce_ready(manifest);
+    let (program, args, work_dir) =
+        build_launch_command(manifest, package_dir, env_dir, bin_dir, invocation.args)?;
 
     let mut cmd = Command::new(&program);
     cmd.args(&args);
@@ -87,7 +109,90 @@ pub fn launch(
     }
 
     let mut child = cmd.spawn().map_err(|e| LaunchError::Spawn(e.to_string()))?;
-    Ok(child.wait()?)
+
+    // Readiness is only claimed once the child has actually survived startup.
+    // Announcing before the spawn told the user "type a message" for processes
+    // that were already exiting — a CLI-shaped entrypoint that prints its usage
+    // and quits, or a server that dies on a missing key — leaving them staring
+    // at a `> ` prompt with nothing behind it and no idea what they were
+    // looking at (the package's own output reads like Xelian output).
+    match wait_for_startup(&mut child)? {
+        Some(status) => {
+            if !invocation.user_driven() {
+                eprint!(
+                    "{}",
+                    immediate_exit_notice(manifest, status.code(), invocation.command)
+                );
+                let _ = io::stderr().flush();
+            }
+            Ok(status)
+        }
+        None => {
+            if !invocation.user_driven() {
+                announce_ready(manifest);
+            }
+            Ok(child.wait()?)
+        }
+    }
+}
+
+/// How long a child must stay alive before it counts as started.
+///
+/// Long enough that a process which exits on its own immediately (usage text,
+/// a startup crash) is always caught; short enough to be invisible after the
+/// seconds of download and environment work that precede it.
+const STARTUP_GRACE: std::time::Duration = std::time::Duration::from_millis(300);
+
+/// Poll the child for [`STARTUP_GRACE`]. `Some(status)` if it exited within the
+/// window, `None` if it is still running (i.e. actually started).
+fn wait_for_startup(child: &mut std::process::Child) -> io::Result<Option<ExitStatus>> {
+    let deadline = std::time::Instant::now() + STARTUP_GRACE;
+    loop {
+        if let Some(status) = child.try_wait()? {
+            return Ok(Some(status));
+        }
+        if std::time::Instant::now() >= deadline {
+            return Ok(None);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}
+
+/// The message shown when the entrypoint exits before it ever started serving.
+///
+/// Stderr only, like every other Xelian message, and deliberately explicit that
+/// the user did not cause it: the failure mode this replaces had people
+/// reporting output they never typed anything to produce.
+fn immediate_exit_notice(manifest: &Manifest, code: Option<i32>, command: &str) -> String {
+    let how = match code {
+        Some(c) => format!("exit code {c}"),
+        None => "killed by a signal".to_string(),
+    };
+    let head = format!(
+        "\n  \x1b[1;33m⚠\x1b[0m {} {} exited immediately ({how})",
+        manifest.name, manifest.version
+    );
+    // Xelian already installed and cached this package, so the tool is right
+    // there — the user just needs to know how to hand it arguments through
+    // Xelian instead of looking for a binary that isn't on their PATH.
+    let drive_it = format!(
+        "    Drive it through Xelian by putting its arguments after `--`:\n        \
+         \x1b[1m{command} -- --help\x1b[0m\n"
+    );
+    match manifest.package_type {
+        PackageType::Agent => format!(
+            "{head} — it never waited for input.\n    \
+             Its entrypoint ({}) behaves like a command-line tool rather than a\n    \
+             chat agent: the output above is the package's own, not yours.\n{drive_it}",
+            manifest.entrypoint
+        ),
+        PackageType::Mcp => format!(
+            "{head} instead of serving stdio.\n    \
+             The output above is the package's own — usually a missing API key\n    \
+             or an entrypoint that is not the server ({}).\n{drive_it}",
+            manifest.entrypoint
+        ),
+    }
 }
 
 /// Print a clear, consistent readiness marker immediately before handing the
@@ -145,7 +250,26 @@ fn prepend_runtime_path(cmd: &mut Command, env_dir: &Path, bin_dir: &Path) {
 }
 
 /// Build the (program, args, working_directory) for launching the entrypoint.
+///
+/// `user_args` are appended last, after everything the runtime needs, so the
+/// entrypoint sees exactly the argv the user asked for — `xelian run pkg --
+/// setup --verbose` reaches it as `setup --verbose`.
 fn build_launch_command(
+    manifest: &Manifest,
+    package_dir: &Path,
+    env_dir: &Path,
+    bin_dir: &Path,
+    user_args: &[String],
+) -> Result<(String, Vec<String>, PathBuf), LaunchError> {
+    let (program, mut args, work_dir) =
+        build_runtime_command(manifest, package_dir, env_dir, bin_dir)?;
+    args.extend_from_slice(user_args);
+    Ok((program, args, work_dir))
+}
+
+/// The runtime half of [`build_launch_command`]: how this language invokes this
+/// entrypoint, before any user arguments.
+fn build_runtime_command(
     manifest: &Manifest,
     package_dir: &Path,
     env_dir: &Path,
@@ -297,6 +421,167 @@ mod tests {
         // `__main__.py` alone has no package to be a member of, so `-m` would
         // have nothing to name — run it by path instead.
         assert_eq!(module_invocation("__main__.py"), None);
+    }
+
+    fn manifest_of(kind: PackageType) -> Manifest {
+        let kind = match kind {
+            PackageType::Agent => "agent",
+            PackageType::Mcp => "mcp",
+        };
+        Manifest::from_toml_str(&format!(
+            r#"
+spec-version = 1
+name = "agent-reach"
+version = "0.0.0"
+description = "d"
+package-type = "{kind}"
+language = "python"
+runtime = ">=3.10"
+entrypoint = "agent_reach/cli.py"
+license = "MIT"
+permissions = []
+features = []
+
+[author]
+name = "n"
+email = "n@example.com"
+
+[dependencies]
+manifest = "pyproject.toml"
+"#
+        ))
+        .expect("test manifest should parse")
+    }
+
+    /// A package tree with a provisioned Python env, enough for
+    /// `build_launch_command` to accept it.
+    fn python_package(entrypoint: &str) -> (tempfile::TempDir, Manifest) {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let mut m = manifest_of(PackageType::Agent);
+        m.entrypoint = entrypoint.to_string();
+
+        let entry = dir.path().join("pkg").join(entrypoint);
+        std::fs::create_dir_all(entry.parent().unwrap()).unwrap();
+        std::fs::write(&entry, "").unwrap();
+
+        let bin = dir.path().join("env").join("bin");
+        std::fs::create_dir_all(&bin).unwrap();
+        std::fs::write(bin.join("python"), "").unwrap();
+
+        (dir, m)
+    }
+
+    #[test]
+    fn user_arguments_are_passed_through_to_a_python_entrypoint() {
+        let (dir, m) = python_package("agent_reach/cli.py");
+        let user = vec!["setup".to_string(), "--verbose".to_string()];
+        let (_program, args, _cwd) = build_launch_command(
+            &m,
+            &dir.path().join("pkg"),
+            &dir.path().join("env"),
+            &dir.path().join("env").join("bin"),
+            &user,
+        )
+        .expect("command");
+
+        // The script path first, then the user's arguments, in order.
+        assert!(args[0].ends_with("agent_reach/cli.py"), "got {args:?}");
+        assert_eq!(&args[1..], &["setup", "--verbose"]);
+    }
+
+    #[test]
+    fn user_arguments_are_passed_through_to_a_module_invocation() {
+        let (dir, m) = python_package("agent_reach/__main__.py");
+        let user = vec!["--help".to_string()];
+        let (_program, args, _cwd) = build_launch_command(
+            &m,
+            &dir.path().join("pkg"),
+            &dir.path().join("env"),
+            &dir.path().join("env").join("bin"),
+            &user,
+        )
+        .expect("command");
+
+        assert_eq!(args, vec!["-m", "agent_reach", "--help"]);
+    }
+
+    #[test]
+    fn no_user_arguments_leaves_the_command_exactly_as_before() {
+        let (dir, m) = python_package("agent_reach/cli.py");
+        let (_program, args, _cwd) = build_launch_command(
+            &m,
+            &dir.path().join("pkg"),
+            &dir.path().join("env"),
+            &dir.path().join("env").join("bin"),
+            &[],
+        )
+        .expect("command");
+
+        assert_eq!(args.len(), 1, "only the entrypoint path: {args:?}");
+    }
+
+    #[test]
+    fn the_notice_shows_how_to_drive_a_cli_package_through_xelian() {
+        let notice = immediate_exit_notice(
+            &manifest_of(PackageType::Agent),
+            Some(0),
+            "xelian run Panniantong/Agent-Reach",
+        );
+        // Copy-pasteable, using the command the user actually typed.
+        assert!(
+            notice.contains("xelian run Panniantong/Agent-Reach -- --help"),
+            "got: {notice}"
+        );
+    }
+
+    #[test]
+    fn an_agent_that_exits_at_once_is_reported_as_not_a_chat_agent() {
+        let notice =
+            immediate_exit_notice(&manifest_of(PackageType::Agent), Some(0), "xelian run x");
+        // Names the package and the exit code, so the user can tell this from a
+        // crash and from their own typing.
+        assert!(notice.contains("agent-reach"));
+        assert!(notice.contains("exit code 0"));
+        assert!(notice.contains("agent_reach/cli.py"));
+        // The whole point: it never waited for input, so nothing was typed.
+        assert!(notice.contains("never waited for input"));
+        // Must NOT claim a REPL is ready.
+        assert!(!notice.contains("type a message"));
+    }
+
+    #[test]
+    fn an_mcp_server_that_exits_at_once_is_reported_as_not_serving() {
+        let notice = immediate_exit_notice(&manifest_of(PackageType::Mcp), Some(1), "xelian run x");
+        assert!(notice.contains("agent-reach"));
+        assert!(notice.contains("exit code 1"));
+        assert!(notice.contains("stdio"));
+    }
+
+    #[test]
+    fn a_signal_killed_child_reports_no_exit_code_rather_than_a_fake_one() {
+        // `code()` is None when a signal killed the child; inventing "exit code
+        // 1" there would misdescribe what happened.
+        let notice = immediate_exit_notice(&manifest_of(PackageType::Agent), None, "xelian run x");
+        assert!(notice.contains("killed by a signal"));
+        assert!(!notice.contains("exit code"));
+    }
+
+    #[test]
+    fn a_child_that_survives_the_grace_window_is_announced_ready_not_exited() {
+        // `sleep 5` outlives the grace window: still running -> no status yet.
+        let mut child = Command::new("sleep").arg("5").spawn().expect("spawn sleep");
+        let outcome = wait_for_startup(&mut child).expect("poll");
+        assert!(outcome.is_none(), "a live child must not look like an exit");
+        let _ = child.kill();
+        let _ = child.wait();
+    }
+
+    #[test]
+    fn a_child_that_exits_at_once_is_caught_within_the_grace_window() {
+        let mut child = Command::new("true").spawn().expect("spawn true");
+        let outcome = wait_for_startup(&mut child).expect("poll");
+        let status = outcome.expect("an immediate exit must be observed");
+        assert!(status.success());
     }
 
     #[test]

@@ -43,6 +43,12 @@ enum Command {
         /// XELIAN_INSTALLED line.
         #[arg(long, conflicts_with = "install_only")]
         prepare: bool,
+
+        /// Arguments for the package's own entrypoint, after `--`
+        /// (e.g. `xelian run owner/tool -- setup --verbose`). Xelian manages
+        /// the environment; these say what to run in it.
+        #[arg(last = true, allow_hyphen_values = true)]
+        args: Vec<String>,
     },
 
     /// Search the registry for packages.
@@ -55,6 +61,10 @@ enum Command {
     Add {
         /// GitHub repository URL.
         url: String,
+
+        /// Arguments for the imported package's own entrypoint, after `--`.
+        #[arg(last = true, allow_hyphen_values = true)]
+        args: Vec<String>,
     },
 
     /// List locally cached packages.
@@ -343,9 +353,17 @@ fn cmd_push() -> anyhow::Result<()> {
     }
 }
 
-fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()> {
+fn cmd_run(target: &str, install_only: bool, prepare: bool, args: &[String]) -> anyhow::Result<()> {
     let home = xelian_core::cache::XelianHome::resolve()?;
     home.ensure_layout()?;
+
+    // Echoed back verbatim in any hint, so what Xelian suggests is exactly what
+    // the user can paste — their target string, not a normalized form of it.
+    let command = format!("xelian run {target}");
+    let invocation = xelian_core::run::launch::Invocation {
+        args,
+        command: &command,
+    };
 
     // --- H-160: Target-form discrimination (SPEC.md §9.2) ---
     let run_target = xelian_core::run::parse_run_target(target).map_err(|e| anyhow::anyhow!(e))?;
@@ -425,6 +443,7 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                 &grants_path,
                 &home,
                 !prepare,
+                &invocation,
             )
         }
 
@@ -448,7 +467,7 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                                  its own license); importing {url} ..."
                             );
                             let launch = !prepare && !install_only;
-                            return import_github_and_run(&url, &home, launch);
+                            return import_github_and_run(&url, &home, launch, &invocation);
                         }
                         _ => {
                             return Err(anyhow::anyhow!(
@@ -531,6 +550,7 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                     &grants_path,
                     &home,
                     !prepare,
+                    &invocation,
                 )
             } else {
                 eprintln!("downloading {}/{} v{} ...", owner, name, version);
@@ -607,6 +627,7 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                     &grants_path,
                     &home,
                     !prepare,
+                    &invocation,
                 )
             }
         }
@@ -674,6 +695,7 @@ fn cmd_run(target: &str, install_only: bool, prepare: bool) -> anyhow::Result<()
                 &grants_path,
                 &home,
                 !prepare,
+                &invocation,
             )
         }
     }
@@ -701,6 +723,7 @@ fn prepare_env_and_launch_inner(
     grants_path: &std::path::Path,
     home: &xelian_core::cache::XelianHome,
     launch: bool,
+    invocation: &xelian_core::run::launch::Invocation,
 ) -> anyhow::Result<()> {
     eprintln!("environment ready at {}", env_dir.display());
 
@@ -741,9 +764,15 @@ fn prepare_env_and_launch_inner(
     .map_err(|e| anyhow::anyhow!(e))?;
 
     // --- Phase 8 / H-081, H-082: Launch (agent REPL or MCP server). ---
-    let status =
-        xelian_core::run::launch::launch(manifest, package_dir, env_dir, bin_dir, &env_pairs)
-            .map_err(|e| anyhow::anyhow!("launch error: {e}"))?;
+    let status = xelian_core::run::launch::launch(
+        manifest,
+        package_dir,
+        env_dir,
+        bin_dir,
+        &env_pairs,
+        invocation,
+    )
+    .map_err(|e| anyhow::anyhow!("launch error: {e}"))?;
 
     // Mirror the entrypoint's exit code so callers of `xelian run`/`xelian
     // add` can distinguish outcomes exactly as if they had run the
@@ -759,10 +788,15 @@ fn prepare_env_and_launch_inner(
 /// local Xelian package, then run it through the same execution pipeline as
 /// `xelian run`, starting from manifest validation (§9.6) onward (§12.2 step
 /// 7). Performs no publishing (§12.3).
-fn cmd_add(url: &str) -> anyhow::Result<()> {
+fn cmd_add(url: &str, args: &[String]) -> anyhow::Result<()> {
     let home = xelian_core::cache::XelianHome::resolve()?;
     home.ensure_layout()?;
-    import_github_and_run(url, &home, true)
+    let command = format!("xelian add {url}");
+    let invocation = xelian_core::run::launch::Invocation {
+        args,
+        command: &command,
+    };
+    import_github_and_run(url, &home, true, &invocation)
 }
 
 /// Import a GitHub URL and run it through the execution pipeline. Shared by
@@ -774,6 +808,7 @@ fn import_github_and_run(
     url: &str,
     home: &xelian_core::cache::XelianHome,
     launch: bool,
+    invocation: &xelian_core::run::launch::Invocation,
 ) -> anyhow::Result<()> {
     let outcome = xelian_core::github::import_github(url, home).map_err(|e| anyhow::anyhow!(e))?;
 
@@ -839,6 +874,7 @@ fn import_github_and_run(
         &grants_path,
         home,
         launch,
+        invocation,
     )
 }
 
@@ -1127,8 +1163,9 @@ fn main() {
             target,
             install_only,
             prepare,
-        } => cmd_run(target, *install_only, *prepare),
-        Command::Add { url } => cmd_add(url),
+            args,
+        } => cmd_run(target, *install_only, *prepare, args),
+        Command::Add { url, args } => cmd_add(url, args),
         Command::List => cmd_list(),
         Command::Rm {
             target,
