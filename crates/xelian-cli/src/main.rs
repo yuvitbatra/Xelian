@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 mod gateway;
+mod ui;
 
 /// Xelian: a local-first registry and runtime for AI agents and MCP servers.
 #[derive(Parser, Debug)]
@@ -124,6 +125,17 @@ enum Command {
     Key {
         #[command(subcommand)]
         action: KeyAction,
+    },
+
+    /// Open a small local control panel in your browser to manage and run packages.
+    ///
+    /// Serves a self-contained page from http://127.0.0.1:2106 (embedded in the
+    /// binary, no network): list cached packages, launch one in a terminal with
+    /// a click, and set or switch the API keys your agents use.
+    Ui {
+        /// Port to listen on (default 2106).
+        #[arg(long)]
+        port: Option<u16>,
     },
 
     /// Mark a published version as yanked, or reverse that.
@@ -1405,6 +1417,7 @@ fn main() {
             GatewayAction::Status { port } => gateway::cmd_status(*port),
             GatewayAction::Logs { target, lines } => gateway::cmd_logs(target.as_deref(), *lines),
         },
+        Command::Ui { port } => ui::cmd_ui(*port),
         Command::Key { action } => match action {
             KeyAction::Set { name, value } => cmd_key_set(name, value.as_deref()),
             KeyAction::List => cmd_key_list(),

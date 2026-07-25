@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Xelian — control panel</title>
+<style>
+  :root {
+    --bg: #ffffff; --panel: #f7f7f8; --border: #e5e7eb; --fg: #111827;
+    --muted: #6b7280; --accent: #2563eb; --accent-fg: #ffffff;
+    --good: #059669; --good-bg: #ecfdf5; --chip: #eef2ff; --chip-fg: #3730a3;
+    --danger: #dc2626;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0d10; --panel: #15181d; --border: #262b33; --fg: #e5e7eb;
+      --muted: #9aa4b2; --accent: #3b82f6; --accent-fg: #ffffff;
+      --good: #34d399; --good-bg: #06281f; --chip: #1e243a; --chip-fg: #a5b4fc;
+      --danger: #f87171;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 64px; }
+  header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  .tag { color: var(--muted); font-size: 13px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em;
+       color: var(--muted); margin: 36px 0 12px; font-weight: 600; }
+  .card { background: var(--panel); border: 1px solid var(--border);
+          border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+  .pkg { display: flex; align-items: center; gap: 14px; }
+  .pkg .meta { flex: 1; min-width: 0; }
+  .pkg .name { font-weight: 600; }
+  .pkg .name .ver { color: var(--muted); font-weight: 400; margin-left: 6px; font-size: 13px; }
+  .pkg .desc { color: var(--muted); font-size: 13px; overflow: hidden;
+               text-overflow: ellipsis; white-space: nowrap; }
+  .chip { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 999px;
+          background: var(--chip); color: var(--chip-fg); margin-left: 8px; vertical-align: middle; }
+  .actions { display: flex; gap: 8px; flex-shrink: 0; }
+  button {
+    font: inherit; font-size: 13px; border-radius: 8px; padding: 6px 12px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  button.ghost { background: transparent; }
+  button.danger { color: var(--danger); border-color: transparent; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  input {
+    font: inherit; font-size: 14px; padding: 7px 10px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg); min-width: 180px;
+  }
+  .provider { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px;
+              border: 1px solid var(--border); border-radius: 999px; font-size: 13px; cursor: pointer; }
+  .provider .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .provider.on .dot { background: var(--good); }
+  .provider.free { border-style: dashed; }
+  .keylist { display: flex; flex-direction: column; gap: 6px; }
+  .keyrow { display: flex; align-items: center; justify-content: space-between; }
+  .empty { color: var(--muted); font-size: 14px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+           background: var(--fg); color: var(--bg); padding: 9px 16px; border-radius: 999px;
+           font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Xelian</h1>
+    <span class="tag">local control panel</span>
+  </header>
+
+  <h2>Packages</h2>
+  <div id="packages"><div class="empty">Loading…</div></div>
+
+  <h2>Providers &amp; keys</h2>
+  <div class="card">
+    <div class="row" id="providers"></div>
+    <div style="height:12px"></div>
+    <div class="row">
+      <input id="keyName" placeholder="ENV_VAR_NAME (e.g. OPENAI_API_KEY)" />
+      <input id="keyValue" placeholder="value" type="password" />
+      <button class="primary" onclick="setKey()">Save key</button>
+    </div>
+    <div style="height:14px"></div>
+    <div class="keylist" id="keys"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1800);
+}
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || ("HTTP " + r.status));
+  return data;
+}
+function esc(s) { return (s || "").replace(/[&<>"]/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+async function loadPackages() {
+  try {
+    const { packages } = await api("/api/packages");
+    const el = $("packages");
+    if (!packages.length) {
+      el.innerHTML = '<div class="empty">No packages cached yet. Run one with <code>xelian run owner/name</code>.</div>';
+      return;
+    }
+    el.innerHTML = packages.map((p) => `
+      <div class="card pkg">
+        <div class="meta">
+          <div class="name">${esc(p.name)}<span class="ver">${esc(p.version)}</span>
+            ${p.type ? `<span class="chip">${esc(p.type)}</span>` : ""}
+            <span class="chip">${esc(p.source)}</span>
+          </div>
+          <div class="desc">${esc(p.description) || "&nbsp;"}</div>
+        </div>
+        <div class="actions">
+          <button class="ghost" onclick="copyCmd('${esc(p.run_command)}')">Copy</button>
+          <button class="primary" onclick="runPkg('${esc(p.name)}')">Run</button>
+        </div>
+      </div>`).join("");
+  } catch (e) { $("packages").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+async function loadKeys() {
+  try {
+    const { keys, providers } = await api("/api/keys");
+    $("providers").innerHTML = providers.map((p) => `
+      <span class="provider ${p.configured ? "on" : ""} ${p.free ? "free" : ""}"
+            title="${p.free ? "Local & free — no key needed" : (p.configured ? "Key stored" : "No key yet")}"
+            onclick="${p.free ? "" : `pickProvider('${esc(p.key_var)}')`}">
+        <span class="dot"></span>${esc(p.name)}${p.free ? " · free" : ""}
+      </span>`).join("");
+    const el = $("keys");
+    el.innerHTML = keys.length
+      ? keys.map((k) => `<div class="keyrow"><code>${esc(k)}</code>
+          <button class="danger" onclick="rmKey('${esc(k)}')">remove</button></div>`).join("")
+      : '<div class="empty">No keys stored.</div>';
+  } catch (e) { $("keys").innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+function pickProvider(keyVar) { $("keyName").value = keyVar; $("keyValue").focus(); }
+async function copyCmd(cmd) { try { await navigator.clipboard.writeText(cmd); toast("Copied: " + cmd); } catch { toast(cmd); } }
+
+async function runPkg(name) {
+  try {
+    const r = await api("/api/run", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }) });
+    toast(r.launched ? "Launched in Terminal" : ("Run: " + r.command));
+  } catch (e) { toast(e.message); }
+}
+async function setKey() {
+  const name = $("keyName").value.trim(), value = $("keyValue").value;
+  if (!name || !value) { toast("Enter a name and value"); return; }
+  try {
+    await api("/api/keys/set", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, value }) });
+    $("keyValue").value = ""; toast("Saved " + name); loadKeys();
+  } catch (e) { toast(e.message); }
+}
+async function rmKey(name) {
+  try {
+    await api("/api/keys/remove", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }) });
+    toast("Removed " + name); loadKeys();
+  } catch (e) { toast(e.message); }
+}
+
+loadPackages(); loadKeys();
+</script>
+</body>
+</html>
