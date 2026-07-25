@@ -116,7 +116,7 @@ export default function CatalogCardPage() {
           {entry ? "No README found." : ""}
         </p>
       ) : (
-        <article className="prose prose-sm max-w-none prose-headings:font-semibold prose-a:text-blue-600">
+        <article className="readme">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeSanitize]}
