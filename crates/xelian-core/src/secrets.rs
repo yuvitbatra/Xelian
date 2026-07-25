@@ -72,9 +72,18 @@ impl SecretStore {
 /// stored). Purely cosmetic — every entered required value is stored the same.
 pub fn looks_secret(name: &str) -> bool {
     let n = name.to_ascii_uppercase();
-    ["KEY", "TOKEN", "SECRET", "PASSWORD", "PASSWD", "API", "AUTH", "CREDENTIAL"]
-        .iter()
-        .any(|m| n.contains(m))
+    [
+        "KEY",
+        "TOKEN",
+        "SECRET",
+        "PASSWORD",
+        "PASSWD",
+        "API",
+        "AUTH",
+        "CREDENTIAL",
+    ]
+    .iter()
+    .any(|m| n.contains(m))
 }
 
 #[cfg(test)]

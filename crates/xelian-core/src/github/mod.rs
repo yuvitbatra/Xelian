@@ -658,7 +658,9 @@ fn detect_required_env(checkout: &Path, language: Language) -> Vec<String> {
     let mut budget: usize = 3_000_000; // ~3 MB of source is plenty to scan.
     let mut stack = vec![checkout.to_path_buf()];
     while let Some(dir) = stack.pop() {
-        let Ok(entries) = fs::read_dir(&dir) else { continue };
+        let Ok(entries) = fs::read_dir(&dir) else {
+            continue;
+        };
         for entry in entries.flatten() {
             let path = entry.path();
             let name = entry.file_name();
@@ -666,8 +668,15 @@ fn detect_required_env(checkout: &Path, language: Language) -> Vec<String> {
             if name.starts_with('.')
                 || matches!(
                     name.as_ref(),
-                    "node_modules" | "venv" | ".venv" | "dist" | "build" | "__pycache__"
-                        | "site-packages" | "target" | "vendor"
+                    "node_modules"
+                        | "venv"
+                        | ".venv"
+                        | "dist"
+                        | "build"
+                        | "__pycache__"
+                        | "site-packages"
+                        | "target"
+                        | "vendor"
                 )
             {
                 continue;
@@ -1177,7 +1186,10 @@ mod tests {
         )
         .unwrap();
         let found = detect_required_env(d.path(), Language::Python);
-        assert_eq!(found, vec!["OPENAI_API_KEY".to_string(), "TAVILY_API_KEY".to_string()]);
+        assert_eq!(
+            found,
+            vec!["OPENAI_API_KEY".to_string(), "TAVILY_API_KEY".to_string()]
+        );
     }
 
     #[test]

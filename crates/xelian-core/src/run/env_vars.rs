@@ -231,13 +231,25 @@ mod tests {
         env.insert("OPENAI_API_KEY".to_string(), env_var(true, None));
         let (pairs, entered) = resolve_with_sources(
             &env,
-            |_| None,                       // not in process env
-            |_| None,                       // not in store
+            |_| None, // not in process env
+            |_| None, // not in store
             |name, _| Some(format!("typed-{name}")),
         )
         .unwrap();
-        assert_eq!(pairs, vec![("OPENAI_API_KEY".to_string(), "typed-OPENAI_API_KEY".to_string())]);
-        assert_eq!(entered, vec![("OPENAI_API_KEY".to_string(), "typed-OPENAI_API_KEY".to_string())]);
+        assert_eq!(
+            pairs,
+            vec![(
+                "OPENAI_API_KEY".to_string(),
+                "typed-OPENAI_API_KEY".to_string()
+            )]
+        );
+        assert_eq!(
+            entered,
+            vec![(
+                "OPENAI_API_KEY".to_string(),
+                "typed-OPENAI_API_KEY".to_string()
+            )]
+        );
     }
 
     #[test]
@@ -251,7 +263,10 @@ mod tests {
             |_, _| panic!("must not prompt when a stored value exists"),
         )
         .unwrap();
-        assert_eq!(pairs, vec![("OPENAI_API_KEY".to_string(), "sk-stored".to_string())]);
+        assert_eq!(
+            pairs,
+            vec![("OPENAI_API_KEY".to_string(), "sk-stored".to_string())]
+        );
         assert!(entered.is_empty());
     }
 
@@ -266,7 +281,10 @@ mod tests {
             |_, _| panic!("must not prompt when the process env has it"),
         )
         .unwrap();
-        assert_eq!(pairs, vec![("OPENAI_API_KEY".to_string(), "sk-env".to_string())]);
+        assert_eq!(
+            pairs,
+            vec![("OPENAI_API_KEY".to_string(), "sk-env".to_string())]
+        );
         assert!(entered.is_empty());
     }
 
