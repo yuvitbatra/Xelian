@@ -13,16 +13,27 @@ use serde::{Deserialize, Serialize};
 
 use crate::cache::XelianHome;
 
-/// The default registry URL used when none is configured (H-225): release
-/// builds bake the production URL in via the `XELIAN_DEFAULT_REGISTRY_URL`
-/// build-time env var; dev builds default to a local registry.
+/// The default registry URL used when none is configured (H-225).
+///
+/// Priority: the build-time `XELIAN_DEFAULT_REGISTRY_URL` if set, else a
+/// profile-dependent fallback. A **release** binary must reach the public
+/// registry out of the box even if the CI variable was unset or a stale build
+/// cache dropped it — shipping a binary that talks to `localhost` is the worst
+/// possible failure (every command 404s for the user). So release builds fall
+/// back to production; only local *debug* builds default to localhost (override
+/// either with the `XELIAN_REGISTRY_URL` env var).
 pub const DEFAULT_REGISTRY_URL: &str = match option_env!("XELIAN_DEFAULT_REGISTRY_URL") {
     // An *empty* value counts as unset: CI passes `${{ vars.X }}`, which
-    // expands to "" when the repository variable isn't set, so without this a
-    // release built with the variable unset would bake in an empty URL and
-    // every `xelian run` would fail. Fall back to localhost in that case.
+    // expands to "" when the repository variable isn't set.
     Some(url) if !url.is_empty() => url,
-    _ => "http://localhost:8000",
+    _ => DEFAULT_REGISTRY_FALLBACK,
+};
+
+/// Profile-dependent fallback (see [`DEFAULT_REGISTRY_URL`]).
+const DEFAULT_REGISTRY_FALLBACK: &str = if cfg!(debug_assertions) {
+    "http://localhost:8000"
+} else {
+    "https://xelian-registry.onrender.com"
 };
 
 /// The stored credential: a token, the username it belongs to, and the
