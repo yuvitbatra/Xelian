@@ -50,6 +50,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # A binary that misreports its own version is untraceable: every bug
+      # report says the same number and users can't tell an old build from a
+      # new one. `xelian --version` comes from the workspace manifest, so the
+      # tag and the manifest must agree — fail the release if they don't.
+      - name: Check tag matches workspace version
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          manifest="$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)"
+          tag="${GITHUB_REF_NAME#v}"
+          test "$manifest" = "$tag" || {
+            echo "tag v${tag} != Cargo.toml version ${manifest}; bump [workspace.package] version and re-tag"
+            exit 1
+          }
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -68,8 +83,9 @@ jobs:
         # as a GitHub *repository variable* named XELIAN_DEFAULT_REGISTRY_URL
         # (Settings → Secrets and variables → Actions → Variables) and every
         # future release binary points at your registry automatically — no code
-        # change. When the variable is unset the binary falls back to
-        # http://localhost:8000, exactly as a local build does.
+        # change. When it is unset, the literal default below is baked in; and
+        # even if that were lost, a release build falls back to production
+        # rather than localhost (see DEFAULT_REGISTRY_URL in auth.rs).
         env:
           # The deployed registry URL (public, not a secret). The repository
           # variable overrides it if set; otherwise this default is baked in so

@@ -86,7 +86,18 @@ say "Installed xelian ${version} to ${BIN_DIR}/xelian"
 
 # --- PATH hint ---------------------------------------------------------------
 case ":$PATH:" in
-  *":$BIN_DIR:"*) ;;
+  *":$BIN_DIR:"*)
+    # Being on PATH isn't enough. Another `xelian` earlier on PATH (a
+    # `cargo install --path` build, a copy in /usr/local/bin) keeps winning, so
+    # the user runs a stale binary while this script reports success — and a
+    # stale binary can be pointed at a different registry, which looks like the
+    # registry being down rather than an install problem. Say so loudly.
+    found="$(command -v xelian 2>/dev/null || true)"
+    if [ -n "$found" ] && [ "$found" != "${BIN_DIR}/xelian" ]; then
+      warn "warning: ${found} comes earlier on your PATH and will run instead of the version just installed."
+      warn "Remove it (a source build: \`cargo uninstall xelian-cli\`), or put ${BIN_DIR} first on your PATH."
+    fi
+    ;;
   *)
     warn "${BIN_DIR} is not on your PATH. Add it, e.g.:"
     warn "    echo 'export PATH=\"${BIN_DIR}:\$PATH\"' >> ~/.profile && . ~/.profile"

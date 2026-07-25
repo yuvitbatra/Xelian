@@ -1455,7 +1455,7 @@ dependencies = [
 
 [[package]]
 name = "xelian-cli"
-version = "0.1.0"
+version = "0.1.7"
 dependencies = [
  "anyhow",
  "clap",
@@ -1471,7 +1471,7 @@ dependencies = [
 
 [[package]]
 name = "xelian-core"
-version = "0.1.0"
+version = "0.1.7"
 dependencies = [
  "chrono",
  "dirs",

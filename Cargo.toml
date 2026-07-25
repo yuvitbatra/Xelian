@@ -3,7 +3,10 @@ resolver = "2"
 members = ["crates/xelian-cli", "crates/xelian-core"]
 
 [workspace.package]
-version = "0.1.0"
+# Must match the release tag being built: `xelian --version` reports this, and
+# the release workflow refuses to publish a tag that disagrees with it. Bump it
+# in the same commit you tag.
+version = "0.1.7"
 edition = "2021"
 license = "MIT"
 
