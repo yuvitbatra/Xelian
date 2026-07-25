@@ -51,6 +51,16 @@ impl SecretStore {
         self.secrets.insert(key.to_string(), value.to_string());
     }
 
+    /// Remove a stored value, returning whether it existed.
+    pub fn remove(&mut self, key: &str) -> bool {
+        self.secrets.remove(key).is_some()
+    }
+
+    /// The names of all stored secrets, sorted (values are never exposed).
+    pub fn names(&self) -> Vec<&str> {
+        self.secrets.keys().map(String::as_str).collect()
+    }
+
     /// Persist the store to `path` with `0600` permissions, creating parents.
     pub fn save(&self, path: &Path) -> Result<(), SecretsError> {
         if let Some(parent) = path.parent() {
@@ -107,6 +117,7 @@ mod tests {
 
         let reloaded = SecretStore::load(&path).unwrap();
         assert_eq!(reloaded.get("OPENAI_API_KEY"), Some("sk-123"));
+        assert_eq!(reloaded.names(), vec!["OPENAI_API_KEY"]);
 
         #[cfg(unix)]
         {
@@ -114,6 +125,15 @@ mod tests {
             let mode = std::fs::metadata(&path).unwrap().permissions().mode();
             assert_eq!(mode & 0o777, 0o600);
         }
+    }
+
+    #[test]
+    fn remove_reports_presence_and_deletes() {
+        let mut store = SecretStore::default();
+        store.set("OPENAI_API_KEY", "sk-123");
+        assert!(store.remove("OPENAI_API_KEY"));
+        assert!(!store.remove("OPENAI_API_KEY"));
+        assert!(store.get("OPENAI_API_KEY").is_none());
     }
 
     #[test]

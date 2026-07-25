@@ -116,6 +116,16 @@ enum Command {
         action: GatewayAction,
     },
 
+    /// Manage stored API keys / provider credentials (`~/.xelian/secrets.toml`).
+    ///
+    /// Keys are stored once and reused across every package that needs them, so
+    /// you're never asked twice. Use this to set, list, remove, or switch which
+    /// provider your agents run against — without hand-editing any file.
+    Key {
+        #[command(subcommand)]
+        action: KeyAction,
+    },
+
     /// Mark a published version as yanked, or reverse that.
     Yank {
         /// Package to yank (owner/package).
@@ -128,6 +138,33 @@ enum Command {
         /// Reverse a previous yank instead of applying one.
         #[arg(long)]
         undo: bool,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum KeyAction {
+    /// Store or replace a key by env-var name, e.g. `xelian key set OPENAI_API_KEY`.
+    Set {
+        /// The env-var name the key is stored under (e.g. OPENAI_API_KEY).
+        name: String,
+        /// The value; omit to be prompted (kept off your shell history).
+        #[arg(long)]
+        value: Option<String>,
+    },
+    /// List stored key names (values are never printed).
+    List,
+    /// Remove a stored key by name.
+    Rm {
+        /// The env-var name to remove.
+        name: String,
+    },
+    /// Choose which provider your agents run against, storing its key.
+    ///
+    /// `xelian key use ollama` selects the free local provider (no key).
+    /// `xelian key use openai` prompts for and stores an OpenAI key.
+    Use {
+        /// Provider name: ollama, openai, or anthropic. Omit to pick from a menu.
+        provider: Option<String>,
     },
 }
 
@@ -753,15 +790,49 @@ fn prepare_env_and_launch_inner(
         return Ok(());
     }
 
+    // --- Smart provider setup (design 2026-07-25): inspect the package and, if
+    // it needs an LLM and nothing is configured, offer a free-local (Ollama) /
+    // paste-key menu so setup approaches zero. ---
+    let insights = xelian_core::run::inspect::inspect_package(package_dir, Some(manifest));
+    let provider_env = match xelian_core::run::provider::setup_provider_interactive(
+        &insights,
+        &home.secrets_path(),
+    )
+    .map_err(|e| anyhow::anyhow!("provider setup: {e}"))?
+    {
+        Some(setup) => {
+            if let Some(model) = &setup.ollama_model {
+                xelian_core::run::model::ensure_model(Some(model), home)
+                    .map_err(|e| anyhow::anyhow!("model error: {e}"))?;
+            }
+            // Put the chosen provider's vars into this process's env so the
+            // declared-var resolver below treats them as satisfied (no double
+            // prompt) and the child inherits them.
+            for (k, v) in &setup.env {
+                std::env::set_var(k, v);
+            }
+            setup.env
+        }
+        None => Vec::new(),
+    };
+
     // --- Phase 8 / H-080: Resolve required/default environment variables,
     // immediately before launch per §9.10. Missing required values (e.g. API
     // keys) are asked for interactively and saved for reuse — setup should be
     // ridiculously easy, not a wall of "cannot launch". ---
-    let env_pairs = xelian_core::run::env_vars::resolve_env_vars_interactive(
+    let mut env_pairs = xelian_core::run::env_vars::resolve_env_vars_interactive(
         &manifest.environment,
         &home.secrets_path(),
     )
     .map_err(|e| anyhow::anyhow!(e))?;
+
+    // Append any provider vars the resolver didn't emit (e.g. the Ollama
+    // base-URL redirect, which isn't a manifest-declared variable).
+    for (k, v) in provider_env {
+        if !env_pairs.iter().any(|(ek, _)| *ek == k) {
+            env_pairs.push((k, v));
+        }
+    }
 
     // --- Phase 8 / H-081, H-082: Launch (agent REPL or MCP server). ---
     let status = xelian_core::run::launch::launch(
@@ -1153,6 +1224,131 @@ fn cmd_yank(target: &str, version: &str, undo: bool) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Prompt on stderr (stdout is reserved for machine-readable output) and read
+/// one trimmed line from stdin.
+fn prompt_line(prompt: &str) -> anyhow::Result<String> {
+    use std::io::Write;
+    eprint!("{prompt}");
+    let _ = std::io::stderr().flush();
+    let mut s = String::new();
+    std::io::stdin().read_line(&mut s)?;
+    Ok(s.trim().to_string())
+}
+
+fn parse_provider(s: &str) -> anyhow::Result<xelian_core::run::provider::Provider> {
+    use xelian_core::run::provider::Provider;
+    match s.to_ascii_lowercase().as_str() {
+        "ollama" => Ok(Provider::Ollama),
+        "openai" => Ok(Provider::OpenAI),
+        "anthropic" => Ok(Provider::Anthropic),
+        other => anyhow::bail!("unknown provider '{other}' (try: ollama, openai, anthropic)"),
+    }
+}
+
+/// `xelian key set <NAME> [--value V]` — store or replace a credential.
+fn cmd_key_set(name: &str, value: Option<&str>) -> anyhow::Result<()> {
+    let home = xelian_core::cache::XelianHome::resolve()?;
+    let path = home.secrets_path();
+    let val = match value {
+        Some(v) => v.to_string(),
+        None => prompt_line(&format!("Value for {name}: "))?,
+    };
+    if val.is_empty() {
+        anyhow::bail!("no value provided");
+    }
+    let mut store = xelian_core::secrets::SecretStore::load(&path)?;
+    store.set(name, &val);
+    store.save(&path)?;
+    eprintln!("Stored {name}.");
+    Ok(())
+}
+
+/// `xelian key list` — print stored key names (never values).
+fn cmd_key_list() -> anyhow::Result<()> {
+    let home = xelian_core::cache::XelianHome::resolve()?;
+    let store = xelian_core::secrets::SecretStore::load(&home.secrets_path())?;
+    let names = store.names();
+    if names.is_empty() {
+        println!(
+            "No keys stored. Add one with `xelian key set <NAME>` or `xelian key use <provider>`."
+        );
+    } else {
+        for n in names {
+            println!("{n}");
+        }
+    }
+    Ok(())
+}
+
+/// `xelian key rm <NAME>` — remove a stored credential.
+fn cmd_key_rm(name: &str) -> anyhow::Result<()> {
+    let home = xelian_core::cache::XelianHome::resolve()?;
+    let path = home.secrets_path();
+    let mut store = xelian_core::secrets::SecretStore::load(&path)?;
+    if store.remove(name) {
+        store.save(&path)?;
+        eprintln!("Removed {name}.");
+    } else {
+        eprintln!("No stored key named {name}.");
+    }
+    Ok(())
+}
+
+/// `xelian key use [provider]` — choose the provider agents run against, storing
+/// its key. Ollama (local, free) needs no key.
+fn cmd_key_use(provider: Option<&str>) -> anyhow::Result<()> {
+    use xelian_core::run::provider::Provider;
+    let chosen = match provider {
+        Some(p) => parse_provider(p)?,
+        None => {
+            eprintln!("Which provider should agents use?");
+            let all = Provider::all();
+            for (i, p) in all.iter().enumerate() {
+                let note = if p.is_local_free() {
+                    " (local, free — no key)"
+                } else {
+                    ""
+                };
+                eprintln!("  [{}] {}{note}", i + 1, p.display_name());
+            }
+            let choice = prompt_line("Choose [1]: ")?;
+            let sel = if choice.is_empty() {
+                1
+            } else {
+                choice.parse::<usize>().unwrap_or(1)
+            };
+            all.get(sel.saturating_sub(1)).copied().unwrap_or(all[0])
+        }
+    };
+
+    if chosen.is_local_free() {
+        eprintln!(
+            "Ollama selected — local and free. Agents will run against it with no key needed."
+        );
+        return Ok(());
+    }
+
+    let key_var = chosen.key_var().expect("paid provider has a key var");
+    let home = xelian_core::cache::XelianHome::resolve()?;
+    let path = home.secrets_path();
+    let val = prompt_line(&format!(
+        "Paste your {} key ({key_var}): ",
+        chosen.display_name()
+    ))?;
+    if val.is_empty() {
+        anyhow::bail!("no value provided");
+    }
+    let mut store = xelian_core::secrets::SecretStore::load(&path)?;
+    store.set(key_var, &val);
+    store.save(&path)?;
+    eprintln!(
+        "Stored {} key. Agents that use {} will pick it up automatically.",
+        chosen.display_name(),
+        chosen.display_name()
+    );
+    Ok(())
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -1186,6 +1382,12 @@ fn main() {
             GatewayAction::Serve { port } => gateway::cmd_serve(*port),
             GatewayAction::Status { port } => gateway::cmd_status(*port),
             GatewayAction::Logs { target, lines } => gateway::cmd_logs(target.as_deref(), *lines),
+        },
+        Command::Key { action } => match action {
+            KeyAction::Set { name, value } => cmd_key_set(name, value.as_deref()),
+            KeyAction::List => cmd_key_list(),
+            KeyAction::Rm { name } => cmd_key_rm(name),
+            KeyAction::Use { provider } => cmd_key_use(provider.as_deref()),
         },
         Command::Yank {
             target,
