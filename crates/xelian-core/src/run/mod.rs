@@ -81,8 +81,10 @@ fn is_safe_ref_component(s: &str) -> bool {
 
 pub mod env_vars;
 pub mod extract;
+pub mod inspect;
 pub mod launch;
 pub mod model;
+pub mod provider;
 pub mod runtime;
 
 /// Errors that can occur while preparing a local `.xelian` archive for
