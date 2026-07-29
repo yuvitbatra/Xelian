@@ -20,3 +20,14 @@ __pycache__/
 !.env.example
 
 test_add.txt
+
+# Internal planning / working docs — kept local, not published
+BACKLOG.md
+CLAUDE.md
+DEPLOY_RENDER.md
+HANDOFF.md
+IMPLEMENTATION.md
+LAUNCH.md
+SPEC.md
+TRY_IT.md
+docs/

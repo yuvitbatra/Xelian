@@ -5,7 +5,7 @@ runtime for AI agents and MCP servers — package once, publish with one
 command, and anyone can run it locally with zero setup.
 
 ```bash
-xelian run QuantGeekDev/docker-mcp     # any of 330 verified agents & MCP servers, by name
+xelian run blazickjp/arxiv-mcp-server   # any of 60 verified agents & MCP servers, by name
 ```
 
 Every package in the catalog is **verified to actually run** — imported,
@@ -28,8 +28,7 @@ scripts/try-it.sh        # build → import a real GitHub repo → publish → r
 ```
 
 Self-contained and safe (throwaway registry, never touches your real
-`~/.xelian`). See [TRY_IT.md](TRY_IT.md) for step-by-step commands covering
-every capability.
+`~/.xelian`).
 
 ## Quickstart
 
@@ -46,7 +45,7 @@ Or build from source (Rust toolchain required):
 
 ```bash
 cargo install --path crates/xelian-cli       # 1. install the CLI
-xelian run QuantGeekDev/docker-mcp           # 2. run any of 330 verified packages by name
+xelian run blazickjp/arxiv-mcp-server        # 2. run any of 60 verified packages by name
 xelian add https://github.com/zcaceres/fetch-mcp   # or import any GitHub repo directly
 ```
 
@@ -221,7 +220,7 @@ two files:
 
 The runtime abstracts the implementation language away — a Python agent, a
 Node MCP server, and anything else with a manifest all expose the same
-interface. The full specification lives in [SPEC.md](SPEC.md).
+interface.
 
 ## Environment variables
 
@@ -251,11 +250,6 @@ interface. The full specification lives in [SPEC.md](SPEC.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for build and test instructions, and
 [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
-
-## Deploying & handoff
-
-Running the public registry: **[DEPLOY_RENDER.md](DEPLOY_RENDER.md)** (click-by-click).
-Project status and next steps: **[HANDOFF.md](HANDOFF.md)**.
 
 ## Credits
 
