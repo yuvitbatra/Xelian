@@ -919,6 +919,19 @@ Design: `docs/superpowers/specs/2026-07-25-smart-run-and-local-ui-design.md`.
     plugin installed; switched it to the existing styled `.readme` class so
     markdown renders. `next build` clean.
 
+- [x] **H-275 — Free-local path reuses an already-pulled Ollama model**
+  - Difficulty: S · Deps: H-271
+  - What: the free path always served `DEFAULT_OLLAMA_MODEL` (`llama3.2`), so
+    choosing "free/local" triggered a multi-GB download even when a capable
+    model was already on disk. `run/provider.rs` now reads `/api/tags` and
+    reuses the best already-pulled model, rejecting embedding-only and
+    `:cloud` models (neither is a free local chat model) and preferring
+    tool-capable ones since agents rely on function calling. Falls back to
+    pulling the default only when nothing usable is present.
+  - Verified: unit tests over a real `/api/tags` fixture (embedding / tools /
+    cloud / completion-only); checked against a live daemon, which correctly
+    skipped `nomic-embed-text` and `glm-5.2:cloud` and picked `qwen3.6:latest`.
+
 ---
 
 ## Notes on ordering and parallelism

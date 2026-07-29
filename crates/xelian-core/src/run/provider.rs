@@ -109,9 +109,96 @@ pub fn ollama_running() -> bool {
     agent.get("http://localhost:11434/api/tags").call().is_ok()
 }
 
-/// Default local model to serve via Ollama when the free path is chosen for an
-/// agent that doesn't declare its own model.
+/// Default local model to serve via Ollama when the free path is chosen and the
+/// daemon has nothing usable already pulled.
 pub const DEFAULT_OLLAMA_MODEL: &str = "llama3.2";
+
+/// A model already pulled into the local Ollama daemon, as reported by
+/// `/api/tags`. Used to reuse what the user already has instead of downloading
+/// [`DEFAULT_OLLAMA_MODEL`] on every free-path run.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalModel {
+    /// Fully qualified `name:tag`, exactly as Ollama reports it.
+    pub name: String,
+    /// Can generate text at all. Embedding-only models cannot and are useless
+    /// as an agent's chat model.
+    pub completion: bool,
+    /// Supports function/tool calling, which most agents rely on.
+    pub tools: bool,
+    /// Cloud-hosted (`:cloud`) model. Ollama proxies these but they need an
+    /// account, so they are not a free *local* path.
+    pub cloud: bool,
+    /// RFC3339 timestamp used only as a tie-break (most recent first).
+    pub modified_at: String,
+}
+
+/// Parse the `/api/tags` payload into [`LocalModel`]s, ignoring anything
+/// malformed rather than failing the whole run.
+pub fn parse_local_models(json: &str) -> Vec<LocalModel> {
+    let Ok(root) = serde_json::from_str::<serde_json::Value>(json) else {
+        return Vec::new();
+    };
+    let Some(models) = root.get("models").and_then(|m| m.as_array()) else {
+        return Vec::new();
+    };
+    models
+        .iter()
+        .filter_map(|m| {
+            let name = m.get("name")?.as_str()?.to_string();
+            let caps: Vec<&str> = m
+                .get("capabilities")
+                .and_then(|c| c.as_array())
+                .map(|a| a.iter().filter_map(|c| c.as_str()).collect())
+                .unwrap_or_default();
+            Some(LocalModel {
+                completion: caps.contains(&"completion"),
+                tools: caps.contains(&"tools"),
+                // Cloud models are tagged `:cloud` and carry no local weights,
+                // so a reported size of exactly zero is the same signal. A
+                // missing size field is treated as local, not cloud.
+                cloud: name.ends_with(":cloud")
+                    || m.get("size").and_then(|s| s.as_u64()) == Some(0),
+                modified_at: m
+                    .get("modified_at")
+                    .and_then(|s| s.as_str())
+                    .unwrap_or_default()
+                    .to_string(),
+                name,
+            })
+        })
+        .collect()
+}
+
+/// Choose the best already-pulled model to use as an agent's chat model, or
+/// `None` when the daemon has nothing usable.
+///
+/// Embedding-only and cloud models are rejected outright — neither is a free
+/// local chat model. Among the rest, tool-capable models win because most
+/// agents rely on function calling, with the most recently modified model as a
+/// stable tie-break.
+pub fn pick_local_model(models: &[LocalModel]) -> Option<String> {
+    let mut usable: Vec<&LocalModel> = models.iter().filter(|m| m.completion && !m.cloud).collect();
+    usable.sort_by(|a, b| {
+        b.tools
+            .cmp(&a.tools)
+            .then_with(|| b.modified_at.cmp(&a.modified_at))
+    });
+    usable.first().map(|m| m.name.clone())
+}
+
+/// Ask a running Ollama daemon which models are already pulled and pick the
+/// best usable one. `None` when the daemon isn't running, is unreachable, or
+/// has nothing that can serve as an agent's chat model.
+pub fn local_chat_model() -> Option<String> {
+    let agent = ureq::builder().timeout(Duration::from_millis(800)).build();
+    let body = agent
+        .get("http://localhost:11434/api/tags")
+        .call()
+        .ok()?
+        .into_string()
+        .ok()?;
+    pick_local_model(&parse_local_models(&body))
+}
 
 /// Errors from interactive provider setup.
 #[derive(Debug, Error)]
@@ -232,8 +319,18 @@ pub fn setup_provider_interactive(
         .unwrap_or(options[0]);
 
     if chosen.is_local_free() {
-        let model = DEFAULT_OLLAMA_MODEL.to_string();
-        eprintln!("→ Using local Ollama ({model}). No key needed.");
+        // Reuse whatever the daemon already has before falling back to pulling
+        // the default — a multi-GB download is a poor "zero setup" experience
+        // when a perfectly good model is already on disk.
+        let (model, already_local) = match local_chat_model() {
+            Some(m) => (m, true),
+            None => (DEFAULT_OLLAMA_MODEL.to_string(), false),
+        };
+        if already_local {
+            eprintln!("→ Using local Ollama ({model}, already downloaded). No key needed.");
+        } else {
+            eprintln!("→ Using local Ollama ({model}). No key needed.");
+        }
         return Ok(Some(ProviderSetup {
             chosen,
             env: ollama_redirect_env(&model),
@@ -350,5 +447,98 @@ mod tests {
         )));
         assert!(env.contains(&("OPENAI_API_KEY".to_string(), "ollama".to_string())));
         assert!(env.contains(&("OPENAI_MODEL".to_string(), "llama3.2".to_string())));
+    }
+
+    /// Trimmed but faithful `/api/tags` payload: an embedding-only model, a
+    /// tool-capable local model, a cloud model, and a completion-only fine-tune.
+    const TAGS_JSON: &str = r#"{"models":[
+        {"name":"nomic-embed-text:latest","size":274302450,
+         "modified_at":"2026-07-18T00:01:23.226914933+05:30",
+         "details":{"family":"nomic-bert"},"capabilities":["embedding"]},
+        {"name":"qwen3.6:latest","size":23938333577,
+         "modified_at":"2026-07-17T17:14:46.816292010+05:30",
+         "details":{"family":"qwen35moe"},
+         "capabilities":["vision","completion","tools","thinking"]},
+        {"name":"glm-5.2:cloud","size":0,
+         "modified_at":"2026-07-17T15:34:00.000000000+05:30",
+         "details":{"family":"glm"},
+         "capabilities":["completion","tools","thinking"]},
+        {"name":"yuvitbatra/cadquery-coder:latest","size":4700000000,
+         "modified_at":"2026-07-16T10:00:00.000000000+05:30",
+         "details":{"family":"qwen2"},"capabilities":["completion"]}
+    ]}"#;
+
+    #[test]
+    fn parses_local_models_with_capabilities() {
+        let models = parse_local_models(TAGS_JSON);
+        assert_eq!(models.len(), 4);
+
+        let embed = &models[0];
+        assert_eq!(embed.name, "nomic-embed-text:latest");
+        assert!(
+            !embed.completion,
+            "embedding-only model can't do completion"
+        );
+        assert!(!embed.tools);
+
+        let qwen = &models[1];
+        assert_eq!(qwen.name, "qwen3.6:latest");
+        assert!(qwen.completion);
+        assert!(qwen.tools);
+        assert!(!qwen.cloud);
+
+        assert!(models[2].cloud, "`:cloud` tag marks a cloud-hosted model");
+    }
+
+    #[test]
+    fn parse_local_models_tolerates_garbage() {
+        assert!(parse_local_models("not json").is_empty());
+        assert!(parse_local_models("{}").is_empty());
+    }
+
+    #[test]
+    fn picks_tool_capable_model_over_completion_only() {
+        // qwen3.6 supports tools; the cadquery fine-tune does not. Agents need
+        // function calling, so the tool-capable model wins even though the
+        // fine-tune is smaller/cheaper to load.
+        let picked = pick_local_model(&parse_local_models(TAGS_JSON));
+        assert_eq!(picked, Some("qwen3.6:latest".to_string()));
+    }
+
+    #[test]
+    fn never_picks_embedding_only_or_cloud_models() {
+        let models = parse_local_models(TAGS_JSON);
+        let only_unusable: Vec<LocalModel> = models
+            .into_iter()
+            .filter(|m| !m.completion || m.cloud)
+            .collect();
+        assert_eq!(
+            only_unusable.len(),
+            2,
+            "fixture has an embedding + a cloud model"
+        );
+        assert_eq!(
+            pick_local_model(&only_unusable),
+            None,
+            "an embedding model or a cloud model is not a usable free local chat model"
+        );
+    }
+
+    #[test]
+    fn falls_back_to_completion_only_when_nothing_supports_tools() {
+        let models: Vec<LocalModel> = parse_local_models(TAGS_JSON)
+            .into_iter()
+            .filter(|m| m.completion && !m.cloud && !m.tools)
+            .collect();
+        assert_eq!(
+            pick_local_model(&models),
+            Some("yuvitbatra/cadquery-coder:latest".to_string()),
+            "a usable local model still beats downloading a new one"
+        );
+    }
+
+    #[test]
+    fn picks_nothing_when_daemon_has_no_models() {
+        assert_eq!(pick_local_model(&[]), None);
     }
 }
