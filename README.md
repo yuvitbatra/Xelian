@@ -220,7 +220,7 @@ two files:
 
 The runtime abstracts the implementation language away — a Python agent, a
 Node MCP server, and anything else with a manifest all expose the same
-interface.
+interface. The full specification lives in [SPEC.md](SPEC.md).
 
 ## Environment variables
 
