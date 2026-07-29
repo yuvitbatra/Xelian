@@ -30,3 +30,6 @@ IMPLEMENTATION.md
 LAUNCH.md
 TRY_IT.md
 docs/
+
+# Homebrew formula — stale (v0.1.1, wrong Linux triple); regenerate before publishing
+Formula/
