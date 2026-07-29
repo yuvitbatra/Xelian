@@ -200,6 +200,76 @@ pub fn local_chat_model() -> Option<String> {
     pick_local_model(&parse_local_models(&body))
 }
 
+/// What Xelian knew about the LLM backend at the moment a package exited
+/// non-zero. Gathered from inspection plus a cheap re-probe, never by parsing
+/// the package's output — its stdio is inherited so the child can own the
+/// terminal, and a crashing Python agent prints its own traceback directly.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FailureContext {
+    /// Providers the package appears to need.
+    pub providers: Vec<Provider>,
+    /// Whether an Ollama daemon answered just now.
+    pub ollama_up: bool,
+    /// Whether a key for some paid provider the package needs is available.
+    pub key_available: bool,
+}
+
+/// Explain, in one plain-language line, why a package that needed an LLM most
+/// likely failed — or `None` when the backend looked fine and the failure is
+/// the package's own business.
+///
+/// This exists because a package's crash surfaces as its own stack trace (200+
+/// lines of Python for a LangChain agent), whose single useful line is buried
+/// and reads `Connection refused`. That tells a user nothing about *what* was
+/// refused. The diagnosis is deliberately conservative: it only speaks when the
+/// environment is genuinely missing a backend, so it never talks over a real
+/// bug in the package.
+pub fn diagnose_failure(ctx: &FailureContext) -> Option<String> {
+    if ctx.providers.is_empty() || ctx.key_available {
+        return None;
+    }
+    // Ollama serves an OpenAI-compatible API, so it is only relevant to a
+    // package Ollama could actually have served. Suggesting `ollama serve` to
+    // someone running an Anthropic-only agent would be misleading.
+    let ollama_could_serve =
+        ctx.providers.contains(&Provider::OpenAI) || ctx.providers.contains(&Provider::Ollama);
+
+    // A reachable Ollama that can serve this package *is* a working backend, so
+    // the failure lies elsewhere and this diagnosis must stay out of the way.
+    if ollama_could_serve && ctx.ollama_up {
+        return None;
+    }
+
+    let mut lines: Vec<String> = Vec::new();
+    if ollama_could_serve {
+        lines.push(
+            "    Ollama isn't running — nothing is listening on localhost:11434.\n        \
+             \x1b[1mollama serve\x1b[0m"
+                .to_string(),
+        );
+    }
+
+    if let Some(key_var) = ctx.providers.iter().find_map(|p| p.key_var()) {
+        let lead = if lines.is_empty() {
+            "    It needs an API key:"
+        } else {
+            "    Or give it an API key instead:"
+        };
+        lines.push(format!(
+            "{lead}\n        \x1b[1mxelian key set {key_var}\x1b[0m"
+        ));
+    }
+
+    if lines.is_empty() {
+        return None;
+    }
+    Some(format!(
+        "\n  \x1b[1;33m⚠\x1b[0m This package needs an LLM, and no backend was reachable.\n\
+         {}\n    The trace above is the package's own.\n",
+        lines.join("\n")
+    ))
+}
+
 /// Errors from interactive provider setup.
 #[derive(Debug, Error)]
 pub enum ProviderError {
@@ -540,5 +610,69 @@ mod tests {
     #[test]
     fn picks_nothing_when_daemon_has_no_models() {
         assert_eq!(pick_local_model(&[]), None);
+    }
+
+    fn failure_ctx(
+        providers: Vec<Provider>,
+        ollama_up: bool,
+        key_available: bool,
+    ) -> FailureContext {
+        FailureContext {
+            providers,
+            ollama_up,
+            key_available,
+        }
+    }
+
+    #[test]
+    fn no_diagnosis_when_the_package_needs_no_llm() {
+        assert_eq!(diagnose_failure(&failure_ctx(vec![], false, false)), None);
+    }
+
+    #[test]
+    fn diagnoses_a_dead_ollama_when_nothing_is_configured() {
+        // The real-world case: an OpenAI-SDK agent, no key, no daemon. The
+        // package's own traceback says only "Connection refused".
+        let msg = diagnose_failure(&failure_ctx(vec![Provider::OpenAI], false, false))
+            .expect("should explain the missing backend");
+        assert!(
+            msg.contains("11434"),
+            "must name the port that refused: {msg}"
+        );
+        assert!(msg.contains("ollama serve"), "must give the fix: {msg}");
+    }
+
+    #[test]
+    fn stays_quiet_when_a_key_was_available() {
+        // A key was present, so the backend wasn't the problem — the failure is
+        // the package's own and we must not talk over its traceback.
+        assert_eq!(
+            diagnose_failure(&failure_ctx(vec![Provider::OpenAI], false, true)),
+            None
+        );
+    }
+
+    #[test]
+    fn stays_quiet_when_ollama_was_running() {
+        assert_eq!(
+            diagnose_failure(&failure_ctx(vec![Provider::OpenAI], true, false)),
+            None
+        );
+    }
+
+    #[test]
+    fn anthropic_only_package_is_pointed_at_its_key_not_at_ollama() {
+        // Ollama cannot serve an Anthropic client, so suggesting `ollama serve`
+        // here would be actively misleading.
+        let msg = diagnose_failure(&failure_ctx(vec![Provider::Anthropic], false, false))
+            .expect("should explain the missing key");
+        assert!(
+            msg.contains("ANTHROPIC_API_KEY"),
+            "must name the key: {msg}"
+        );
+        assert!(
+            !msg.contains("ollama serve"),
+            "Ollama can't serve Anthropic — must not suggest it: {msg}"
+        );
     }
 }

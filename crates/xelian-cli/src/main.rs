@@ -883,6 +883,29 @@ fn prepare_env_and_launch_inner(
     // add` can distinguish outcomes exactly as if they had run the
     // entrypoint directly.
     if !status.success() {
+        // The package owns the terminal (its stdio is inherited), so a crash
+        // surfaces as its own stack trace — 200+ lines of Python for a
+        // LangChain agent, whose one useful line reads `Connection refused`
+        // without saying what refused. If the LLM backend is what was missing,
+        // add a single plain-language line under it.
+        let store = xelian_core::secrets::SecretStore::load(&home.secrets_path()).ok();
+        let key_available = insights.providers.iter().any(|p| {
+            p.key_var().is_some_and(|kv| {
+                // The free/local path injects `OPENAI_API_KEY=ollama` as a
+                // placeholder, which is not a real credential.
+                std::env::var(kv).is_ok_and(|v| v != "ollama")
+                    || store.as_ref().and_then(|s| s.get(kv)).is_some()
+            })
+        });
+        let ctx = xelian_core::run::provider::FailureContext {
+            providers: insights.providers.clone(),
+            ollama_up: xelian_core::run::provider::ollama_running(),
+            key_available,
+        };
+        if let Some(msg) = xelian_core::run::provider::diagnose_failure(&ctx) {
+            eprint!("{msg}");
+            let _ = std::io::Write::flush(&mut std::io::stderr());
+        }
         std::process::exit(status.code().unwrap_or(1));
     }
 
